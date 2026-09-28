@@ -597,7 +597,7 @@ it is two segments — `0 → 1.04` over 210 ms `OutQuart`, then `1.04 → 1` ov
 
   | block | |
   |---|---|
-  | **TIME** (blue) | local `HH:mm:ss` at 28 px, a rule, then New York / Los Angeles / Tokyo with day delta, zone abbreviation and clock |
+  | **TIME** (blue) | local `HH:mm:ss` at 28 px, a rule, then the 3-letter codes NYC / LAX / TYO with day delta, zone abbreviation and clock |
   | **DATE** (yellow) | weekday at 24 px, a full `dd MMMM yyyy` line, and a compact `dd.MM.yyyy · week NN · <moon glyph>` line (the date asked for, the ISO 8601 calendar-week number — Qt has no token for it, so it is computed — and the current moon phase, glyph only, Weather Icons set) |
   | **UPTIME** (teal) | `3d 04h 12m` at 28 px, boot timestamp, and how many full days |
 
@@ -795,7 +795,7 @@ it is two segments — `0 → 1.04` over 210 ms `OutQuart`, then `1.04 → 1` ov
   `TimeZone` QML type** (verified on 0.3.1 / Qt 6.11) and
   `toLocaleTimeString` silently *ignores* a `timeZone` option instead of failing
   — every city would show local time under its own name. The script prints
-  `<uptime-secs>|<City>\tHH:MM:SS\t<delta>\t<abbrev>|…` on one line, one `date`
+  `<uptime-secs>|<CityCode>\tHH:MM:SS\t<delta>\t<abbrev>|…` on one line, one `date`
   fork per zone, with the day delta from `year*366 + dayOfYear`. The poll is
   bound to `visible`, so a closed flyout forks nothing.
 - **No hover tooltip.** The old timezone tooltip is redundant now that the
@@ -1068,12 +1068,14 @@ Quickshell/Qt traps this feature ran into, all noted in the source:
 - A **positioner can be polished before its children exist** and never polished
   again, so a `Column`/`GridLayout` here left every child stacked at y=0 and the
   panel half a block too short. The panel body, the creator block, and the
-  flyout's TIME block (zone rows are `RowLayout`s) all place their children with
-  anchors or by hand instead of nesting positioners.
+  flyout's TIME block (whose zone rows are plain `Item`s in fixed columns, not
+  a positioner) all place their children with anchors or by hand instead of
+  nesting positioners.
 - Two items anchored **to each other in a cycle** make Qt drop an edge and leave
   the columns to jitter — it logs "Possible anchor loop detected on horizontal
-  anchor" and carries on. The zone rows are a one-way chain inward from the
-  right edge.
+  anchor" and carries on. The zone rows used to be a one-way chain inward from
+  the right edge, so the abbreviation column rode on the delta's width; they are
+  now fixed columns driven from the left.
 - An **anchor bound to a conditional, or to a derived property of the parent,
   keeps the value it was first given**: the rule above the creator stayed on its
   idle value forever, so the panel never grew for its rows. The rows and the

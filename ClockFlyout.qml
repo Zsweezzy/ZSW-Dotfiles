@@ -245,7 +245,7 @@ PopupWindow {
         onTriggered: root.now = new Date()
     }
 
-    // clock-panel.sh prints "<uptime-secs>|<City>\tHH:MM:SS\t<delta>\t<abbrev>|…"
+    // clock-panel.sh prints "<uptime-secs>|<CityCode>\tHH:MM:SS\t<delta>\t<abbrev>|…"
     // on a single line, so SplitParser hands the whole thing over at once.
     Poll {
         id: clockPoll
