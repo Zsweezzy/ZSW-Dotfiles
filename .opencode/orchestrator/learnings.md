@@ -29,3 +29,12 @@
 - 2026-09-28: `pgrep -f 'hyprctl|jq'` matches its own command line and reports a permanent phantom process count. Use `pgrep -xc <name>` for exact-name counting when measuring whether a poll actually spawns anything.
 - 2026-09-28: the tokyonight QML files use 4 spaces — `grep -cP '\t'` is 0 across all of them. Do not tell a sub-agent to use tabs; verify the file's actual convention first.
 - 2026-09-28: when a reviewer or brief asserts a premise, check it before complying. Two of this run's briefs were wrong (a `SUPER+CTRL+SHIFT+C` bind that never existed; "tab indentation" against a spaces repo) and a review finding was rejected because its stated reason was false (`Bar.qml`'s unused `Quickshell.Hyprland` import was already an orphan at the base commit, so it was not residue of the diff). A finding with a false premise is worse than no finding — executing it enlarges the diff for nothing.
+
+## 2026-09-28 — clock-pane zone-row alignment round
+- Check `git log` before planning on an assumed base SHA: HEAD was `9b41ab5` "WIP snapshot" (alignment work already committed), not `a5e79af`.
+- Offscreen probe recipe: render the verbatim TIME-block fragment with a `zonealign` module + `singleton Tokyo` stub; QML `console.log` NEVER prints in this harness — read geometry back through a JSON root property (`geoJson`); `QT_SCALE_FACTOR=2 × grabToImage(2×)` ⇒ out.png is 4×.
+- Copy the REAL palette into probe stubs: `Tokyo.dim` is `#7983a4`, not the stock tokyonight `#565f89` — wrong colors make pixel scans lie.
+- Measured (logical px, pixel-verified): abbrev x = 40.0 on every row (NYC/LAX same-day AND TYO "+1d"); delta `"same"` iw 24 vs `"+1d"` iw 18, both inside the 30 px right-aligned slot; zoneClock right edge = content width 194. A 0.5 px ink spread across rows is glyph bearing (E/P vs J), not column drift.
+- `.opencode/orchestrator/` is TRACKED here (no `.gitignore`) — memory files are committed directly, run ledgers included.
+- Timestamped reload log: `/run/user/1000/quickshell/by-id/<id>/log.log` (`INFO: Reloading configuration...` → `Configuration Loaded`); `log.qslog` is binary-padded and untimestamped.
+- README:954's `RowLayout` is the timer-row progress bar — legit, not a stale zone-row claim.
