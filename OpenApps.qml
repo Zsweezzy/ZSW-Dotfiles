@@ -201,23 +201,27 @@ Rectangle {
         return ""
     }
 
-    // a theme icon URL for an app, or "" when the theme has none. SNI items hand
-    // us a name (sometimes an absolute path), window classes are often
-    // reverse-DNS (org.kde.kate -> kate), so try the last dotted segment too.
-    // A name carrying "/" is not proof it is a usable path: SNI items hand over
-    // paths from the app's last run, and a self-updated app leaves them stale
-    // (file gone). Try the basename in the theme first and keep the path as the
-    // last resort — the opposite order is what the dead shell-out resolver did.
+    // whatever URL the Image can load for an app, or "" when nothing resolves.
+    // Window classes are often reverse-DNS (org.kde.kate -> kate), so a name
+    // that misses the theme is retried on its last dotted segment; an absolute
+    // path is taken as one. A path that no longer exists on disk still goes to
+    // the Image, which fails it and hands the cell back to its glyph — there is
+    // no existence check here to fall back from (QML has no equivalent of the
+    // old resolver's `[ -f "$name" ]`).
     function iconUrl(name) {
         const n = String(name || "").trim()
         if (n === "") return ""
-        if (n.indexOf("/") !== -1) {
-            const themed = Quickshell.iconPath(n.split("/").pop(), true)
-            return themed !== "" ? themed : "file://" + n.replace(/ /g, "%20")
-        }
+        // an SNI icon is not always a bare theme name: Steam hands over a
+        // complete provider URL (image://icon/steam_tray_mono?path=...), others
+        // a generated one (image://qspixmap/...). Those are already URLs, and
+        // iconPath() cannot resolve them — hand them to the Image as they are.
+        if (n.indexOf("://") !== -1) return n
         let p = Quickshell.iconPath(n, true)
         if (p === "" && n.indexOf(".") !== -1) p = Quickshell.iconPath(n.split(".").pop(), true)
-        return p
+        if (p !== "") return p
+        // nothing in the theme: an absolute path the app gave us
+        if (n.indexOf("/") === 0) return "file://" + n.replace(/ /g, "%20")
+        return ""
     }
 
     // taskbar-style click: focus that app's first window.
@@ -405,8 +409,8 @@ Rectangle {
 
                     // the app's own icon, used whenever glyphFor() has no
                     // nerd-font glyph for it. item.icon is what the SNI hands
-                    // us (usually the theme name, sometimes a path), so try it
-                    // first and fall back to the SNI id.
+                    // us (a theme name, a path, or a whole image:// URL), so try
+                    // it first and fall back to the SNI id.
                     // openRGB is the case this exists for: it runs
                     // --startminimized and lives here as an SNI cell, and the
                     // sliders glyph it used to be given is only a guess at its
