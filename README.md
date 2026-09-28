@@ -97,9 +97,24 @@ module at `scripts/`.
     (`hl.dsp.focus({ window = "class:…" })`; the old cycle-through-apps
     behavior and `openapps-focus.sh` are retired).
   - Tray glyphs are mapped per app (`glyphFor` mirrors the `openapps.sh` map):
-    Steam gets its logo `\uf1b6`, NordVPN a padlock `\uf023`, OpenRGB the
-    sliders `\uf1de` ("RGB control"), and browser/terminal/editor/file-manager
-    classes match their open-apps glyphs.
+    Steam gets its logo `\uf1b6`, NordVPN a padlock `\uf023`, and
+    browser/terminal/editor/file-manager classes match their open-apps glyphs.
+    Unmapped apps (OpenRGB among them — it used to be a `\uf1de` sliders glyph)
+    get an **empty** glyph and fall back to **their own icon from the active
+    icon theme**, so a cell shows: mapped glyph → the app's theme icon →
+    the generic wrench `\uf0c8`. `Quickshell.iconPath(name, true)` does the
+    lookup (and the active theme is picked up automatically); window classes
+    that are reverse-DNS are retried on their last dotted segment
+    (`org.kde.kate` → `kate`), and an SNI `icon` that looks like a path is
+    looked up by basename first — a self-updated app leaves a stale path, and
+    the old per-cell `find` through `~/.local/share/icons` that checked it
+    (dead code since the tray merge, now deleted) fell back to the theme
+    exactly that way. A URL the image provider can't decode lands back on the
+    glyph rather than an empty cell.
+    Accepted tradeoff: native icons are artwork, so they render full-colour —
+    the pink / muted blue-gray split only tints the cells still showing a glyph.
+    Icons are rasterized at `sourceSize` (14 px); without it the `image://`
+    provider hands back a 200×200 pixmap that Qt then scales down.
   - Every cell hover-highlights; the highlight is tracked from the cursor
     position itself (`containsMouse`) and the 5 s `openapps.sh` poll reuses the
     same array when nothing changed — so the highlight stays lit exactly as long
@@ -755,7 +770,6 @@ Tokyo.qml            palette + geometry singleton
 NetworkMonitor.qml  shared per-adapter rate/latency data source
 Brightness.qml      shared DDC/CI brightness service (display map, debounced writes)
 Workspaces/Cava/OpenApps/Wifi/Ethernet/Audio/Gpu/Cpu/Mem/Updates.qml
-TrayIcon.qml          retired with the tray merge (themed SNI icons; currently unused)
 AudioFlyout.qml       popup with per-app volume + input/output device switching
 TrayMenu.qml          SNI right-click menu rendered as a flyout (same look as AudioFlyout)
 BrightnessFlyout.qml  per-monitor DDC/CI luminance slider (right-click a workspace pill)

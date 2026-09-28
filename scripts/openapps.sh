@@ -1,19 +1,23 @@
 #!/bin/bash
-# openapps.sh — taskbar cluster source: one pink nerd-font glyph per open
-# application (deduped by class, first-seen order), with the window title for
-# per-icon tooltips. Outputs JSON (return-type: json):
+# openapps.sh — taskbar cluster source: one glyph per open application (deduped
+# by class, first-seen order), with the window title for per-icon tooltips.
+# Outputs JSON (return-type: json):
 #   { "apps": [ {class, glyph, title}, ... ] }
 # The pill renders each app as its own clickable cell (left-click focuses it).
+# A class with no entry in glyphs() gets glyph: "" on purpose — that is the
+# contract with OpenApps.qml: an empty glyph means "use the app's own icon from
+# the icon theme" (and the generic wrench only if the theme has none either).
 
 # Emit the REAL glyph characters (not "\uf269" escape strings) so the JSON
 # carries the actual PUA code points and the pill renders them as glyphs.
 glyphs() {
     case "$1" in
+        *steam*) printf '\uf1b6' ;;  # brand glyph; an open Steam window now matches the tray cell
         *firefox*|*chromium*|*brave*|*zen*|*webkit*) printf '\uf269' ;;   # browser
         *kitty*|*alacritty*|*wezterm*|*foot*|*konsole*|*ghostty*|*urxvt*|*xterm*) printf '\uf120' ;;  # terminal
         *kate*|*kwrite*|*sublime*|*code*|*vim*|*nvim*|*emacs*|*zed*) printf '\uf044' ;;  # editor
         *dolphin*|*nautilus*|*thunar*|*pcmanfm*|*nemo*) printf '\uf07b' ;;  # file manager
-        *) printf '\uf0c8' ;;  # generic app
+        *) : ;;  # unmapped: empty glyph, the QML side falls back to the app's own icon
     esac
 }
 

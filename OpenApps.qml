@@ -11,6 +11,14 @@
 // glyph map) so opened and trayed apps read as two color-coded groups inside
 // one uniform widget.
 //
+// A cell shows whichever it has, in this order: a mapped nerd-font glyph, else
+// the app's own icon from the active icon theme (iconUrl()), else the generic
+// wrench. Most apps here have no glyph worth hand-mapping, and a hand-picked
+// glyph is only ever a guess at a logo — the theme's icon is the better one when
+// it has one. The tradeoff is that native icons are artwork, so an icon cell is
+// full-colour and only glyph cells take the pink/muted tint that colour-codes
+// the two groups.
+//
 // Every cell is its own click target (≥24 px, ~12 px gaps between glyphs, and
 // glyphs are a px bigger than the other pills' labels so they're easy to hit):
 //   Open apps:  left-click focuses that app's window.
@@ -50,8 +58,14 @@ Rectangle {
     // ---------- taskbar sizing (apps cluster only — the other pills keep Tokyo.fontSize) ----------
     // "a tiny bit bigger" than the other pills' labels.
     readonly property real iconSize: Tokyo.fontSize + 1
-    // cell width = glyph + 12 px spacing (6 px pad each side → ~12 px visual gap
-    // between glyphs), min 24 px so each icon is a comfortable click target.
+    // last-resort glyph: only painted when the app has neither a mapped
+    // nerd-font glyph nor an icon in the current theme.
+    readonly property string genericGlyph: "\uf0c8"
+    // cell width = the wider of glyph and icon + 12 px spacing (6 px pad each
+    // side → ~12 px visual gap between cells), min 24 px so each icon is a
+    // comfortable click target. The icon is in the formula so a cell is already
+    // its final width when the icon is still loading — resizing then would
+    // shuffle the whole row.
     readonly property real appCellPad: 12
     readonly property real appCellMin: 24
 
@@ -171,17 +185,39 @@ Rectangle {
 
     // nerd-font glyph for an open/tray app. Mirrors the glyph map in
     // scripts/openapps.sh (keep the two in sync) plus app-specific brands for
-    // the tray; "" never happens here — every name falls through to generic.
+    // the tray; "" means no font glyph is mapped, and the cell then falls back
+    // to the app's own theme icon (root.iconUrl) — the generic wrench is only
+    // painted by the cell when that lookup misses too. openRGB is deliberately
+    // absent: the sliders glyph (\uf1de, was \uf1fb) was a stand-in for its
+    // logo, and its own icon is the better one where the theme has it.
     function glyphFor(name) {
         const n = String(name || "").toLowerCase()
         if (n.indexOf("steam") !== -1) return "\uf1b6"    // nf-fa-steam
         if (n.indexOf("nordvpn") !== -1) return "\uf023"  // nf-fa-lock (was \uf132 shield — read as a generic blob at 14 px)
-        if (n.indexOf("openrgb") !== -1) return "\uf1de"  // nf-fa-sliders-h ("RGB control" — was \uf1fb eyedropper, diagonal mush at 14 px)
         if (/firefox|chromium|brave|zen|webkit/.test(n)) return "\uf269"   // browser
         if (/kitty|alacritty|wezterm|foot|konsole|ghostty|urxvt|xterm/.test(n)) return "\uf120"  // terminal
         if (/kate|kwrite|sublime|code|vim|nvim|emacs|zed/.test(n)) return "\uf044"  // editor
         if (/dolphin|nautilus|thunar|pcmanfm|nemo/.test(n)) return "\uf07b"  // file manager
-        return "\uf0c8" // generic app
+        return ""
+    }
+
+    // a theme icon URL for an app, or "" when the theme has none. SNI items hand
+    // us a name (sometimes an absolute path), window classes are often
+    // reverse-DNS (org.kde.kate -> kate), so try the last dotted segment too.
+    // A name carrying "/" is not proof it is a usable path: SNI items hand over
+    // paths from the app's last run, and a self-updated app leaves them stale
+    // (file gone). Try the basename in the theme first and keep the path as the
+    // last resort — the opposite order is what the dead shell-out resolver did.
+    function iconUrl(name) {
+        const n = String(name || "").trim()
+        if (n === "") return ""
+        if (n.indexOf("/") !== -1) {
+            const themed = Quickshell.iconPath(n.split("/").pop(), true)
+            return themed !== "" ? themed : "file://" + n.replace(/ /g, "%20")
+        }
+        let p = Quickshell.iconPath(n, true)
+        if (p === "" && n.indexOf(".") !== -1) p = Quickshell.iconPath(n.split(".").pop(), true)
+        return p
     }
 
     // taskbar-style click: focus that app's first window.
@@ -268,9 +304,11 @@ Rectangle {
                     readonly property var app: modelData
 
                     id: openCell
-                    // same sizing as the tray cells (root.appCellPad/Min): glyph
-                    // width + 12 px spacing, min 24 px — easy to click specific apps.
-                    width: Math.max(glyph.implicitWidth + root.appCellPad, root.appCellMin)
+                    // same sizing as the tray cells (root.appCellPad/Min): the
+                    // wider of glyph/icon + 12 px spacing, min 24 px — easy to
+                    // click specific apps. Sizing on the icon too means the cell
+                    // is already its final width when the icon is still loading.
+                    width: Math.max(Math.max(root.iconSize, glyph.implicitWidth) + root.appCellPad, root.appCellMin)
                     height: Tokyo.pillHeight
                     radius: 6
                     // highlight tracks the cursor position itself (containsMouse)
@@ -283,12 +321,37 @@ Rectangle {
                     // and jiggling between the tray icons made both look focused)
                     color: mouse.containsMouse ? Tokyo.cellHover : "transparent"
 
+                    // the app's own artwork, for classes openapps.sh left unmapped
+                    // (app.glyph === "") — they fall through to whatever the theme
+                    // resolves for their class, and to the wrench if that misses too.
+                    Image {
+                        id: icon
+                        anchors.centerIn: parent
+                        width: root.iconSize
+                        height: root.iconSize
+                        fillMode: Image.PreserveAspectFit
+                        // without these the image:// provider hands back a
+                        // 200x200 pixmap and Qt scales it down (blurry SVG at
+                        // 14 px); with them the SVG rasterizes at 14.
+                        sourceSize.width: root.iconSize
+                        sourceSize.height: root.iconSize
+                        source: openCell.app && openCell.app.glyph === "" ? root.iconUrl(openCell.app.class) : ""
+                    }
+
                     Text {
                         id: glyph
                         anchors.centerIn: parent
-                        text: (openCell.app && openCell.app.glyph) ? openCell.app.glyph : ""
+                        // "" from the map means "no glyph of ours" -> the cell
+                        // falls back to the app's own icon, and only reaches the
+                        // generic wrench when the theme has no icon either.
+                        text: (openCell.app && openCell.app.glyph) ? openCell.app.glyph : root.genericGlyph
                         color: Tokyo.pink
                         font { family: Tokyo.fontFamily; pixelSize: root.iconSize; letterSpacing: 0.2 }
+                        // a non-empty source is not proof the icon painted: a URL
+                        // the provider can't decode (stale path, broken SVG) has
+                        // to hand the cell back to its glyph, or the cell is a
+                        // live click target with nothing in it.
+                        visible: icon.source === "" || icon.status === Image.Error
                     }
 
                     MouseArea {
@@ -329,9 +392,9 @@ Rectangle {
                     readonly property var item: modelData
 
                     id: sniCell
-                    // same sizing as open-app cells (root.appCellPad/Min): glyph
-                    // width + 12 px spacing, min 24 px.
-                    width: Math.max(glyph.implicitWidth + root.appCellPad, root.appCellMin)
+                    // same sizing as open-app cells (root.appCellPad/Min): the
+                    // wider of glyph/icon + 12 px spacing, min 24 px.
+                    width: Math.max(Math.max(root.iconSize, glyph.implicitWidth) + root.appCellPad, root.appCellMin)
                     height: Tokyo.pillHeight
                     radius: 6
                     // no fade: an instant highlight means two adjacent cells can
@@ -340,16 +403,40 @@ Rectangle {
                     // and jiggling between the tray icons made both look focused)
                     color: mouse.containsMouse ? Tokyo.cellHover : "transparent"
 
+                    // the app's own icon, used whenever glyphFor() has no
+                    // nerd-font glyph for it. item.icon is what the SNI hands
+                    // us (usually the theme name, sometimes a path), so try it
+                    // first and fall back to the SNI id.
+                    // openRGB is the case this exists for: it runs
+                    // --startminimized and lives here as an SNI cell, and the
+                    // sliders glyph it used to be given is only a guess at its
+                    // logo — so it takes whatever the theme resolves for its
+                    // icon/id, and the generic wrench if that misses too.
+                    Image {
+                        id: icon
+                        anchors.centerIn: parent
+                        width: root.iconSize
+                        height: root.iconSize
+                        fillMode: Image.PreserveAspectFit
+                        // rasterize at the target size — see the open-app cell
+                        sourceSize.width: root.iconSize
+                        sourceSize.height: root.iconSize
+                        source: sniCell.item ? (root.iconUrl(sniCell.item.icon) || root.iconUrl(sniCell.item.id)) : ""
+                    }
+
                     Text {
                         id: glyph
                         anchors.centerIn: parent
                         // item can be momentarily undefined while the Repeater
                         // rebuilds on reload — guard so it doesn't warn.
-                        text: sniCell.item ? root.glyphFor(sniCell.item.title + " " + sniCell.item.id + " " + sniCell.item.icon) : ""
+                        text: sniCell.item ? (root.glyphFor(sniCell.item.title + " " + sniCell.item.id + " " + sniCell.item.icon) || root.genericGlyph) : ""
                         // tray/background apps use a muted blue-gray so opened
                         // apps (pink) and trayed apps read as separate groups.
                         color: Tokyo.trayGlyph
                         font { family: Tokyo.fontFamily; pixelSize: root.iconSize; letterSpacing: 0.2 }
+                        // a failed icon load falls back to the glyph too — see
+                        // the open-app cell
+                        visible: icon.source === "" || icon.status === Image.Error
                     }
 
                     MouseArea {
@@ -390,7 +477,7 @@ Rectangle {
 
                     id: phCell
                     // same sizing as SNI/open-app cells (see root.appCellPad/Min)
-                    width: Math.max(glyph.implicitWidth + root.appCellPad, root.appCellMin)
+                    width: Math.max(Math.max(root.iconSize, glyph.implicitWidth) + root.appCellPad, root.appCellMin)
                     height: Tokyo.pillHeight
                     radius: 6
                     // no fade: an instant highlight means two adjacent cells can
@@ -399,15 +486,31 @@ Rectangle {
                     // and jiggling between the tray icons made both look focused)
                     color: mouse.containsMouse ? Tokyo.cellHover : "transparent"
 
+                    // same fallback as the SNI cells, from the window class
+                    Image {
+                        id: icon
+                        anchors.centerIn: parent
+                        width: root.iconSize
+                        height: root.iconSize
+                        fillMode: Image.PreserveAspectFit
+                        // rasterize at the target size — see the open-app cell
+                        sourceSize.width: root.iconSize
+                        sourceSize.height: root.iconSize
+                        source: phCell.client ? root.iconUrl(phCell.client.class) : ""
+                    }
+
                     Text {
                         id: glyph
                         anchors.centerIn: parent
                         // client can be momentarily undefined while the Repeater
                         // rebuilds on reload — guard so it doesn't warn.
-                        text: phCell.client ? root.glyphFor(phCell.client.class + " " + phCell.client.title) : ""
+                        text: phCell.client ? (root.glyphFor(phCell.client.class + " " + phCell.client.title) || root.genericGlyph) : ""
                         // tray/background apps use the muted blue-gray (see SNI cell)
                         color: Tokyo.trayGlyph
                         font { family: Tokyo.fontFamily; pixelSize: root.iconSize; letterSpacing: 0.2 }
+                        // a failed icon load falls back to the glyph too — see
+                        // the open-app cell
+                        visible: icon.source === "" || icon.status === Image.Error
                     }
 
                     MouseArea {
