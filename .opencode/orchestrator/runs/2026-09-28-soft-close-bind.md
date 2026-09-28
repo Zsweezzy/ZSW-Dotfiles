@@ -6,10 +6,11 @@ base: n/a — `~/.config/hypr` is NOT a git repo. Delivery is a live-verified fi
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | soft-close-bind | implementation | validated | normal | session default | ses_f18321c05fferT7utxsyB6xTjd | live `~/.config/hypr` (no VCS) | none — verified via `hyprctl binds` | 1 | — |
 | review | quality gate | validated | — | session default | ses_f1831776effeyvlegiCny2PNpA | — | no blocking, 3 nits | — | soft-close-bind |
-| hypr-lua-api | research | superseded | normal | session default | ses_f18362888ffe5OozksnpOmF3gd | — | — | 0 | — |
+| hypr-lua-api | research | completed (post-delivery) | normal | session default | ses_f18362888ffe5OozksnpOmF3gd | — | — | 0 | — |
 
 ## Decisions
 - 2026-09-28: "soft close" = ONE graceful request. User chose A over hold-to-repeat and over a self-paced loop, and chose silence on failure. Settled in grilling, not revisited. Loop machinery (script, pin-address, bound, notify) is therefore NOT built. Revisit cost if wrong: add `{ repeating = true }` to the one bind line (hold-to-repeat) or ~6 lines of script (self-paced).
+- 2026-09-28: the late research **vindicates** that choice. Hyprland does not escalate repeated close requests — it re-sends the identical `xdg_toplevel.close` / `WM_DELETE_WINDOW` indefinitely. So a self-paced "keep asking until it dies" loop buys almost nothing: it cannot rescue an app that genuinely ignores the request. The only case it covers is a first request swallowed by a `noclosefor` window rule. The single request was the right build. Not re-litigated with the user; recorded so a future session does not rebuild the loop.
 - 2026-09-28: keep `SUPER+C` = `hl.dsp.window.kill()`. User chose the two-key ladder over retargeting. The kill's commented-out `closeWindowBind:set_enabled(false)` is left in place.
 - 2026-09-28: implementation lives in `hyprland.lua`, not the Quickshell bar. The bar has no `CustomShortcut`, no `IpcHandler`, no `Quickshell.Io` anywhere — an IPC layer would have been built from scratch to deliver a signal the user declined. Rejected: Quickshell-side bind.
 - 2026-09-28: took review nit 1 (comment overclaimed the prompt), declined nits 2 and 3. Nit 2 (disambiguate the launcher description) is cosmetic — the launcher search already separates "close" from "kill". Nit 3 is a pre-existing misnomer on line 340 (`closeWindowBind` names a kill bind), out of scope.
@@ -35,3 +36,5 @@ base: n/a — `~/.config/hypr` is NOT a git repo. Delivery is a live-verified fi
 - `~/.config/hypr` still has no VCS.
 - Line 340's local is named `closeWindowBind` but binds a SIGKILL. Pre-existing, now mildly confusing next to the real close bind.
 - A `SUPER+CTRL+C` hold-to-repeat variant was available at zero extra cost and was declined. Revisit if a single request proves too weak in practice.
+- **XWayland apps that do not advertise `WM_DELETE_WINDOW` get `xcb_kill_client` from this bind** — i.e. `SUPER+CTRL+C` is a silent hard kill on those apps, not a graceful close. Source-verified. The bind comment already warns about the compositor killing an app that ignores the request, which is exactly this case, but it does not name XWayland specifically.
+- **A `noclosefor` window rule can eat the first request silently.** The comment's "silently, since this bind says nothing" covers it, but no such rule is currently configured, so it is latent rather than active.
