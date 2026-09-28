@@ -99,7 +99,9 @@ Item {
                     height: 2
                     color: Tokyo.blue
                     visible: globallyActive
-                    radius: 2
+                    // clamped, not 2: at this height a radius of 2 is twice half
+                    // the bar, which draws a lozenge rather than an underline
+                    radius: height / 2
                 }
 
                 MouseArea {

@@ -1,13 +1,9 @@
 // TimerCreator.qml — "set a new timer": slider + manual entry + Start.
 //
 // The "new timer" block: a readout, a 1-30 min slider, a manual-entry box and a
-// START button. The entry box is always present; `roomy` only widens the readout
-// and the button, and shows the hint line under them. With TimerWindow.qml gone
-// there is one host and it passes `roomy: false`, so in practice `roomy` is
-// always false now and the hint line — the only thing that ever told the user
-// the box takes "minutes / minutes:seconds" — is no longer shown anywhere.
-// Same shape of loss as the `+N more` line: the feature works, the signposting
-// went with the surface that carried it.
+// START button. With TimerWindow.qml gone there is one host — ClockFlyout's
+// timers pane — so every size in here is a constant rather than something the
+// host negotiates.
 //
 // Deliberately anchored rather than a Column: Qt can polish a positioner before
 // all of its children exist and never polish it again, which left every child
@@ -16,9 +12,11 @@
 // order. (forceLayout() also rescues it, but only if you remember to call it.)
 //
 // Range is 1-30 minutes in 1-minute steps, matching the slider. The manual box
-// accepts finer values ("4:30") because that is the reason it exists — the
-// slider then rounds to the nearest minute for display, while the started
-// timer keeps the exact value that was typed.
+// accepts finer values ("4:30") because that is the reason it exists; typing
+// there live-moves the slider, rounded to whole minutes so the readout stays
+// honest. But only Enter starts the exact typed value (still within the
+// 1-30 min range: "99" starts 30:00, not 99:00) — START starts the
+// slider's whole minutes, not what is in the box.
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic as Controls
@@ -45,9 +43,6 @@ Item {
     /// for the host's own diagnostics
     readonly property bool hasActiveField: field.activeFocus
 
-    /// the window has room for a larger readout and a hint line
-    property bool roomy: false
-
     /// slider position in minutes, 1..30
     property real minutes: 25
     property string entry: ""
@@ -59,8 +54,7 @@ Item {
 
     readonly property real gap: 8
 
-    // the last child decides the height, since the hint line is roomy-only
-    implicitHeight: hint.visible ? hint.y + hint.height : entryRow.y + entryRow.height
+    implicitHeight: entryRow.y + entryRow.height
     height: implicitHeight
 
     // ---------------- readout ----------------
@@ -72,7 +66,7 @@ Item {
         Text {
             text: TimerState.fmt(root.minutes * 60000)
             color: Tokyo.fg
-            font { family: Tokyo.fontFamily; pixelSize: root.roomy ? 26 : 20; bold: true }
+            font { family: Tokyo.fontFamily; pixelSize: 20; bold: true }
         }
         Text {
             text: "min"
@@ -146,14 +140,14 @@ Item {
 
         Controls.TextField {
             id: field
-            Layout.preferredWidth: root.roomy ? 120 : 96
+            Layout.preferredWidth: 96
             // implicitHeight, not height: a RowLayout manages its geometry and
             // assigning `height` there is undefined behaviour.
             implicitHeight: 26
             text: root.entry
             placeholderText: "12 or 12:30"
             color: Tokyo.fg
-            placeholderTextColor: Tokyo.bgHighlight
+            placeholderTextColor: Tokyo.trayGlyph
             font { family: Tokyo.fontFamily; pixelSize: 12 }
             leftPadding: 8
             rightPadding: 8
@@ -164,10 +158,10 @@ Item {
 
             background: Rectangle {
                 radius: 6
-                color: Tokyo.bg
+                color: Tokyo.panelFill
                 border.width: 1
                 border.color: field.activeFocus ? Tokyo.blue
-                    : (root.entryBad ? Tokyo.magenta : Tokyo.bgHighlight)
+                    : (root.entryBad ? Tokyo.magenta : Tokyo.paneEdge)
             }
             onTextChanged: {
                 root.entry = text
@@ -189,19 +183,6 @@ Item {
             Layout.alignment: Qt.AlignVCenter
             onClicked: root.start()
         }
-    }
-
-    Text {
-        id: hint
-        anchors {
-            left: parent.left; right: parent.right
-            top: entryRow.bottom; topMargin: root.gap
-        }
-        visible: root.roomy
-        text: "drag the slider, or type minutes / minutes:seconds · enter starts"
-        color: Tokyo.trayGlyph
-        font { family: Tokyo.fontFamily; pixelSize: 10 }
-        wrapMode: Text.WordWrap
     }
 
     // ---------------- logic ----------------

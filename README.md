@@ -40,7 +40,7 @@ Launched at session start by `hyprland.lua` line 66
 | custom/updates         | Updates       | `scripts/cachy-updates.sh`       |
 | tray (merged into OpenApps) | OpenApps | Quickshell.Services.SystemTray + `special:tray` |
 | (no waybar equivalent)  | Brightness    | `scripts/brightness.sh` (ddcutil, DDC/CI VCP 0x10) |
-| (no waybar equivalent)  | ClockFlyout   | `TimerState.qml` + `scripts/timer-alert.sh` |
+| (no waybar equivalent)  | ClockFlyout   | `TimerState.qml` + `pw-play` (`assets/timer-done.wav`) |
 
 The bar's centre is **one** pill now, not four. `ClockDate.qml`, `ClockTime.qml`,
 `Uptime.qml` and `TimerPill.qml` are gone; what they showed lives in
@@ -77,8 +77,9 @@ module at `scripts/`.
   the Ethernet tooltip.
 - Clicking the audio pill opens a flyout (`AudioFlyout.qml`) with per-application
   volume sliders + mute toggles and click-to-switch output/input devices
-  (defaults set via `Pipewire.preferredDefaultAudioSink/Source`). It replaces
-  the old `audio-popup.py` on left-click; right/middle click still launches it.
+  (defaults set via `Pipewire.preferredDefaultAudioSink/Source`). It replaced
+  the old Python audio panel on left-click; right/middle click launches the
+  compiled `audio-popup` panel.
 - Clicking the cpu / gpu / mem pills opens `btop` in a kitty window
   (`Quickshell.execDetached`, replacing waybar's on-click).
 - **Apps cluster / "minimize to tray"** (`OpenApps.qml`, the dropped waybar tray
@@ -239,16 +240,23 @@ and how long have you been here"), so it is one click away instead of four.
   The bar's `Clock` stays on screen the whole time: there is nothing to hide,
   because the two are on different pixels by the end of the morph.
 
-  What that cost, and why it is still the right trade: the panel's header is no
-  longer the widget's own row. It used to be — the `time and date` label landed
-  on the same 26 rows the digits had, at the same pixels, so opening the panel
-  looked like the widget reading out a fuller version of itself. A panel *below*
-  the widget has nothing to inherit, so the header is an ordinary header now: the
-  panel's own title. That could not be done while the header *was* a reading of
-  the clock, because with the panel on the widget's own row a header repeating
-  the time and the date is a third copy of it — two of them a click apart. The
-  readings had to leave the header, not the widget, and the widget keeping them
-  is what makes the header's silence read as the widget going quiet.
+  What that cost, and why it is still the right trade: the panel's top is no
+  longer the widget's own row. It used to be — the `time and date` label was the
+  panel's first `pillH` rows and the digits were the window's, so at rest the two
+  were adjacent rather than coincident, and the label slid in below the digits as
+  the shape uncovered it rather than over them. That is what the move bought: the
+  widget's own rows stayed the widget's. A panel *below* the widget has nothing to
+  inherit, so the header was an ordinary header: the panel's own title, naming
+  the panes rather than repeating them. It has since
+  been deleted outright, which is that same conclusion taken one step further —
+  the CLOCK pane carries both readings already, at a size worth reading, so the
+  only thing the band was left doing was describing what was underneath it. What
+  the panel has where the header was is `pad` of margin, the same margin it has
+  on its other three sides. It could not be done while the header *was* a reading
+  of the clock, because with the panel on the widget's own row a header
+  repeating the time and the date is a third copy of it — two of them a click
+  apart. The readings had to leave the header, not the widget, and the widget
+  keeping them is what makes the panel's silence read as the widget going quiet.
 
   The widget also stays **lit** while its panel is up. The popup's own surface is
   drawn on top of the pill, so the bar's `MouseArea` hears nothing at all once
@@ -304,7 +312,12 @@ it is two segments — `0 → 1.04` over 210 ms `OutQuart`, then `1.04 → 1` ov
   popping. Every *surface* in the shell wears the same 10 — bar, pills, panels,
   flyouts, tooltip, tray menu, clock panes — so a quickshell surface reads as a
   Hyprland window. Only surfaces: a button or a slider track inside a panel is a
-  different scale of thing and keeps its own radius. (`decoration.rounding_power`
+  different scale of thing and keeps its own radius. What a control does not get
+  either is a radius past half its own height — a 2 px underline with r=2 is a
+  lozenge, not an underline — so the three elements that needed clamping all
+  clamp: `Workspaces`' 2 px active underline and `TimerPanel`'s 3 px
+  progress bar to `height / 2`, and `TrayMenu`'s separator rows to
+  `Math.min(6, height / 2)`, which leaves its 30 px rows at 6. (`decoration.rounding_power`
   is 2, so a *large* Hyprland window's effective corner is rounder than 10; 10 is
   what a 26 px pill and this panel are being asked to match.)
 - **The fill is the pill's fill for the whole morph**, and not a fade from it to a
@@ -329,28 +342,52 @@ it is two segments — `0 → 1.04` over 210 ms `OutQuart`, then `1.04 → 1` ov
   exactly, and the content is laid out against the same edges with nothing
   clipped. The panel's edge is defined by the fill itself, as it is for every
   other widget in the bar.
-- **The pill's own height becomes the panel's header, and the header says its own
-  name.** `panelH = pillH + headerGap + cellH + pad`; the 26 px is a header band, a
-  1 px `headerRule` marks its bottom edge, and the grid starts below it. It is an
-  ordinary header — **`time and date`**, `Tokyo.trayGlyph` at 11 px with
-  letterSpacing 1, centred — in a `Text` that lives *inside* `panelSpace` and is
-  therefore clipped by the shape and faded in with the rest of the content. It
-  names the panes below it, and the CLOCK pane has both readings already, at a
-  size worth reading. Measured after the move: ink at device 1823..2010 × 81..96,
-  three word clusters, on the panel's own first 26 rows.
+- **The panel has no header band, and the panes sit one `pad` below its top edge.**
+  `panelH = pad * 2 + cellH` and the grid is at `y: root.pad`. The
+  `pillH + headerGap` the band used to hold above the grid went out with it: a
+  centred `time and date` label at 11 px with letterSpacing 1, and a 1 px rule
+  under it. The `pad` is not a new margin invented for this — it is the one the
+  panel already had on its other three sides, so the panel is now padded on four.
 
-  A header that still read `21:58:03` over `Sun 27 Sep` would be the same two
-  numbers the widget above it is already showing, 60 px down the same screen, and
-  the widget goes quiet for exactly as long as the panel is up — so the panel
-  would be the only place the clock is readable, which is the arrangement the
-  whole bar was collapsed to get away from.
-- **The content does not move or reflow during the morph.** `headerRule` and the
-  grid are sized from `root.panelW` and placed in a nested `panelSpace` item that
-  *is* the final 462×441 rect, in window coordinates: `x: (shape.width -
+  The label was a name for the panes, not a reading: the CLOCK pane has the time
+  and the date at a size worth reading, and the widget above had both again. A
+  header that read `21:58:03` over `Sun 27 Sep` would have been the same two
+  numbers the widget above it is already showing, 60 px down the same screen,
+  while the widget goes quiet for exactly as long as the panel is up — so the
+  panel would be the only place the clock is readable, which is the arrangement
+  the whole bar was collapsed to get away from. Dropping the band is the same
+  argument taken further: with the readings gone there was nothing left for it to
+  do but describe what sat under it.
+
+  **Flush, with the panes on the panel's own top edge, was tried and rejected.**
+  It broke two things at once, and only one of the two was ever seen.
+  `pillMouse` is a later sibling of `panel` and so topmost in the input stack,
+  and a `pillH` strip off the shape covers cell y 0..26 — both title rows and 20
+  of the 22 rows of each glyph button — so a press on either would close the
+  flyout instead of pausing or stopping. That one is an argument, not a
+  measurement: sibling declaration order plus arithmetic. It could not have been
+  observed here either, because every synthetic press dismisses the xdg_popup
+  whatever the coordinate space, and `TimerState` has no IPC path, so no timer
+  can be created and no press routed to a button. The other *was* a capture —
+  `paneEdge` at device y 69 — and it is the one that wanted a live process: a
+  pane flush with the panel's own edge does not read as a bordered card. It *is*
+  drawn there, but with no air outside it, it reads as the panel's own outline
+  rather than the pane's. The `pad` fixes both with one number, and the strip it
+  leaves is bare panel fill — which is what a click-to-close target should be
+  anyway. The cost is 12 rows of top margin against the `pillH + headerGap` the
+  band held above the cells, so the panel is `pillH + headerGap - pad` shorter at
+  the top — less the 4 the buttons put back into `cellH`'s chrome, which comes
+  to 22 rows on the whole panel: a height of 438 with the band
+  (`pillH + headerGap + cellH + pad`, at the 51 chrome) against 416 with
+  `pad * 2 + cellH` now.
+- **The content does not move or reflow during the morph.** The grid is sized
+  from `root.panelW` and placed in a nested `panelSpace` item that
+  *is* the final panel rect — `panelW` wide, `pad * 2 + cellH` tall — in window
+  coordinates: `x: (shape.width -
   root.panelW) / 2` puts the final panel's left edge into the shape's own still-
   moving coordinates, so the content stays nailed to the same global pixels while
   the clip grows around it. Two ways to get this wrong, both paid for: anchored to
-  the parent, the grid relaid 69 → 174 → 438 px wide across the open; positioned
+  the parent, the grid's width went 69 → 174 → 438 across the open; positioned
   in *window* coordinates while being a child of the already-offset `panel`, every
   child landed `room` (18 px) right of where it belonged — the panes shoved
   off-centre and the right-hand one clipped by the shape.
@@ -383,19 +420,24 @@ it is two segments — `0 → 1.04` over 210 ms `OutQuart`, then `1.04 → 1` ov
   Measured after, on a live process driven by real clicks: the open panel's fill
   spans **728.5..1190.0, 462 wide, centre 959.25**, and the closed pill's fill
   spans **941.0..977.5, centre 959.25** — the same centre to the pixel, and the
-  same in every frame of the burst. Vertical: the pill's top at y=6.0, the
-  panel's top at y=32.0 (the pill's bottom), 441 tall, so the panel's bottom is at
-  472.5; the 1 px header rule at y=64.0 and the grid from y=71.0. Nothing is
-  left over and there is no nudge constant to tune either: 2.5 px of extra margin
+  same in every frame of the burst. The width is still `panelW` and is unaffected
+  by anything since. The vertical figures that were taken with it are **not
+  restated**: they were measured on a layout that no longer exists, and every one
+  of them moved when the band came out. The panel's top is still the pill's
+  bottom — that is what `drop` is — and its height is `pad * 2 + cellH`, which
+  is the number to read off the code. Nothing is left
+  over and there is no nudge constant to tune either: 2.5 px of extra margin
   moved the placed surface 0.57 px, so a sub-pixel correction is not expressible
   through the anchor in the first place.
 - **Both edges travel, and the panel ends flush under the widget.** `shape.y` is
   `drop * min(1, t)`, with `drop = pillH` (26) — exactly the pill's height, because
   the window's top edge is the pill's top edge and nothing above that moves. The
-  bottom edge runs down ~415 px while the top walks down 26, so at `t=1` the
-  panel's top row lands on the pill's bottom row: one column of shapes, attached.
-  Measured: the widget's fill at y 6.0..32.0, the panel's at 32.0..472.5 — no gap,
-  no overlap, the joint on the pixel it was designed to be on.
+  bottom edge runs down `panelH − pillH` while the top walks down 26, so at `t=1`
+  the panel's top row lands on the pill's bottom row: one column of shapes,
+  attached. Measured: the widget's fill at y 6.0..32.0, the panel's at 32.0 down
+  `pad * 2 + cellH` — no gap, no overlap, the joint on the pixel it was designed
+  to be on. (The y that closes that range was measured with the header band in
+  place and is not restated.)
 
   The `min(1, t)` is load-bearing and the `1.04` overshoot is why. An overshooting
   top edge would push the panel's top row back up into the bar's padding, which is
@@ -478,10 +520,12 @@ it is two segments — `0 → 1.04` over 210 ms `OutQuart`, then `1.04 → 1` ov
   or notches — the fillet's traced boundary is a 16 px quarter circle, and there
   is no white pixel anywhere in the joint. Closed, the joint leaves nothing behind:
   the only material outside the pill is the pill's own antialiasing.
-- **The face is on the widget, the label is in the panel, and they were never the
-  same thing.** `headerLabel` is the first child of `panelSpace`, which is the
-  final 462×441 rect *in window coordinates*, so its 26-row band at `y: 0,
-  height: pillH` is the panel's own first band. The face is not: the flyout keeps
+- **The face is on the widget, and it was never in the panel at all.**
+  `panelSpace` is the final panel rect — `panelW` wide, `pad * 2 + cellH` tall —
+  in window coordinates, so anything in it is on the panel's own rows from the
+  first frame and clipped by the shape. The panel's first band used to be a
+  `headerLabel` filling it and is now `pad` of margin above the panes. The face
+  is not in that space: the flyout keeps
   a second `ClockFace` outside the clip, nailed to the widget's own pixels
   (`y: 0`, the window's own top 26 rows, which *is* the widget's rect at every
   value of `t`). It cross-fades the readings into the glyph over the first ~50 ms
@@ -505,18 +549,33 @@ it is two segments — `0 → 1.04` over 210 ms `OutQuart`, then `1.04 → 1` ov
   under the widget: the surface is created once at show time, so resizing it per
   frame would be a compositor round-trip per frame. The margin is what gives the
   1.04 overshoot somewhere to go, and the `MouseArea` over it turns it into
-  click-to-dismiss. That works out at **498 × 485** — 462 + 36 across, and
-  `panelH + room + drop` = 441 + 18 + 26 down — with the shape's height capped at
-  `implicitHeight` so the overshoot cannot push its bottom edge off the surface.
-  At `t=0` all but 26 of those 485 rows are empty bar.
+  click-to-dismiss. Across it is `panelW + room * 2` and down it is
+  **`pad * 2 + cellH + room + drop`** — both formulas, deliberately, because every
+  absolute written here went stale the first time a constant moved and one of them
+  was already 3 px wrong before that. The shape's height is capped at
+  `implicitHeight` so the overshoot cannot push its bottom edge off the surface. At
+  `t=0` every row of the window below the widget's own `pillH` is empty bar.
 
   The click-to-close is a second `MouseArea` bound to the **shape**, not to the
-  face: at `t=0` the shape is the pill's rect and the band is the widget, at `t=1`
-  it is the panel and the band is the header, and in between it slides down with
-  the joint — one area covering both ends instead of two. Its width is
-  `shape.width`, so the band is as wide as whatever it is covering. The widget's
-  own row closes the panel too, by falling outside the shape and hitting the
-  click-to-dismiss above.
+  face: at `t=0` the shape is the pill's rect and this is the widget, at `t=1` the
+  shape is the panel and this is the `pad`-tall margin above the panes, and in
+  between it slides down with the joint — one area covering both ends instead of
+  two. Its width is `shape.width`, so the strip is as wide as whatever it is
+  covering. The widget's own row closes the panel too, by falling outside the
+  shape and hitting the click-to-dismiss above.
+
+  **Its height is `pillH` closed and `pad` open, interpolated on `t / contentIn`**
+  — and it has to be, in both directions. Left at `pillH` it would still be 26
+  rows, which past the 12 rows of top margin is 14 rows into the cells: 4 of them
+  in `headerRow`, from QuadCell's `pad` 10 to `pad` + `headerH` 24, and 8 of them
+  in the 22 the glyph buttons are (it is a later sibling of `panel`, so it is
+  topmost); shrunk to `pad` it would stop closing the panel from the widget's own
+  row. Ramping on `t` rather than on the content's own fade-in would leave the
+  strip over those rows until `t` is 0.57, by which point the panes are 44%
+  opaque, so the ramp is `contentIn` and the strip is down to `pad` on the frame
+  the content starts to appear. That is the real reason the panes are inset by
+  `pad` rather than flush: the margin is not decoration, it is the
+  click-to-close target.
 
   It reads `shape.x` / `shape.y`, **not** `shape.left` / `shape.top`. Those look
   like plain coordinates and are documented as "the same as x", but in Qt 6 on
@@ -539,15 +598,16 @@ it is two segments — `0 → 1.04` over 210 ms `OutQuart`, then `1.04 → 1` ov
   | block | |
   |---|---|
   | **TIME** (blue) | local `HH:mm:ss` at 28 px, a rule, then New York / Los Angeles / Tokyo with day delta, zone abbreviation and clock |
-  | **DATE** (yellow) | weekday at 24 px, `27 September 2026`, and the machine-readable `2026-09-27 · week 39 · day Sat` |
+  | **DATE** (yellow) | weekday at 24 px, a full `dd MMMM yyyy` line, and a compact `dd.MM.yyyy · week NN · <moon glyph>` line (the date asked for, the ISO 8601 calendar-week number — Qt has no token for it, so it is computed — and the current moon phase, glyph only, Weather Icons set) |
   | **UPTIME** (teal) | `3d 04h 12m` at 28 px, boot timestamp, and how many full days |
 
   It started as a 2×2 grid of four cells. Four cells meant four titles, four
   rules and four sets of insets to keep in step, and the timer form — the one
   pane with something to type into — was squeezed into a square. Collapsing the
   three time-ish cells into one stacked pane gives the timers a full-height
-  half of the panel without widening it, and leaves the panel 441 px tall
-  instead of 556.
+  half of the panel without widening it, and leaves the panel
+  `pad * 2 + cellH` tall where it had been 556 (2 × 258 of cell + 2 × 10 gap +
+  2 × `pad`).
 - **The panes are glass on glass, not holes in the panel.** `QuadCell`'s fill used
   to be `Tokyo.bg` (`#1e2030`) and its border and every rule in the flyout used
   `Tokyo.bgHighlight` (`#2f334d`) — and both of those were the wrong colour for
@@ -560,9 +620,8 @@ it is two segments — `0 → 1.04` over 210 ms `OutQuart`, then `1.04 → 1` ov
   | token | value | sits on | step against it |
   |---|---|---|---|
   | `Tokyo.pane` | `#394161` | `panelFill` `#2f334d` | +10, +14, +20 |
-  | `Tokyo.paneEdge` | `#454c65` | pane, and the panel's pad | +22, +25, +24 |
+  | `Tokyo.paneEdge` | `#454c65` | pane, the panel's pad, the entry field | +22, +25, +24 |
   | `Tokyo.hairline` | `#485172` | pane | +15, +16, +17 |
-  | `Tokyo.headerRule` | `#3d425b` | the panel's own fill | +14, +15, +14 |
   | `Tokyo.dim` | `#7983a4` | pane | +64, +66, +67 |
 
   **Fixed values, not washes.** These were originally `rgba()` films over the
@@ -574,10 +633,13 @@ it is two segments — `0 → 1.04` over 210 ms `OutQuart`, then `1.04 → 1` ov
   translucency did buy was the pane reading as glass over a bright window, and
   that is worth less than the panel being itself.
 
-  Two rules rather than one, and that is not duplication: `hairline` is a rule
-  *inside* a pane and `headerRule` is the one hairline in the flyout that sits on
-  the panel's own fill, so it carries its own value. With washes one alpha served
-  both because the two surfaces were close; pinned, they are 10 units apart.
+  One rule colour, and that is a consequence rather than a choice: the panel's
+  header and its 1 px `headerRule` are gone, so every rule in the flyout is
+  `hairline` and every one of them is inside a pane. With the band there were two
+  — `headerRule` sat on the panel's own fill, so it was a darker fixed value
+  where `hairline` was a lighter one over `pane`, and the pair read as two
+  weights where one surface had one. Nothing outside a pane is ruled any more, so
+  there is nothing for a second value to distinguish itself from.
 
   `paneEdge` is a step stronger than `hairline` on purpose — a card reads as a
   card because of its outline, and an outline at rule strength is lost in the
@@ -592,20 +654,31 @@ it is two segments — `0 → 1.04` over 210 ms `OutQuart`, then `1.04 → 1` ov
   re-checked whenever the surface moves.
 
   Deliberately **not** lifted, because they are inputs and gauges rather than
-  surfaces: the creator's text field and its border (`bg`), the slider track and
-  the progress track (`bgHighlight`). A darker inset on a lighter card still
-  reads as a recess, which is what they are — and unlike the card they are
-  allowed to be dark, because a recess is supposed to be darker than the thing
-  it is cut into.
-- **`cellH` is measured, not chosen.** It is `51 + clockTail`, where 51 is
-  `QuadCell`'s own chrome and `clockTail` is the bottom of the last clock block.
-  The block heights are font metrics and the zone count is data, so a
-  hand-written constant would be wrong the moment a zone is added — and a wrong
-  constant is not cosmetic, it cuts the bottom of UPTIME off. Measure from the
-  last anchored child (a block's `bottom` collapses onto its `top` if its
-  `height` is unset, and the blocks are plain `Item`s) rather than reading a
-  positioner's implicit height, which is only correct once every child has
-  polished.
+  surfaces: the slider track and the progress track (`bgHighlight`). A darker
+  inset on a lighter card still reads as a recess, which is what they are — and
+  unlike the card they are allowed to be dark, because a recess is supposed to be
+  darker than the thing it is cut into. The creator's text field keeps the recess
+  but could not keep the token: a `bg` field on the lifted pane is the black
+  window the paragraph above is about, so its fill is `panelFill`, which is still
+  darker than the `pane` it sits in and so still reads as a hole cut in the card.
+  Its border and placeholder had to move off `bgHighlight` for exactly the reason
+  `bgHighlight` gave for the pane borders: it is the panel fill's own RGB, and
+  the field's new fill is the panel fill, so a `bgHighlight` border on it is a
+  border drawn in its own fill colour and a `bgHighlight` placeholder on it is
+  the fill's own RGB again — invisible on it. Hence `paneEdge` — the same
+  +22/+25/+24 step, against the fill this time — and `trayGlyph` for the
+  placeholder.
+- **`cellH` is measured, not chosen.** It is `55 + clockTail` — 55 is
+  `QuadCell`'s own chrome, and that cell's constants are the definition (`pad` +
+  `headerH` + (`gap` + 4) + 1 rule + `gap` + `pad`; the same arithmetic spelled
+  out beside `cellH` in `ClockFlyout.qml`) — and `clockTail` is the bottom of
+  the last clock block. The block heights are font metrics and the zone count is
+  data, so a hand-written constant would be wrong the moment a zone is added —
+  and a wrong constant is not cosmetic, it cuts the bottom of UPTIME off.
+  Measure from the last anchored child (a block's `bottom` collapses onto its
+  `top` if its `height` is unset, and the blocks are plain `Item`s) rather than
+  reading a positioner's implicit height, which is only correct once every child
+  has polished.
 - **The timers pane splits top and bottom.** It is as tall as the clock pane's
   three blocks while its own content is a couple of hundred pixels shorter. The
   list stays at the top and the creator form is pinned to the **bottom** of the
@@ -615,21 +688,88 @@ it is two segments — `0 → 1.04` over 210 ms `OutQuart`, then `1.04 → 1` ov
   the void dumped underneath. `TimerPanel` grows a `pinFormToBottom` property for
   this; the standalone window used to leave it off, being exactly as tall as its
   content, but it is gone now and the flyout is the only host. The form does not
-  move as timers come and go: measured at y 345.5–431 with none, two, three and
-  six running.
+  move as timers come and go — it is pinned to the pane's bottom edge and the
+  list is what grows. (A measured y range used to be given here; it went with the
+  header band and has not been re-measured, so it is not restated rather than
+  restated wrong.)
 - **The row cap is derived from the space, not written down.** `listCap` is the
   gap between the top of the panel and the rule above the form, so the list runs
   down to the slider instead of stopping short. It was a hard-coded two rows,
   which was right for the old 258 px square cell and left a 160 px hole in a pane
-  twice that size. Five 36 px rows is what actually fits, and still is: the
-  `+N more` line's height used to come out of the cap, and dropping it freed
-  ~12 px — 5 × 44 − 8 = 212 needs 212, and 224 available is not the 248 that a
-  sixth row would want. Both sides of that subtraction are unstable — the pane's
-  height is itself measured off the clock pane's font metrics — so a literal
-  would be wrong the moment either changed, and wrong here means either a hole or
-  rows running under the form.
-  Rows stay at 36 px rather than the retired window's 46: the space is filled
-  either way, and five rows show more timers than four.
+  twice that size. Five 36 px rows is what fits, and re-deriving the cap from the
+  code confirms the count while correcting the arithmetic behind it. With this
+  machine's `JetBrains Mono Nerd Font` metrics (a 10-px text is 13 px tall) and
+  the three zones `clock-panel.sh` lists: `cellH` is 392 — `QuadCell`'s 55 px of
+  chrome plus a 337 px clock pane — the form is 90 (a 26 px readout, 8, a 22 px
+  slider, 8, a 26 px entry row), so `listCap = 337 − 90 − 20` = **227**, and
+  `floor((227 + 8) / 44)` = **five rows**, 15 px to spare. The old text gave 224
+  available and 248 for a sixth; it is 227 and 256. The count was right; the
+  numbers around it were not.
+  Moving the title rule down 4 px for the title row's buttons moved the chrome
+  from 51 to 55 and **none** of this. That looks like it cannot be true, since
+  the rule sits between the title and the body, so the obvious reading is 4 px
+  off the list: `listCap` at 223, 11 px spare, and the same five rows. That is
+  what it *would* be if `cellH` had stayed put. It did not — `cellH` is chrome +
+  clock pane, so raising the chrome raises `cellH` by the same 4 and the body
+  the panes actually get is `cellH − chrome` = the tail = 337, unchanged. And
+  `cellH` cannot be left alone: the moment it is wrong by 4 the bottom of the
+  UPTIME block is cut off. So the 4 px was always going to come out of the
+  list's spare 15, and the `cellH` change is what stops it — 227, five rows and
+  15 px of slack are exactly what they were before the rule moved.
+  Deleting `TimerCreator`'s hint line moved none of this, which is worth writing
+  down because it looks like it must have: `implicitHeight` read
+  `hint.visible ? … : …`, and the only host passed `roomy: false`, so the false
+  branch was always the one taken and the hint was never in the form's height to
+  begin with. It was invisible *and* free — the case that reads like a layout
+  change and is not one.
+  Both sides of the subtraction are unstable — the pane's height is itself
+  measured off the clock pane's font metrics, and the zone count is data — so a
+  literal would be wrong the moment either changed, and wrong here means either a
+  hole or rows running under the form.
+  Rows stay at 38 px rather than the retired window's 46: the space is filled
+  either way, and five rows show more timers than four. `TimerPanel.rowH` used
+  to *declare* 46 while its one and only host passed 36 over the top, so the 46
+  never took effect and the comment beside it described a value that was not
+  live — the number lives in the panel now and the host says nothing, so it is
+  written down once. 38 is a ceiling rather than a preference: `capacity` is
+  `floor((227 + 8) / (38 + 8))` = 5, and five rows at 38 with the 8 px gaps
+  take 5 × 38 + 4 × 8 = 222 px, leaving 5 px of the cap's 227 spare (the 36
+  row kept 15), so a row could grow to 39 and no further before the count
+  dropped to four.
+
+  **What that ceiling buys, and what it does not.** A 38 px row carries the big
+  countdown, the "of mm:ss" line and the 3 px bar. Round 3 measured the glyph
+  ink at 12.0 px (big time) and 6.5 px (small line) — inked *device* rows, both
+  ends included, halved — and the air between the small line's ink bottom and
+  the bar's top edge at 1 px, live. This round re-measured both ends of the
+  change on the same offscreen pipeline round 3 validated against live (row-0
+  template): at rowH 36 / offset −2 the ink bottom sits at row-local 30.0 and
+  the bar's top at 31.0 — **1 logical px**, matching the live reading exactly.
+  At rowH 38 / offset −4 the ink bottom measures 30.0 again and the bar's top
+  33.0 — **3 logical px**. An intermediate (38 / −2) render reads 31.0 / 33.0.
+  The bar's top is pure arithmetic (rowH − bottomMargin − bar height), so it
+  moved 31 → 33 with the taller row; the ink bottom followed that row down by
+  1 px and the offset −2 → −4 pulled the pixel back (30 → 31 → 30, all
+  measured), so the air grew by exactly the bar's 2 px. Naive centre
+  arithmetic — text centre −1 px, bar +2 px ⇒ air +3 px — would predict 4 px
+  here; the render reads 3 px, and 3 px is what this row claims, written down
+  as measured. The row cost 10 px of the old 15 spare — the deal the cap is
+  built to allow. None of this is a cut: nothing on the row has `clip: true`
+  and nothing has `elide`, so nothing has ever truncated vertically.
+
+  **The overrun was horizontal, and it was one string.** The small line's column
+  is 86.8 px wide in a 193.5 px row — the three buttons start 114 px in. Measured
+  in that budget at this font's 5.41 px advance: `of 5:00` is 37.8 px,
+  `of 30:00` is 43.3, `paused · of 5:00` is 86.5 (a knife edge), and
+  `paused · of 30:00` is **91.9 — 5.1 px over**. So only a paused 30-minute
+  timer broke out of its box, and it broke out into the 8 px gap before the
+  buttons, which is 2.9 px clear of the pause `PillButton`. Nothing was ever
+  cut: no item on the row has `clip: true` and neither `Text` has `elide`, so
+  every glyph painted, and the string simply ran past the width of the column
+  that owns it. The `paused · ` prefix is gone: the row already says paused
+  four other ways (yellow time, yellow glyph, yellow button, yellow bar) and
+  it was the only one of the five that did not fit. Every state reads
+  `of <total>` now, finished rows included.
 - **The cap is now silent, and that is a known gap.** The overflow line used to
   read "+N more — full list in the timer window" and point at `TimerWindow.qml`.
   With the window removed the line was *deleted* rather than reworded, so past
@@ -637,9 +777,10 @@ it is two segments — `0 → 1.04` over 210 ms `OutQuart`, then `1.04 → 1` ov
   five of six reads as if the sixth had finished. `TimerPanel.hidden` still
   computes the number for anything that wants it. The two fixes that were not
   taken, both being design changes rather than deletions: put the count in the
-  host's title row (which `QuadCell` already has, and which already carries STOP
-  ALL), or drop the cap and let the list grow — the latter means the two panes
-  stop being the same height, since `cellH` is measured off the clock pane.
+  host's title row (which `QuadCell` already has, and which already carries the
+  pause/stop pair), or drop the cap and let the list grow — the latter means the
+  two panes stop being the same height, since `cellH` is measured off the clock
+  pane.
 - `pinFormToBottom` fills the pane with `height: parent.height`, which is why
   the panel is anchored `top`/`left`/`right` and **never** `top`+`bottom`:
   anchoring both makes the anchors own the height, and assigning `height` on top
@@ -800,26 +941,121 @@ Added after the waybar switchover, so it has no waybar counterpart.
   that takes `25`, `25:30` or `1:00:00` and clamps to 1:00–30:00. Typing syncs
   the slider, rounding to whole minutes; the started timer keeps the exact typed
   value. Enter starts. Every running timer gets a row of its own — progress bar,
-  pause/resume, +1 min, remove — and STOP ALL (in the pane's title row) clears
-  them.
+  pause/resume, +1 min, remove — and the pane's title row carries the same thing
+  for all of them at once: a pause/resume toggle and a stop, both glyph-only. The
+  toggle's glyph reads as the global state, exactly as a row's does — play while
+  anything is still running, pause once nothing is — while the press itself is
+  the opposite precedence: while a single timer counts, a press pauses the lot,
+  because a global control must never *start* a timer the user can see not
+  running. It greys out once the list is nothing but finished ones.
+- **A row's progress bar is a playhead, and it can be dragged.** The grab area
+  is a 12 px transparent strip on the row's bottom edge — big enough to hit,
+  while the bar itself stays 3 px — and it is declared *before* the row's
+  `RowLayout`, because a later sibling takes the clicks first and the three
+  buttons reach down into the bottom 3 px of that strip. Two handlers drive it
+  and they do the same arithmetic: **`onPressed` is the click** — it scrubs to
+  wherever the press landed, so a click is a drag of zero length — and
+  **`onPositionChanged` is the drag**, and it runs the same
+  `TimerState.scrub(id, ms)`. Qt documents `positionChanged` as firing only
+  while a button is down, so the `if (pressed)` test in front of it changes
+  nothing on a Qt that behaves as documented; it is there so that a plain hover
+  cannot rewrite a deadline if that ever stops holding. The bar's 250 ms
+  `Behavior on width` is switched off for the duration of the press, because
+  easing a playhead the pointer is driving leaves it trailing and settling
+  somewhere the pointer is not.
+
+  The rules are all "playhead", not "length": the value is clamped into
+  `[0, totalMs]`, so **a drag can never change how long a timer is**. The
+  precise box is the length control, and its rule is two-way: type anything up
+  to the timer's current total and it moves the playhead exactly like a drag,
+  type something longer and the timer becomes that long — capped at 30 min, the
+  shell's 1–30 range — playhead at the top of the new length. `+1` (`nudge()`)
+  still exists beside it for one-minute bumps
+  (it accepts a negative delta; nothing sends one). Two consequences are worth
+  knowing, because both are reachable without any drag at all:
+
+  - **A plain click near the *right* end of a running row's strip sets
+    remaining to 0 and fires it** on the next tick. That is a click, not a drag
+    — the press alone does it.
+  - **A paused row dragged to 0 sits at `0:00` with a full bar and does *not*
+    fire**, because `advance()` skips paused timers. It stays like that until
+    resumed, and then it fires on the next tick. `scrub()` does not resume
+    anything.
+
+  A **paused** row is scrubbable and stays paused; a **finished** row is locked
+  (scrub returns without touching anything), gets no grab area at all, and has
+  its bar greyed to `trayGlyph` so the lock is visible. Its green time and green
+  tick glyph stay green — those are the "done" signal, and the row stays on
+  screen precisely because `+1` is the only way back from finished.
+
+  **Hovering the strip for one second opens a precise-entry box** above the
+  bar, inside the row, so it cannot reach the row above. It is prefilled with
+  the time **remaining** — the number the pointer is about to move, not the
+  total — and **Enter commits it through `retime`**, the two-way rule above.
+  It accepts the same strings the
+  creator's box does (`25`, `25:30`, `1:00:00`, one to three digits per part,
+  digits only) because both validate the raw string against the same regex
+  first; `Number("")` is 0, so a split-then-parse would have let `::` through
+  as 0 ms and fired a running timer off a mistyped entry. Anything else throws
+  the typed value away: the field losing the focus (which is also how Escape
+  ends it, see below), or the pointer leaving the strip. The box does not
+  appear for a finished row, and it cannot open mid-drag because the press stops
+  its timer.
+- **The box is closed by hand when the pane closes**, not left to the focus
+  loss that normally dismisses it. `TimerPanel.reset()` walks the rows and
+  closes each box, and the rows are reused rather than rebuilt, so a box left
+  `visible: true` would still be up next time. The two things that would have
+  dismissed it implicitly — Qt dropping item focus when a popup window is
+  hidden, and a leave event reaching the grab strip on an unmapping surface —
+  are not things this code can check, so the close does not depend on either.
+- **Not exercised here: dragging past the end of a strip.** The grab area
+  configures no drag target, so this rests on `QQuickMouseArea` stopping to
+  deliver moves once the pointer leaves the item. If it does not, a drag that
+  runs off the right-hand end of a strip would keep rewriting the deadline
+  instead of freezing the playhead at the strip's edge. Untested.
+- **There is deliberately no dismiss-on-Escape handler for that box.** It cannot
+  work: `ClockFlyout` registers a window-level `Shortcut` on Escape and Qt
+  resolves shortcuts before ordinary key propagation, so a handler on the field
+  would never fire and would only be a lie in the source. Escape closes the
+  whole flyout, and `reset()` closes the box on the way out either way.
 - **The standalone timer window is gone**, along with its `SUPER + SHIFT + T`
   bind (`hyprland.lua`) and the whole `timer` IPC target that opened it, so there
   is no scripted route to a timer any more either. The flyout pane is the only
-  surface. The two signposts it leaves behind are noted above: the list cap is
-  silent, and `TimerCreator`'s hint line (the thing that said the entry box takes
-  "minutes / minutes:seconds") is `roomy`-gated and so never drawn.
+  surface. Of the two signposts it left behind, one is still a live gap — the
+  list cap is silent, noted above — and the other is gone outright: the
+  `roomy`-gated hint line in `TimerCreator` has been *deleted*, along with the
+  `roomy` property that gated it in both there and in `TimerPanel`, so the
+  field's `12 or 12:30` placeholder is now the only thing in the shell that says
+  the box takes "minutes / minutes:seconds".
 - **No timer badge in the bar.** The countdown pill is retired: the clock pill
   stays a clock, and what is counting is one click away. If a timer is running
-  the pane's rows and STOP ALL are the only sign of it.
+  the pane's rows and the two title-row glyphs are the only sign of it.
 - **The flyout resets its form on close**, so a panel dismissed by an outside
-  click never reopens with half-typed minutes still in the box.
-- **On completion**: `scripts/timer-alert.sh` plays `assets/timer-done.wav`
-  (generated by `scripts/make-timer-sound.py`, stdlib only; override with
-  `$TIMER_SOUND`) and a `notify-send` notification fires. Several timers landing
-  on the same 200 ms tick share one chime and one notification.
+  click never reopens with half-typed minutes still in the box. It closes any
+  open precise-entry box at the same time.
+- **On completion**: `TimerState.alert()` plays `assets/timer-done.wav`
+  (generated by `scripts/make-timer-sound.py`, stdlib only) straight through
+  `pw-play --volume=1.0` — no wrapper script — and a `notify-send` notification
+  fires with a bundled 256 px `assets/timer-done.png` (built by
+  `scripts/make-timer-icon.py`) as its icon. Several timers landing on the same
+  200 ms tick share one chime (a 700 ms throttle) and one notification.
 - **State lives in `TimerState.qml`**, a singleton, and is **in memory only** —
   a bar reload (any file save) or a restart drops all timers. Deadlines are
   wall-clock, so a suspend that overshoots fires the alert on wake.
+- **The first timer after an idle shell used to start part-elapsed.** The cause
+  is worth writing down because it is invisible in the line that has the bug.
+  `TimerState` keeps a single `now` that every view reads — that is what stops
+  the pill, the pane and the tooltip from drifting apart — and the 200 ms tick
+  that refreshes it only runs while `timers.length > 0`. So `now` is a **display
+  cache, not a clock**, and it can be arbitrarily stale. `start()` used to stamp
+  `endsAt` off it, so the first `start()` after an empty list dated its deadline
+  from a `now` frozen since the shell last had no timers: a 30-minute timer
+  started after ten idle minutes came back with twenty left. The rule now is
+  that **every deadline writer refreshes the cache first** — `start`, `scrub`,
+  `retime`, `togglePause`, `nudge` and `pauseAll` all run `now = Date.now()`
+  before stamping (`scrub()` also reads the real clock, so a long press cannot
+  carry a deadline backward by a cache that is 200 ms old). No deadline is ever
+  stamped from a cached `now`; the cache only serves readers.
 
 Quickshell/Qt traps this feature ran into, all noted in the source:
 

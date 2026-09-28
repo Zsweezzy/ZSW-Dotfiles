@@ -33,8 +33,11 @@ Singleton {
     // values, so the panel is the panel.
     //
     // These are what those washes actually composited to, read off the screen
-    // rather than computed: each surface over the one it really sits on, which
-    // is why there are two rules and not one — see `hairline` and `headerRule`.
+    // rather than computed: each surface over the one it really sits on. It was
+    // two rules, not one, while the panel had a header — `headerRule` sat on the
+    // panel's own fill rather than on a pane, and so a darker fixed value. The
+    // header is gone and took its rule with it, so every rule in the flyout is
+    // `hairline` on a pane again and one value does the lot.
     //
     // What they replaced, and why it was wrong: the panes were `bg` (#1e2030),
     // *darker* than the fill they cover, so each read as a near-black window
@@ -48,10 +51,6 @@ Singleton {
     readonly property color paneEdge: "#454c65"
     /// a rule *inside* a pane — over `pane`
     readonly property color hairline: "#485172"
-    /// the header's rule, the one hairline that sits on the panel's own fill
-    /// rather than on a pane, and so a darker fixed value: same alpha over a
-    /// surface ~10 units below `pane` used to be, which no longer exists
-    readonly property color headerRule: "#3d425b"
     /// "dimmed", for the text that used to borrow the *surface* colour to say so.
     /// Lifted along with the surfaces: #2f334d lettering on a #394161 pane is not
     /// a de-emphasis, it is unreadable, and the zone abbreviations are the one
@@ -105,7 +104,12 @@ Singleton {
     // the pills, panels, flyouts, tooltip, tray menu and clock panes all wear
     // that same number so a quickshell surface reads as a Hyprland window.
     // Only *surfaces* — a button or a slider track inside a panel is a
-    // different scale of thing and keeps its own radius.
+    // different scale of thing and keeps its own radius. The other half of that
+    // rule is a ceiling, not a preference: a radius may not pass half the
+    // element's height, because past it a bar stops being a bar and becomes a
+    // lozenge. Three elements needed that and all three clamp —
+    // `Workspaces`' 2 px active underline, `TimerPanel`'s 3 px progress bar and
+    // `TrayMenu`'s 7 px separator rows.
     //
     // pillRadius and panelRadius are still two tokens even though they are both
     // 10: the morph's shape interpolates between them (see ClockFlyout), so

@@ -6,11 +6,11 @@
 // text baselines agree across the pair.
 //
 // Children go into `body`; anything meant to sit at the right end of the title
-// row (the timers pane's STOP ALL) goes into `headerExtra`:
+// row (the timers pane's pause/resume + stop pair) goes into `headerExtra`:
 //
 //   QuadCell {
 //       title: "UPTIME"
-//       headerExtra: PillButton { text: "…" }
+//       headerExtra: Row { PillButton { … } }
 //       Text { … }        // body
 //   }
 //
@@ -75,11 +75,26 @@ Rectangle {
         }
     }
 
+    // The rule sits `gap` below the title row, plus 4. Not because the title row
+    // is taller than it looks but because `headerExtra` is: the pause/stop pair
+    // are `PillButton`s — 22 tall against a 14 `headerRow` — so centring them
+    // leaves them overhanging the row by 4 at the top and 4 at the bottom, and
+    // `gap` measured from the row's own bottom is therefore 4 rows of air short
+    // under the pair. The extra 4 is what makes the air beneath them 8, the same
+    // as everywhere else in the pane. A bare 12 would do the same job and would
+    // be wrong the moment `gap` moved; this reads as the 4 px it is.
+    //
+    // That 4 px is spent on the rule, not taken off the body: the host's `cellH`
+    // constant is raised by the same 4, so the two panes keep one height and each
+    // body comes out `cellH − chrome` long — unchanged. Leaving `cellH` alone
+    // would put the 4 px straight back on the timer list's spare capacity, and
+    // would clip the bottom of the clock pane's last block. Keep the two in step;
+    // `ClockFlyout.qml`'s `cellH` comment carries the same arithmetic.
     Rectangle {
         id: headerRule
         anchors {
             left: parent.left; right: parent.right
-            top: headerRow.bottom; topMargin: root.gap
+            top: headerRow.bottom; topMargin: root.gap + 4
             leftMargin: root.pad; rightMargin: root.pad
         }
         height: 1

@@ -177,7 +177,10 @@ PopupWindow {
 
                     width: parent.width
                     height: row.sep ? 7 : root.rowH
-                    radius: 6
+                    // Clamped, because the separator row is 7 px and a radius of 6
+                    // is more than half of it: 6 reads on a 30 px row and renders
+                    // a 7 px one as a lozenge.
+                    radius: Math.min(6, height / 2)
                     // hover highlight like the audio flyout's rows; disabled
                     // entries never light up (their text is dimmed instead)
                     color: row.sep || !row.enabled || !mouse.containsMouse
