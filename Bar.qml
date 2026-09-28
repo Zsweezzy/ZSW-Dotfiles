@@ -3,7 +3,7 @@
 //   window#waybar : height 34, bg rgba(30,32,48,0.9) — rendered transparent
 //                   here (no background / border band): the pills float over
 //                   the wallpaper, everything between them is see-through.
-//   layout        : left  = workspaces | cava | openapps(+tray)
+//   layout        : left  = workspaces | cava | tray
 //                   center= clock (time over date, click → ClockFlyout)
 //                   right = wifi | ethernet | audio | gpu | cpu | ram | updates
 //   module pills  : radius 8, margin 4px 3px (26px tall, 3px from each edge)
@@ -81,7 +81,7 @@ Variants {
                 tooltipHost: tip
                 Layout.alignment: Qt.AlignVCenter
             }
-            OpenApps {
+            Tray {
                 tooltipHost: tip
                 Layout.alignment: Qt.AlignVCenter
             }
