@@ -105,12 +105,12 @@ module at `scripts/`.
     the generic wrench `\uf0c8`. `Quickshell.iconPath(name, true)` does the
     lookup (and the active theme is picked up automatically); window classes
     that are reverse-DNS are retried on their last dotted segment
-    (`org.kde.kate` → `kate`), and an SNI `icon` that looks like a path is
-    looked up by basename first — a self-updated app leaves a stale path, and
-    the old per-cell `find` through `~/.local/share/icons` that checked it
-    (dead code since the tray merge, now deleted) fell back to the theme
-    exactly that way. A URL the image provider can't decode lands back on the
-    glyph rather than an empty cell.
+    (`org.kde.kate` → `kate`). An SNI `icon` is not always a bare theme name —
+    Steam hands over a whole `image://icon/steam_tray_mono?path=…` URL and
+    others a generated `image://qspixmap/…`, so `iconUrl()` passes any `://`
+    string through untouched (`iconPath()` cannot resolve one) and only wraps
+    `file://` around a name that really starts with `/`. A URL the image
+    provider can't load lands back on the glyph rather than an empty cell.
     Accepted tradeoff: native icons are artwork, so they render full-colour —
     the pink / muted blue-gray split only tints the cells still showing a glyph.
     Icons are rasterized at `sourceSize` (14 px); without it the `image://`
