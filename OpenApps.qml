@@ -351,11 +351,15 @@ Rectangle {
                         text: (openCell.app && openCell.app.glyph) ? openCell.app.glyph : root.genericGlyph
                         color: Tokyo.pink
                         font { family: Tokyo.fontFamily; pixelSize: root.iconSize; letterSpacing: 0.2 }
-                        // a non-empty source is not proof the icon painted: a URL
-                        // the provider can't decode (stale path, broken SVG) has
-                        // to hand the cell back to its glyph, or the cell is a
-                        // live click target with nothing in it.
-                        visible: icon.source === "" || icon.status === Image.Error
+                        // the glyph stands in for a cell with no icon to paint,
+                        // and a cell has none two ways: the source was empty
+                        // (status Null) or the provider could not decode it
+                        // (status Error — a stale path, a broken SVG). Judged on
+                        // the status enum, not on `source === ""`: source is
+                        // url-typed, so that comparison is never true and every
+                        // blank cell lost its glyph. Loading stays hidden so the
+                        // two are never painted at once.
+                        visible: icon.status === Image.Null || icon.status === Image.Error
                     }
 
                     MouseArea {
@@ -438,9 +442,8 @@ Rectangle {
                         // apps (pink) and trayed apps read as separate groups.
                         color: Tokyo.trayGlyph
                         font { family: Tokyo.fontFamily; pixelSize: root.iconSize; letterSpacing: 0.2 }
-                        // a failed icon load falls back to the glyph too — see
-                        // the open-app cell
-                        visible: icon.source === "" || icon.status === Image.Error
+                        // Null/Error, i.e. no icon to show — see the open-app cell
+                        visible: icon.status === Image.Null || icon.status === Image.Error
                     }
 
                     MouseArea {
@@ -512,9 +515,8 @@ Rectangle {
                         // tray/background apps use the muted blue-gray (see SNI cell)
                         color: Tokyo.trayGlyph
                         font { family: Tokyo.fontFamily; pixelSize: root.iconSize; letterSpacing: 0.2 }
-                        // a failed icon load falls back to the glyph too — see
-                        // the open-app cell
-                        visible: icon.source === "" || icon.status === Image.Error
+                        // Null/Error, i.e. no icon to show — see the open-app cell
+                        visible: icon.status === Image.Null || icon.status === Image.Error
                     }
 
                     MouseArea {
