@@ -651,10 +651,17 @@ PopupWindow {
                             onClicked: {
                                 if (modelData.active) {
                                     if (root.pill !== null) root.pill.leaveWifi()
-                                } else if (modelData.secure) {
-                                    // Open the password field under this row.
+                                } else if (modelData.secure && !modelData.known) {
+                                    // Only a network this machine has no profile
+                                    // for gets a password field. Asking for one
+                                    // on a saved network asks for something you
+                                    // already have, and it is the one case where
+                                    // a click cannot do what the glyph promised.
                                     root.entering = modelData.ssid
                                 } else {
+                                    // An empty password is not "no password" — it
+                                    // is the argument wifi-connect.sh leaves off,
+                                    // so nmcli connects with the saved one.
                                     if (root.pill !== null)
                                         root.pill.joinWifi(modelData.ssid, "")
                                 }
