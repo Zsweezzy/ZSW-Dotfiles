@@ -75,7 +75,19 @@ PopupWindow {
     // what sends the PC's sound out through the phone, and the un-toggle puts
     // back whatever was default before.
     function isPhoneAudio(node) {
-        return !!node && String(node.name || "").indexOf("bluez5") === 0
+        if (!node) return false
+        // The name is the old test, kept because it costs nothing, but it is a
+        // naming convention rather than an interface. The driver says what a
+        // node really is in its own properties: anything the bluez5 driver
+        // built carries `api.bluez5.*` and `device.api = bluez…`, whatever it
+        // decided to call itself. That is the difference between a phone being
+        // connected and this row saying "no phone connected".
+        if (String(node.name || "").indexOf("bluez5") === 0) return true
+        const p = node.properties || {}
+        if (String(p["device.api"] || "").indexOf("bluez") === 0) return true
+        return ["api.bluez5.address", "api.bluez5.device",
+                "api.bluez5.media.sink", "api.bluez5.media.source",
+                "api.bluez5.profile"].some(k => p[k] !== undefined)
     }
     readonly property var phoneSinks: Pipewire.nodes.values
         .filter(n => root.isPhoneAudio(n) && n.isSink && !n.isStream)
@@ -148,7 +160,11 @@ PopupWindow {
     }
 
     function friendlyName(node) {
-        return (node.properties["application.name"]
+        // The phone's own name first: a bluez node is called
+        // `bluez5.AA_BB_CC_DD_EE_FF_A2DP_SINK`, and the driver already knows
+        // the thing on the other end is called "Pixel 8".
+        return (node.properties["api.bluez5.device"]
+                || node.properties["application.name"]
                 || node.description || node.nickname || node.name || "Unknown")
     }
 
