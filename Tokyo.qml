@@ -14,6 +14,8 @@ Singleton {
     readonly property color cyan: "#86e1fc"
     readonly property color green: "#9ece6a"
     readonly property color yellow: "#e0af68"
+    readonly property color red: "#f7768e"          // moon red
+    readonly property color orange: "#ff9e64"       // moon orange
     readonly property color magenta: "#bb9af7"
     readonly property color purple: "#9d7cd8"
     readonly property color teal: "#2ac3de"

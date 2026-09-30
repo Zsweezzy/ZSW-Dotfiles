@@ -18,12 +18,18 @@ Rectangle {
     property color fg: Tokyo.fg
     property color bg: Tokyo.pillBg
 
+    /// Coloured spans in a row, instead of `text`: a list of { text, color }.
+    /// For a pill standing for more than one stat, where each of them keeps the
+    /// accent it had as a pill of its own (Sys.qml: gpu purple, cpu cyan, ram
+    /// green). One label and one `fg` cannot say that.
+    property var fragments: []
+
     // opt-in hover styling (waybar #workspaces / #taskbar buttons)
     property bool hoverStyle: false
     property color hoverBg: Tokyo.bgHighlight
     property color hoverFg: Tokyo.cyan
 
-    // when false the module ignores hover entirely (e.g. cava)
+    // when false the module ignores hover entirely (e.g. the tray counter)
     property bool interactive: true
 
     property int hPad: Tokyo.pillHPad
@@ -56,7 +62,8 @@ Rectangle {
     signal hoverChanged(bool hovering)
 
     implicitHeight: Tokyo.pillHeight
-    implicitWidth: label.implicitWidth + hPad * 2
+    implicitWidth: (root.fragments.length > 0 ? fragRow.implicitWidth : label.implicitWidth)
+                   + hPad * 2
     radius: Tokyo.pillRadius
     color: (interactive && hoverStyle && lit) ? hoverBg : bg
     Behavior on color {
@@ -66,11 +73,31 @@ Rectangle {
     Text {
         id: label
         anchors.centerIn: parent
+        visible: root.fragments.length === 0
         text: root.text
         color: (interactive && hoverStyle && lit) ? root.hoverFg : root.fg
         font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize; letterSpacing: root.letterSpacing }
         Behavior on color {
             ColorAnimation { duration: 150; easing.type: Easing.OutQuad }
+        }
+    }
+
+    Row {
+        id: fragRow
+        anchors.centerIn: parent
+        spacing: 10
+        Repeater {
+            model: root.fragments
+            delegate: Text {
+                required property var modelData
+                // a fragment with `visible: false` drops out and the row closes
+                // the gap — the net pill is two icons that are not both there
+                visible: modelData.visible !== false
+                text: modelData.text ?? ""
+                color: (root.interactive && root.hoverStyle && root.lit) ? root.hoverFg
+                                                                       : (modelData.color ?? root.fg)
+                font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize; letterSpacing: root.letterSpacing }
+            }
         }
     }
 

@@ -2,6 +2,10 @@
 //
 // Sections:
 //   Output devices   click a row → Pipewire.preferredDefaultAudioSink
+//   Phone audio      the bluetooth phone streaming into this PC, as a switch.
+//                    Always drawn; greyed out with a hover explanation when no
+//                    phone is connected. Pairing itself is done in the settings
+//                    flyout's bluetooth panel.
 //   Input devices    click a row → Pipewire.preferredDefaultAudioSource
 //   Applications     per-playback-app volume slider + mute toggle
 //
@@ -62,6 +66,87 @@ PopupWindow {
     /// every node the flyout manages — kept ref'd/bound by the tracker below
     readonly property var trackedNodes: root.outputDevices.concat(root.inputDevices, root.apps)
 
+    // ---------------- phone audio ----------------
+    // A phone streaming over bluetooth is a PipeWire *sink* named bluez5.*: the
+    // phone is the source, the PC is the A2DP receiver. So there is nothing to
+    // pair here and nothing to install — pairing happens in the settings flyout,
+    // and the moment the phone is connected its audio arrives as one of these
+    // nodes. The toggle is therefore just "make this the default sink", which is
+    // what sends the PC's sound out through the phone, and the un-toggle puts
+    // back whatever was default before.
+    function isPhoneAudio(node) {
+        return !!node && String(node.name || "").indexOf("bluez5") === 0
+    }
+    readonly property var phoneSinks: Pipewire.nodes.values
+        .filter(n => root.isPhoneAudio(n) && n.isSink && !n.isStream)
+    readonly property var phoneSink: root.phoneSinks.length > 0
+        ? root.phoneSinks[0] : null
+    /// true when the phone is what you are hearing
+    readonly property bool phoneAudioOn: root.phoneSink !== null
+        && Pipewire.defaultAudioSink === root.phoneSink
+    /// what to go back to when the toggle is switched off: the first non-phone
+    /// output, which is the speakers in every setup where a phone has ever
+    /// connected. Held so it is not recomputed the moment the phone is default.
+    property int lastLocalSink: -1
+
+    // Whether the radio is even on. Needed because "no bluez5 sink" has two
+    // very different causes — the radio is off, or the radio is on and nothing
+    // is paired to it — and the fix is different for each. A permanently
+    // greyed-out switch cannot tell you which one it is.
+    property bool btRadio: true
+    Poll {
+        command: ["bluetoothctl", "show"]
+        // 10s: the radio is toggled in the settings flyout and the phone
+        // connects on its own, so this row has to wake up by itself rather
+        // than waiting for the flyout to be opened.
+        interval: 10000
+        onResult: output => {
+            root.btRadio = /Powered:\s*yes/.test(String(output))
+        }
+    }
+
+    /// Why the switch cannot be used right now, in one sentence. This is the
+    /// tooltip, and it is ordered from the most fundamental cause down: no
+    /// point telling someone to pair a phone when the radio is off.
+    readonly property string phoneAudioWhy: {
+        if (root.phoneSink !== null)
+            return "Send this PC's sound out through your phone."
+        if (!root.btRadio)
+            return "Bluetooth is off. Turn it on in the quick menu first."
+        return "No phone connected. Pair one in the quick menu, then press "
+             + "play on the phone — it shows up here as soon as it streams."
+    }
+    readonly property bool phoneAudioReady: root.phoneSink !== null
+
+    function togglePhoneAudio(on) {
+        if (on) {
+            // Remember the speakers before leaving them.
+            if (Pipewire.defaultAudioSink !== root.phoneSink) {
+                for (let i = 0; i < root.outputDevices.length; i++) {
+                    const n = root.outputDevices[i]
+                    if (!root.isPhoneAudio(n) && n !== root.phoneSink) {
+                        root.lastLocalSink = i
+                        break
+                    }
+                }
+            }
+            Pipewire.preferredDefaultAudioSink = root.phoneSink
+        } else {
+            const back = root.outputDevices[root.lastLocalSink]
+            if (back !== undefined && back !== null) {
+                Pipewire.preferredDefaultAudioSink = back
+            } else {
+                // No speaker remembered — pick any non-phone output.
+                for (let i = 0; i < root.outputDevices.length; i++) {
+                    if (!root.isPhoneAudio(root.outputDevices[i])) {
+                        Pipewire.preferredDefaultAudioSink = root.outputDevices[i]
+                        break
+                    }
+                }
+            }
+        }
+    }
+
     function friendlyName(node) {
         return (node.properties["application.name"]
                 || node.description || node.nickname || node.name || "Unknown")
@@ -75,6 +160,13 @@ PopupWindow {
     // ---------------- window / anchoring ----------------
     PwObjectTracker {
         objects: root.trackedNodes
+    }
+    // The phone sink is tracked on its own: it is in no other list (a paired
+    // phone is a sink but not an app, and it is kept out of the output list so
+    // the speakers do not shuffle around under the user when a phone
+    // connects), and an untracked node's volume writes are dropped.
+    PwObjectTracker {
+        objects: root.phoneSinks
     }
 
     function toggleFor(item) {
@@ -116,6 +208,156 @@ PopupWindow {
             Repeater {
                 model: root.outputDevices
                 delegate: deviceRow
+            }
+
+            Item { height: 8 }
+
+            // ---------- phone audio ----------
+            // Always drawn, ready or not. A switch that only appears once it
+            // works cannot be found, and the one time you want it is the time
+            // you are looking for it — so the row is permanent, greyed out
+            // when there is no phone, and hovering it says why. The switch
+            // itself is the same shape as the settings flyout's, so the two
+            // menus do not disagree about what "on" looks like.
+            Column {
+                width: parent.width
+                spacing: 2
+
+                Text {
+                    text: "PHONE AUDIO"
+                    font { family: Tokyo.fontFamily; pixelSize: 10; bold: true; letterSpacing: 1.5 }
+                    color: root.phoneAudioReady ? Tokyo.blue : Tokyo.dim
+                    leftPadding: 4
+                    bottomPadding: 2
+                }
+                Rectangle {
+                    width: parent.width; height: 1
+                    color: root.phoneAudioReady ? Tokyo.bgHighlight
+                                                : Qt.rgba(0.18, 0.20, 0.30, 0.5)
+                }
+
+                Rectangle {
+                    id: phoneRow
+                    width: parent.width
+                    height: root.rowHeight
+                    radius: 6
+                    // No hover fill when the row is dead: the fill is the
+                    // "this does something" signal, and this does not.
+                    color: phoneHover.hovered && root.phoneAudioReady
+                           ? Tokyo.bgHighlight : "transparent"
+
+                    Row {
+                        anchors {
+                            left: parent.left; right: parent.right
+                            leftMargin: 8; rightMargin: 8
+                            verticalCenter: parent.verticalCenter
+                        }
+                        spacing: 6
+
+                        Text {
+                            width: parent.width - 60
+                            text: root.phoneSink
+                                ? root.friendlyName(root.phoneSink)
+                                : "No phone connected"
+                            elide: Text.ElideRight
+                            color: !root.phoneAudioReady ? Tokyo.dim
+                                  : root.phoneAudioOn ? Tokyo.cyan : Tokyo.fg
+                            font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize }
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        Item {
+                            width: 34; height: 18
+                            anchors.verticalCenter: parent.verticalCenter
+                            opacity: root.phoneAudioReady ? 1 : 0.4
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: height / 2
+                                color: Qt.rgba(Tokyo.cyan.r, Tokyo.cyan.g,
+                                               Tokyo.cyan.b,
+                                               root.phoneAudioOn ? 0.30 : 0.10)
+                                border.color: root.phoneAudioOn ? Tokyo.cyan
+                                                                 : Tokyo.bgHighlight
+                                border.width: 1
+                                Behavior on color { ColorAnimation { duration: 140 } }
+                            }
+                            Rectangle {
+                                width: 12; height: 12; radius: 6
+                                y: 3
+                                x: root.phoneAudioOn ? parent.width - width - 3 : 3
+                                color: root.phoneAudioOn ? Tokyo.cyan : Tokyo.dim
+                                Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                                Behavior on color { ColorAnimation { duration: 140 } }
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                // A dead row does not even offer the pointer: a
+                                // hand cursor over something that cannot be
+                                // pressed is a small lie.
+                                cursorShape: root.phoneAudioReady
+                                              ? Qt.PointingHandCursor
+                                              : Qt.ArrowCursor
+                                onClicked: {
+                                    if (root.phoneAudioReady)
+                                        root.togglePhoneAudio(!root.phoneAudioOn)
+                                }
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: phoneHover
+                        anchors { left: parent.left; right: sw.left
+                                  top: parent.top; bottom: parent.bottom }
+                        hoverEnabled: true
+                        onClicked: {
+                            if (root.phoneAudioReady)
+                                root.togglePhoneAudio(!root.phoneAudioOn)
+                        }
+                    }
+                    Item {
+                        id: sw
+                        anchors { right: parent.right; rightMargin: 4
+                                  verticalCenter: parent.verticalCenter }
+                        width: 40; height: 24
+                    }
+
+                    // ---------- the tooltip ----------
+                    // A panel of its own rather than another line in the column:
+                    // an inline explanation would make the whole panel jump
+                    // taller every time the pointer crossed the row, which is
+                    // worse than the problem it explains. This floats over the
+                    // rows below instead, and is only ever shown for a dead
+                    // row — when the switch works, the label already says what
+                    // it does.
+                    Rectangle {
+                        id: phoneTip
+                        width: tipText.width + 20
+                        height: tipText.height + 20
+                        radius: 8
+                        color: Tokyo.bgDark
+                        border.color: Tokyo.bgHighlight
+                        border.width: 1
+                        visible: opacity > 0.01
+                        opacity: (!root.phoneAudioReady && phoneHover.hovered)
+                                 ? 1 : 0
+                        Behavior on opacity {
+                            NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
+                        }
+                        anchors { left: parent.left; leftMargin: 2
+                                  top: parent.bottom; topMargin: 2 }
+                        z: 10
+                        Text {
+                            id: tipText
+                            anchors { left: parent.left; right: parent.right
+                                      top: parent.top; margins: 10 }
+                            text: root.phoneAudioWhy
+                            color: Tokyo.fg
+                            wrapMode: Text.WordWrap
+                            width: 236
+                            font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize - 1 }
+                        }
+                    }
+                }
             }
 
             Item { height: 8 }

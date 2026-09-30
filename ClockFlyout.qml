@@ -411,22 +411,19 @@ PopupWindow {
         timerPanel.reset()
     }
 
-    // Material 3 "expressive spatial", which is a spring: most of the distance
-    // covered early, then a small overshoot and a settle. QML has no spring
-    // easing, so it is two segments — out to 1.04, then back to 1.
+    // One curve, both directions. The fly-in is the fly-out played backwards:
+    // OutQuart over 200 ms, which is exactly the time-reverse of the InQuart
+    // 200 ms below. The panel therefore looks the same going up as coming down
+    // — the same motion, reversed — instead of opening on a springy overshoot
+    // that the close never had, which read as the panel being *placed* rather
+    // than *drawn out of the pill*.
     SequentialAnimation {
         id: openAnim
         NumberAnimation {
             target: root; property: "t"
-            from: 0; to: 1.04
-            duration: 210
+            from: 0; to: 1
+            duration: 200
             easing.type: Easing.OutQuart
-        }
-        NumberAnimation {
-            target: root; property: "t"
-            from: 1.04; to: 1
-            duration: 90
-            easing.type: Easing.InOutSine
         }
     }
 
