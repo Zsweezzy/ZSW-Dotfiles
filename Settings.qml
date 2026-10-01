@@ -45,6 +45,8 @@ Module {
         if (!Array.isArray(root.adapters)) return false
         return root.adapters.some(a => a && a.activeWifi === true)
     }
+    /// wired wins when both are up — it is the link everything else rides on
+    readonly property bool primaryEthernet: root.ethUp
 
     // ---------- connection stats (was Net.qml, read by the flyout) ----------
     /// The WI-FI section's reveal/hide button, and the only thing that decides

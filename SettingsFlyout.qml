@@ -33,6 +33,9 @@ PopupWindow {
 
     /// which detail panel is open under the tiles: "", "wifi", "bt"
     property string open: ""
+    /// the old net flyout's two tabs, inside the wi-fi detail
+    /// 0 = ethernet, 1 = wi-fi
+    property int linkTab: 0
     property string entering: ""
 
     readonly property real gap: 6
@@ -125,8 +128,10 @@ PopupWindow {
             closeAnim.start()
             return
         }
-        if (root.pill !== null)
+        if (root.pill !== null) {
+            root.linkTab = root.pill.primaryEthernet ? 0 : 1
             root.open = ""
+        }
         root.visible = true
         root.t = 0
         openAnim.start()
@@ -173,6 +178,7 @@ PopupWindow {
     readonly property bool scanning: root.pill !== null && root.pill.scanning
     readonly property string notice: root.pill === null ? "" : root.pill.notice
     readonly property bool ssidShown: root.pill !== null && root.pill.ssidShown
+    readonly property bool ethUp: root.pill !== null && root.pill.ethUp
     readonly property bool wifiUp: root.pill !== null && root.pill.wifiUp
     readonly property var airdrop: root.pill === null
         ? { running: false } : root.pill.airdrop
@@ -192,28 +198,19 @@ PopupWindow {
     readonly property int hiddenNets: root.wifi.networks.length
                                      - root.shownNets.length
 
-    /// The bluetooth devices to draw. A paired device that is switched off is
-    /// the same information as one that has never been paired, so the default
-    /// list is only what is connected — the count of the rest goes on the
-    /// find-devices row, which is not a mystery toggle either. Scanning or
-    /// ADVANCED lifts the filter: a scan exists to show you devices, and
-    /// ADVANCED is where you go when the short list is not what you wanted.
-    readonly property var shownBt: (root.scanning || root.showStats)
-        ? root.btList
-        : root.btList.filter(d => d.connected === true)
-    readonly property int hiddenBt: root.btList.length - root.shownBt.length
+    /// Every device this machine has paired, connected or not. A paired device
+    /// that happens to be off is not the same information as one that has never
+    /// been paired: you paired it, you know it is there, and hiding it behind a
+    /// disclosure meant the list you saw depended on which buttons you had
+    /// pressed. Both are listed, and the row's own status says which is which.
+    readonly property var shownBt: root.btList
 
-    /// The wi-fi link's own block, under ADVANCED. The wired link used to have a
-    /// tab here next to this one, which meant the internet section could open
-    /// showing the ethernet cable: two links, one of them a stranger, in a
-    /// panel whose only job was wi-fi. The pill still carries its own glyph
-    /// for the wired link, so nothing is lost but the duplicate.
+    /// The old flyout's per-link block, for the tab that is showing.
     readonly property string linkStats: root.pill === null
-        ? "" : root.pill.wifiTooltip
+        ? ""
+        : (root.linkTab === 0 ? root.pill.ethernetTooltip : root.pill.wifiTooltip)
 
-    /// Signal strength as a single digit, 1 to 4, so strength is a glance and
-    /// not a number to read. The exact percentage is already on the row's right
-    /// as "SAVED 42%", so this one only has to be comparable at a glance.
+    /// A bar of signal, so strength is a glance and not a number to read.
     function bars(signal) {
         return signal >= 80 ? 4 : signal >= 60 ? 3 : signal >= 35 ? 2 : 1
     }
@@ -636,10 +633,6 @@ PopupWindow {
                             // clicking opens the password field. Neither means the
                             // network is open and clicking joins straight away. The
                             // glyph says which of the three it is before you try.
-                            // One space between the digit and the lock: they
-                            // were concatenated with nothing between them, so
-                            // "4" and the padlock came out as one token and
-                            // read as a single glyph.
                             glyph: root.bars(modelData.signal)
                                    + (modelData.active ? ""
                                       : modelData.secure
@@ -784,8 +777,10 @@ PopupWindow {
                         accent: root.showStats ? Tokyo.dim : Tokyo.cyan
                         onClicked: root.showStats = !root.showStats
                     }
+                    // The reveal/hide button only makes sense on the wi-fi tab.
                     PillButton {
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                        visible: root.linkTab === 1
                         glyph: ""
                         text: root.ssidShown ? "HIDE" : "SHOW SSID"
                         accent: Tokyo.cyan
@@ -793,12 +788,48 @@ PopupWindow {
                             if (root.pill !== null) root.pill.toggleSsid()
                         }
                     }
+
+                    // The wired link's own switch, on the ethernet tab only — the
+                    // same slot SHOW SSID uses on the wi-fi tab, because both are
+                    // "this link is on / off" and neither belongs on the other tab.
+                    //
+                    // No fourth tile: the tile row is three wide and the panel is
+                    // sized for it, and ethernet already has a panel of its own
+                    // under ADVANCED. Adding a tile to reach a switch that has
+                    // always been in this panel is a worse trade than one button.
+                    PillButton {
+                        anchors { right: parent.right
+                                  verticalCenter: parent.verticalCenter }
+                        visible: root.linkTab === 0
+                        text: root.ethUp ? "DISABLE" : "ENABLE"
+                        accent: root.ethUp ? Tokyo.dim : Tokyo.blue
+                        onClicked: {
+                            if (root.pill !== null)
+                                root.pill.setEthEnabled(!root.ethUp)
+                        }
+                    }
                 }
+
 
                 Column {
                     width: parent.width
                     spacing: 6
                     visible: root.showStats
+
+                    Row {
+                        visible: root.linkTab === 0 || root.linkTab === 1
+                        spacing: 8
+                        PillButton {
+                            text: "ETHERNET"
+                            accent: root.linkTab === 0 ? Tokyo.blue : Tokyo.dim
+                            onClicked: root.linkTab = 0
+                        }
+                        PillButton {
+                            text: "WI-FI"
+                            accent: root.linkTab === 1 ? Tokyo.cyan : Tokyo.dim
+                            onClicked: root.linkTab = 1
+                        }
+                    }
 
                     Text {
                         width: parent.width
@@ -823,13 +854,11 @@ PopupWindow {
                 // would list every device in the room and drain the phone.
                 DeviceRow {
                     width: parent.width
+                    // A scan is off until asked for: an always-on scan drains the
+                    // phone's battery and makes every device in the room show up
+                    // in the list uninvited.
                     name: root.scanning ? "Scanning…" : "Find new devices"
-                    // The count of paired-but-idle devices being held back, so
-                    // the filter below is never a silent one.
-                    status: root.scanning || root.showStats ? ""
-                           : root.hiddenBt > 0
-                               ? root.hiddenBt + " PAIRED · FIND MORE"
-                               : "FIND MORE"
+                    status: ""
                     glyph: ""
                     accent: root.scanning ? Tokyo.yellow : Tokyo.fg
                     busy: root.scanning
@@ -858,28 +887,11 @@ PopupWindow {
                     }
                 }
 
-                // The same disclosure the wi-fi panel has, on the same switch:
-                // without it here there would be no way back — tick ADVANCED
-                // over on wi-fi, come to bluetooth, and every paired device is
-                // suddenly listed with no button that hides them again.
-                PillButton {
-                    visible: root.hiddenBt > 0 || root.showStats
-                    text: root.showStats
-                        ? "HIDE " + root.hiddenBt + " IDLE"
-                        : "SHOW ALL " + root.hiddenBt
-                    accent: root.showStats ? Tokyo.dim : Tokyo.blue
-                    onClicked: root.showStats = !root.showStats
-                }
-
                 Text {
                     width: parent.width
                     visible: root.shownBt.length === 0
                     text: !root.bt.powered ? "Bluetooth is off."
-                        : root.btList.length === 0 ? "No bluetooth devices yet."
-                        : root.hiddenBt > 0
-                            ? "Nothing connected. SHOW ALL to see the "
-                              + root.hiddenBt + " paired."
-                            : "No bluetooth devices yet."
+                        : "No bluetooth devices yet."
                     color: Tokyo.dim
                     wrapMode: Text.WordWrap
                     font { family: Tokyo.fontFamily; pixelSize: 10 }
