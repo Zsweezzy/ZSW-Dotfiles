@@ -33,9 +33,6 @@ PopupWindow {
 
     /// which detail panel is open under the tiles: "", "wifi", "bt"
     property string open: ""
-    /// the old net flyout's two tabs, inside the wi-fi detail
-    /// 0 = ethernet, 1 = wi-fi
-    property int linkTab: 0
     property string entering: ""
 
     readonly property real gap: 6
@@ -128,10 +125,8 @@ PopupWindow {
             closeAnim.start()
             return
         }
-        if (root.pill !== null) {
-            root.linkTab = root.pill.primaryEthernet ? 0 : 1
+        if (root.pill !== null)
             root.open = ""
-        }
         root.visible = true
         root.t = 0
         openAnim.start()
@@ -178,7 +173,6 @@ PopupWindow {
     readonly property bool scanning: root.pill !== null && root.pill.scanning
     readonly property string notice: root.pill === null ? "" : root.pill.notice
     readonly property bool ssidShown: root.pill !== null && root.pill.ssidShown
-    readonly property bool ethUp: root.pill !== null && root.pill.ethUp
     readonly property bool wifiUp: root.pill !== null && root.pill.wifiUp
     readonly property var airdrop: root.pill === null
         ? { running: false } : root.pill.airdrop
@@ -209,12 +203,17 @@ PopupWindow {
         : root.btList.filter(d => d.connected === true)
     readonly property int hiddenBt: root.btList.length - root.shownBt.length
 
-    /// The old flyout's per-link block, for the tab that is showing.
+    /// The wi-fi link's own block, under ADVANCED. The wired link used to have a
+    /// tab here next to this one, which meant the internet section could open
+    /// showing the ethernet cable: two links, one of them a stranger, in a
+    /// panel whose only job was wi-fi. The pill still carries its own glyph
+    /// for the wired link, so nothing is lost but the duplicate.
     readonly property string linkStats: root.pill === null
-        ? ""
-        : (root.linkTab === 0 ? root.pill.ethernetTooltip : root.pill.wifiTooltip)
+        ? "" : root.pill.wifiTooltip
 
-    /// A bar of signal, so strength is a glance and not a number to read.
+    /// Signal strength as a single digit, 1 to 4, so strength is a glance and
+    /// not a number to read. The exact percentage is already on the row's right
+    /// as "SAVED 42%", so this one only has to be comparable at a glance.
     function bars(signal) {
         return signal >= 80 ? 4 : signal >= 60 ? 3 : signal >= 35 ? 2 : 1
     }
@@ -637,10 +636,16 @@ PopupWindow {
                             // clicking opens the password field. Neither means the
                             // network is open and clicking joins straight away. The
                             // glyph says which of the three it is before you try.
+                            // One space between the digit and the lock: they
+                            // were concatenated with nothing between them, so
+                            // "4" and the padlock came out as one token and
+                            // read as a single glyph.
                             glyph: root.bars(modelData.signal)
                                    + (modelData.active ? ""
                                       : modelData.secure
-                                          ? (modelData.known ? "\uf084" : "\uf023")
+                                          ? " "
+                                              + (modelData.known ? "\uf084"
+                                                                 : "\uf023")
                                           : "")
                             accent: modelData.active ? Tokyo.cyan
                                   : modelData.known ? Tokyo.fg : Tokyo.yellow
@@ -779,10 +784,8 @@ PopupWindow {
                         accent: root.showStats ? Tokyo.dim : Tokyo.cyan
                         onClicked: root.showStats = !root.showStats
                     }
-                    // The reveal/hide button only makes sense on the wi-fi tab.
                     PillButton {
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                        visible: root.linkTab === 1
                         glyph: ""
                         text: root.ssidShown ? "HIDE" : "SHOW SSID"
                         accent: Tokyo.cyan
@@ -790,48 +793,12 @@ PopupWindow {
                             if (root.pill !== null) root.pill.toggleSsid()
                         }
                     }
-
-                    // The wired link's own switch, on the ethernet tab only — the
-                    // same slot SHOW SSID uses on the wi-fi tab, because both are
-                    // "this link is on / off" and neither belongs on the other tab.
-                    //
-                    // No fourth tile: the tile row is three wide and the panel is
-                    // sized for it, and ethernet already has a panel of its own
-                    // under ADVANCED. Adding a tile to reach a switch that has
-                    // always been in this panel is a worse trade than one button.
-                    PillButton {
-                        anchors { right: parent.right
-                                  verticalCenter: parent.verticalCenter }
-                        visible: root.linkTab === 0
-                        text: root.ethUp ? "DISABLE" : "ENABLE"
-                        accent: root.ethUp ? Tokyo.dim : Tokyo.blue
-                        onClicked: {
-                            if (root.pill !== null)
-                                root.pill.setEthEnabled(!root.ethUp)
-                        }
-                    }
                 }
-
 
                 Column {
                     width: parent.width
                     spacing: 6
                     visible: root.showStats
-
-                    Row {
-                        visible: root.linkTab === 0 || root.linkTab === 1
-                        spacing: 8
-                        PillButton {
-                            text: "ETHERNET"
-                            accent: root.linkTab === 0 ? Tokyo.blue : Tokyo.dim
-                            onClicked: root.linkTab = 0
-                        }
-                        PillButton {
-                            text: "WI-FI"
-                            accent: root.linkTab === 1 ? Tokyo.cyan : Tokyo.dim
-                            onClicked: root.linkTab = 1
-                        }
-                    }
 
                     Text {
                         width: parent.width
