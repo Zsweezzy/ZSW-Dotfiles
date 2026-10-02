@@ -8,6 +8,8 @@
 //                    flyout's bluetooth panel.
 //   Input devices    click a row → Pipewire.preferredDefaultAudioSource
 //   Applications     per-playback-app volume slider + mute toggle
+//   Advanced         bottom drawer: the switch that lifts the app sliders to
+//                    150% instead of 100%
 //
 // Uses the native Quickshell Pipewire service (same source as Audio.qml).
 // Device/app lists come from Pipewire.nodes — every node carries isSink/isStream
@@ -192,6 +194,57 @@ PopupWindow {
         root.visible = !root.visible
     }
 
+    // ---------------- overboost ----------------
+    // PipeWire takes a volume above 1.0 — that is exactly what "volume over
+    // 100%" means in pavucontrol — and these sliders hand the number straight to
+    // it. It is off by default because a boosted stream clips on its loud parts,
+    // so it has to be asked for rather than reached by accident.
+    property bool overboost: false
+    /// whether the ADVANCED drawer at the bottom of the panel is open
+    property bool advanced: false
+    /// slider ceiling: 150% with overboost on, the ordinary 100% without it.
+    /// Switching it off does not pull anything already above 100% back down —
+    /// it only stops the slider from going there.
+    readonly property real maxVolume: root.overboost ? 1.5 : 1
+
+    /// The on/off switch, same shape as the settings flyout's: a capsule track
+    /// with a knob that slides, so the knob's side is the state and no
+    /// "on"/"off" text is needed beside it.
+    component Toggle: Item {
+        id: sw
+        property bool checked: false
+        /// false = drawn dim, no pointer: a hand cursor over something that
+        /// cannot be pressed is a small lie.
+        property bool interactive: true
+        property color accent: Tokyo.cyan
+        signal toggled()
+        implicitWidth: 34
+        implicitHeight: 18
+
+        Rectangle {
+            anchors.fill: parent
+            radius: height / 2
+            color: Qt.rgba(sw.accent.r, sw.accent.g, sw.accent.b,
+                           sw.checked ? 0.30 : 0.10)
+            border.color: sw.checked ? sw.accent : Tokyo.bgHighlight
+            border.width: 1
+            Behavior on color { ColorAnimation { duration: 140 } }
+        }
+        Rectangle {
+            width: 12; height: 12; radius: 6
+            y: 3
+            x: sw.checked ? parent.width - width - 3 : 3
+            color: sw.checked ? sw.accent : Tokyo.dim
+            Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+            Behavior on color { ColorAnimation { duration: 140 } }
+        }
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: sw.interactive ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: if (sw.interactive) sw.toggled()
+        }
+    }
+
     Rectangle {
         id: box
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
@@ -281,60 +334,29 @@ PopupWindow {
                             font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize }
                             verticalAlignment: Text.AlignVCenter
                         }
-                        Item {
+                        Toggle {
                             width: 34; height: 18
                             anchors.verticalCenter: parent.verticalCenter
+                            checked: root.phoneAudioOn
+                            interactive: root.phoneAudioReady
                             opacity: root.phoneAudioReady ? 1 : 0.4
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: height / 2
-                                color: Qt.rgba(Tokyo.cyan.r, Tokyo.cyan.g,
-                                               Tokyo.cyan.b,
-                                               root.phoneAudioOn ? 0.30 : 0.10)
-                                border.color: root.phoneAudioOn ? Tokyo.cyan
-                                                                 : Tokyo.bgHighlight
-                                border.width: 1
-                                Behavior on color { ColorAnimation { duration: 140 } }
-                            }
-                            Rectangle {
-                                width: 12; height: 12; radius: 6
-                                y: 3
-                                x: root.phoneAudioOn ? parent.width - width - 3 : 3
-                                color: root.phoneAudioOn ? Tokyo.cyan : Tokyo.dim
-                                Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-                                Behavior on color { ColorAnimation { duration: 140 } }
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                // A dead row does not even offer the pointer: a
-                                // hand cursor over something that cannot be
-                                // pressed is a small lie.
-                                cursorShape: root.phoneAudioReady
-                                              ? Qt.PointingHandCursor
-                                              : Qt.ArrowCursor
-                                onClicked: {
-                                    if (root.phoneAudioReady)
-                                        root.togglePhoneAudio(!root.phoneAudioOn)
-                                }
-                            }
+                            onToggled: root.togglePhoneAudio(!root.phoneAudioOn)
                         }
                     }
 
                     MouseArea {
                         id: phoneHover
-                        anchors { left: parent.left; right: sw.left
+                        // Stops short of the switch's own hit area (8px margin
+                        // + the 34px switch), so the row and the switch never
+                        // both swallow one click.
+                        anchors { left: parent.left; right: parent.right
+                                  rightMargin: 42
                                   top: parent.top; bottom: parent.bottom }
                         hoverEnabled: true
                         onClicked: {
                             if (root.phoneAudioReady)
                                 root.togglePhoneAudio(!root.phoneAudioOn)
                         }
-                    }
-                    Item {
-                        id: sw
-                        anchors { right: parent.right; rightMargin: 4
-                                  verticalCenter: parent.verticalCenter }
-                        width: 40; height: 24
                     }
 
                     // ---------- the tooltip ----------
@@ -412,6 +434,94 @@ PopupWindow {
             Repeater {
                 model: root.apps
                 delegate: appRow
+            }
+
+            Item { height: 8 }
+            Rectangle {
+                width: parent.width; height: 1
+                color: Tokyo.bgHighlight
+            }
+
+            // ---------- advanced ----------
+            // The boost switch is folded away under this rather than sitting in
+            // the panel: going past 100% distorts and clips, so it should be one
+            // deliberate click instead of something in the way every time the
+            // panel opens. The label stays lit when the panel is closed and
+            // boosting is on — otherwise the setting would be invisible while
+            // still in effect.
+            Rectangle {
+                id: advancedButton
+                width: parent.width
+                height: root.rowHeight
+                radius: 6
+                color: advancedHover.hovered ? Tokyo.bgHighlight : "transparent"
+
+                Text {
+                    anchors { left: parent.left; leftMargin: 8
+                              verticalCenter: parent.verticalCenter }
+                    text: "ADVANCED"
+                    color: root.advanced || root.overboost ? Tokyo.blue : Tokyo.dim
+                    font { family: Tokyo.fontFamily; pixelSize: 10; bold: true; letterSpacing: 1.5 }
+                }
+                Text {
+                    anchors { right: parent.right; rightMargin: 8
+                              verticalCenter: parent.verticalCenter }
+                    // chevron down = closed, and there is more below it
+                    text: root.advanced ? "\uf077" : "\uf078"
+                    color: root.advanced ? Tokyo.blue : Tokyo.dim
+                    font { family: Tokyo.fontFamily; pixelSize: 10 }
+                }
+                MouseArea {
+                    id: advancedHover
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: root.advanced = !root.advanced
+                }
+            }
+
+            Column {
+                width: parent.width
+                visible: root.advanced
+                // A Column counts hidden children, so the height has to go to 0
+                // by hand or the flyout keeps a gap where the switch used to be.
+                height: visible ? implicitHeight : 0
+
+                Rectangle {
+                    id: boostRow
+                    width: parent.width
+                    height: root.rowHeight
+                    radius: 6
+                    color: boostHover.hovered ? Tokyo.bgHighlight : "transparent"
+
+                    Row {
+                        anchors {
+                            left: parent.left; right: parent.right
+                            leftMargin: 8; rightMargin: 8
+                            verticalCenter: parent.verticalCenter
+                        }
+                        spacing: 6
+
+                        Text {
+                            width: parent.width - 40
+                            text: "Up to 150%"
+                            elide: Text.ElideRight
+                            color: root.overboost ? Tokyo.cyan : Tokyo.fg
+                            font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize }
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        Toggle {
+                            checked: root.overboost
+                            onToggled: root.overboost = !root.overboost
+                        }
+                    }
+
+                    MouseArea {
+                        id: boostHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: root.overboost = !root.overboost
+                    }
+                }
             }
         }
     }
@@ -524,7 +634,8 @@ PopupWindow {
                     height: 22
                     width: parent.width - 202
                     from: 0
-                    to: 1
+                    // 150% with AMPLIFY on, the usual 100% ceiling without it.
+                    to: root.maxVolume
                     stepSize: 0.01
                     value: row.node.audio ? row.node.audio.volume : 0
                     onMoved: {

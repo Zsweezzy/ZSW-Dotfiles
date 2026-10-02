@@ -15,9 +15,10 @@
 //     arrived from the edge.
 //   - The icon goes through NotifyIcon, so it is drawn at a size the source
 //     actually has rather than upscaled into a fixed box.
-//   - The action buttons are the notification's own, invoked through the
-//     daemon's object. A toast that cannot be acted on is a message you have to
-//     go and find the application for.
+//   - The × is always there, not on hover: a dismiss you have to find is a
+//     dismiss you do not use, and it closes through the daemon's own object.
+//     There are no action buttons here — a toast says what happened; the
+//     notification centre is where you act on it.
 import QtQuick
 import Quickshell
 
@@ -42,8 +43,6 @@ Item {
     /// emitted when the row has finished sliding out and can be dropped
     signal done()
 
-    readonly property bool hasActions: n !== null && n.actions !== undefined
-                                    && n.actions.length > 0
     readonly property color accent: n !== null && n.urgency === 2
         ? Tokyo.red          // NotificationUrgency.Critical
         : Tokyo.blue
@@ -67,7 +66,7 @@ Item {
         // there is one, plus the padding either side. Derived from the text
         // rather than guessed at, so a four-line body grows the card instead of
         // spilling out of it.
-        height: 20 + Math.max(40, textCol.implicitHeight) + (acts.visible ? acts.height + 8 : 0)
+        height: 20 + Math.max(40, textCol.implicitHeight)
         radius: Tokyo.pillRadius
         color: Tokyo.panelFill
         border.color: Tokyo.paneEdge
@@ -108,7 +107,8 @@ Item {
             id: textCol
             x: 62
             y: 10
-            width: card.width - x - 12
+            // Stops short of the × rather than running the summary under it.
+            width: dismiss.left - x - 6
             spacing: 2
 
             Text {
@@ -137,62 +137,43 @@ Item {
             }
         }
 
-        // ---------- actions ----------
-        Flow {
-            id: acts
-            x: 62
-            y: textCol.y + textCol.height + 8
-            width: card.width - x - 12
-            spacing: 6
-            visible: root.hasActions
+        // ---------- dismiss ----------
+        Rectangle {
+            id: dismiss
+            anchors { right: parent.right; rightMargin: 4
+                      verticalCenter: parent.verticalCenter }
+            width: 20; height: 20
+            radius: 5
+            color: dHover.containsMouse ? Tokyo.bgHighlight : "transparent"
 
-            Repeater {
-                model: root.hasActions ? root.n.actions : []
-                delegate: Rectangle {
-                    id: act
-                    required property var modelData
-                    width: actText.implicitWidth + 18
-                    height: 22
-                    radius: 6
-                    color: actHover.containsMouse ? Tokyo.bgHighlight
-                                                 : Qt.rgba(0, 0, 0, 0.18)
-                    border.color: Tokyo.hairline
-                    border.width: 1
-                    Behavior on color { ColorAnimation { duration: 110 } }
-
-                    Text {
-                        id: actText
-                        anchors.centerIn: parent
-                        text: act.modelData.text
-                        color: Tokyo.fg
-                        font { family: Tokyo.fontFamily; pixelSize: 10 }
-                    }
-                    MouseArea {
-                        id: actHover
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            // The action goes back through the daemon, so the
-                            // client that sent it sees the reply. Called on the
-                            // Notification, not on the stored record.
-                            act.modelData.invoke()
-                            if (root.n) root.n.dismiss()
-                            root.done()
-                        }
-                    }
-                }
+            Text {
+                anchors.centerIn: parent
+                text: "×"
+                color: Tokyo.dim
+                font { family: Tokyo.fontFamily; pixelSize: 13 }
+            }
+            MouseArea {
+                id: dHover
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                // `done()` rather than `dismiss()` on the daemon: it is the same
+                // path the timeout and the client's own close take, so a hand
+                // dismiss cannot land where an automatic one does not.
+                onClicked: root.done()
             }
         }
 
         // Clicking the body runs the notification's default action, which is
-        // what a click anywhere in the middle of a notification means.
+        // what a click anywhere in the middle of a notification means. Stops
+        // short of the ×, which is a sibling and would otherwise lose the click
+        // to whichever MouseArea Qt asks first.
         MouseArea {
             anchors {
                 left: parent.left; leftMargin: 6
-                right: acts.visible ? acts.left : parent.right; rightMargin: 2
+                right: dismiss.left; rightMargin: 6
                 top: parent.top; topMargin: 4
-                bottom: acts.visible ? acts.top : parent.bottom; bottomMargin: 4
+                bottom: parent.bottom; bottomMargin: 4
             }
             acceptedButtons: Qt.LeftButton
             cursorShape: Qt.PointingHandCursor
@@ -208,7 +189,6 @@ Item {
                             : String(root.n.appName).toLowerCase().replace(/\s+/g, "-"),
                     ])
                 }
-                if (root.n) root.n.dismiss()
                 root.done()
             }
         }

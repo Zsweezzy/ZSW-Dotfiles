@@ -220,6 +220,10 @@ Module {
     /// true while bt-scan.sh is out listening — the list it fills arrives when
     /// it returns, so without this the button looks broken
     property bool scanning: false
+    /// the MAC of the device row currently waiting on bluez, or "" for none.
+    /// A MAC and not a bool because pairing is per device: the row you clicked
+    /// is the one spinning, not the whole bluetooth section.
+    property string btBusy: ""
     property string notice: ""
 
     /// Paired devices and the scan results are one list between them; a paired
@@ -405,6 +409,10 @@ Module {
 
     function toggleDevice(mac, paired, connected) {
         root.notice = ""
+        // Busy from before the script is even spawned: bt-dev.sh pair blocks for
+        // up to 25s waiting on the phone, and a row that only spins once the
+        // script returns looks like nothing happened for those 25 seconds.
+        root.btBusy = mac
         if (!paired || !connected)
             root.run(Tokyo.scriptDir + "/bt-dev.sh", ["connect", mac])
         else
@@ -424,7 +432,7 @@ Module {
     Timer {
         id: confirm
         interval: 4000
-        onTriggered: { root.refreshAll(); root.notice = "" }
+        onTriggered: { root.refreshAll(); root.notice = ""; root.btBusy = "" }
     }
 
     /// The pill is the three glyphs and nothing else: no link name, no SSID, no

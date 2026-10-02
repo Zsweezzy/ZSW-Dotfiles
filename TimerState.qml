@@ -112,16 +112,17 @@ Singleton {
             if (a.fired !== b.fired) return a.fired ? 1 : -1
             return root.remainingMs(a) - root.remainingMs(b)
         }).map(t => {
-            if (t.fired) return "finished  " + root.fmt(t.totalMs)
-            if (t.paused) return "paused    " + root.fmt(root.remainingMs(t))
-            return root.fmt(root.remainingMs(t)) + "  of " + root.fmt(t.totalMs)
+            const label = t.name ? t.name : ""
+            if (t.fired) return (label ? label + "  " : "") + "finished  " + root.fmt(t.totalMs)
+            if (t.paused) return (label ? label + "  " : "") + "paused    " + root.fmt(root.remainingMs(t))
+            return (label ? label + "  " : "") + root.fmt(root.remainingMs(t)) + "  of " + root.fmt(t.totalMs)
         })
     }
 
     // ---------------- writes ----------------
 
     /// start a timer of `ms` length; returns its id
-    function start(ms) {
+    function start(ms, name="") {
         const length = Math.max(1000, Math.min(root.maxMs, Math.round(ms)))
         // Refresh the display cache on the write, like every deadline writer.
         // `now` is a cache the 200 ms tick keeps fresh, but that tick only runs
@@ -135,6 +136,7 @@ Singleton {
         root.now = Date.now()
         const t = {
             id: root.nextId++,
+            name: String(name || "").trim(),
             totalMs: length,
             endsAt: root.now + length,
             remaining: length,
@@ -146,12 +148,18 @@ Singleton {
         return t.id
     }
 
-    function startMinutes(minutes) {
-        return root.start(minutes * 60000)
+    function startMinutes(minutes, name="") {
+        return root.start(minutes * 60000, name)
     }
 
     function replace(id, patch) {
         root.timers = root.timers.map(t => (t.id === id ? Object.assign({}, t, patch) : t))
+    }
+
+    function rename(id, name) {
+        const t = root.byId(id)
+        if (!t) return
+        root.replace(id, { name: String(name || "").trim() })
     }
 
     function togglePause(id) {
@@ -200,8 +208,7 @@ Singleton {
     /// The precise box's scrub: type how much is left, and when the number fits
     /// inside the timer's total it is exactly `scrub()` — playhead moves, total
     /// untouched. The difference is what `scrub()` must refuse: typing a length
-    /// PAST the total lengthens the timer to that value — capped at the shell's
-    /// 30-min maximum, the same cap `start()` applies — playhead at the top of
+    /// PAST the total lengthens the timer to that value, playhead at the top of
     /// the new length, counting down from the full amount. So the two-way rule
     /// (that exact value, or the whole existing length) is how a timer's length
     /// changes now; the drag stays a pure playhead.
@@ -213,9 +220,7 @@ Singleton {
     function retime(id, ms) {
         const t = root.byId(id)
         if (!t || t.fired) return
-        // `|| 0` is the NaN guard, see `scrub`; the `Math.max(0, …)` keeps a
-        // negative input from writing a negative `remaining` on a paused timer
-        const value = Math.max(0, Math.round(ms) || 0)
+        const value = Math.round(ms) || 0
         root.now = Date.now()
         if (value <= t.totalMs) {
             // within the total: a playhead move, identical to scrub
@@ -225,7 +230,6 @@ Singleton {
                 root.replace(id, { endsAt: root.now + value })
             }
         } else {
-            // capped at maxMinutes — the shell's 1–30 range, the same cap start() applies
             const total = Math.min(root.maxMs, value)
             // past the total: the timer BECOMES that long, playhead at the top
             if (t.paused) {
@@ -241,12 +245,11 @@ Singleton {
     function nudge(id, minutes) {
         const t = root.byId(id)
         if (!t) return
-        // cache refresh on the write, like every deadline writer, see `start`
-        root.now = Date.now()
         const delta = minutes * 60000
         if (t.fired) {
             if (delta <= 0) return
             const base = Math.min(root.maxMs, Math.max(60000, t.totalMs))
+            root.now = Date.now()
             root.replace(id, {
                 fired: false, firedAt: 0, paused: false,
                 totalMs: base, endsAt: root.now + base, remaining: base

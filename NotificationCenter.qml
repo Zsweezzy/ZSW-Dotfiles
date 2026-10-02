@@ -181,14 +181,39 @@ PopupWindow {
             ListView {
                 id: list
                 width: parent.width
-                height: root.store !== null && root.store.entries.length > 0
-                        ? Math.min(root.store.entries.length, root.visibleRows) * root.rowH
-                        : 40
+                height: root.store === null || root.store.entries.length === 0
+                        ? 0
+                        : Math.min(root.store.entries.length, root.visibleRows) * root.rowH
                 clip: true
                 spacing: 4
                 // Newest at the top, and the top is where the eye already is.
                 model: root.store !== null ? root.store.entries : []
                 boundsBehavior: Flickable.StopAtBounds
+
+                // A delete leaves rather than blinking out: the row slides off
+                // to the left and the ones below close the gap behind it. Both
+                // motions are the ListView's own, so `dismiss()` still just
+                // drops the entry — no per-row state to keep in sync.
+                displaced: Transition {
+                    NumberAnimation {
+                        properties: "x,y"
+                        duration: 200
+                        easing.type: Easing.OutCubic
+                    }
+                }
+                remove: Transition {
+                    NumberAnimation {
+                        properties: "x"
+                        to: -list.width
+                        duration: 200
+                        easing.type: Easing.OutCubic
+                    }
+                    NumberAnimation {
+                        properties: "opacity"
+                        to: 0
+                        duration: 140
+                    }
+                }
 
                 delegate: Rectangle {
                     id: entry
@@ -312,7 +337,9 @@ PopupWindow {
                                   verticalCenter: parent.verticalCenter }
                         width: 20; height: 20
                         radius: 5
-                        visible: dHover.containsMouse || dHover.pressed
+                        // Always there, not on hover: a delete you have to find
+                        // is a delete you do not use. `rowHover` already stops
+                        // short of this rectangle, so it never eats the click.
                         color: dHover.containsMouse ? Tokyo.bgHighlight : "transparent"
 
                         Text {
@@ -327,7 +354,8 @@ PopupWindow {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                if (root.store !== null) root.store.dismiss(entry.modelData)
+                                if (root.store !== null)
+                                    root.store.dismiss(entry.modelData)
                             }
                         }
                     }

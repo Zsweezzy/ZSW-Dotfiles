@@ -50,6 +50,12 @@ Scope {
     /// lookup that Qt 6 no longer exposes to QML.
     property var icons: ({})
 
+    /// A per-entry handle the delegate can hand back. `modelData` from a
+    /// ListView is a V4ReferenceObject wrapper, not the object in `entries`, so
+    /// `filter(e => e !== entry)` matches nothing and the row never goes away.
+    /// Matching on this instead is what makes delete work at all.
+    property int seq: 0
+
     function iconFor(name) {
         if (name === undefined || name === null || String(name) === "") return ""
         const hit = root.icons[String(name)]
@@ -60,7 +66,6 @@ Scope {
         id: iconReader
         command: [Tokyo.scriptDir + "/notify-icons.py", "40"]
         interval: 600000
-        active: false
         onResult: line => {
             try {
                 root.icons = JSON.parse(line)
@@ -91,6 +96,9 @@ Scope {
             // launching the app by name when it is.
             live: n,
             read: false,
+            // Monotonic, assigned here and nowhere else. `id` is the daemon's,
+            // and it restarts from 1 with the shell, so it cannot key a list.
+            key: ++root.seq,
         }
         root.entries = [entry].concat(root.entries)
         root.unread = root.unread + 1
@@ -151,7 +159,8 @@ Scope {
         // null for everything that came back from the file — the daemon is not
         // holding those, so the centre offers app-launch rather than a button
         // that cannot do anything.
-        root.entries = parsed.reverse().map(e => Object.assign({}, e, { live: null }))
+        root.entries = parsed.reverse().map(
+            e => Object.assign({}, e, { live: null, key: ++root.seq }))
         root.unread = root.entries.filter(e => e.read !== true).length
     }
 
@@ -182,17 +191,33 @@ Scope {
         root.rewrite()
     }
 
+    /// Close a notification on the daemon, if it is still open there.
+    ///
+    /// Wrapped because a Notification the daemon has already released throws on
+    /// any property access, and an uncaught throw here would abort `dismiss()`
+    /// before it removed the row — a delete button that deletes nothing exactly
+    /// when the notification has expired. The row goes either way.
+    function closeLive(n) {
+        if (n === null || n === undefined) return
+        try {
+            n.dismiss()
+        } catch (e) {
+            // Already gone from the daemon's side; nothing to tell it.
+        }
+    }
+
     function dismiss(entry) {
-        if (entry.live !== null && entry.live !== undefined)
-            entry.live.dismiss()
-        root.entries = root.entries.filter(e => e !== entry)
+        root.closeLive(entry.live)
+        // On `key`, not on identity: the centre's delegate hands back a
+        // V4ReferenceObject wrapper, never the object in `entries`, so an
+        // identity filter removes nothing and the × appears inert.
+        root.entries = root.entries.filter(e => e.key !== entry.key)
         if (entry.read !== true && root.unread > 0) root.unread = root.unread - 1
         root.rewrite()
     }
 
     function clearAll() {
-        for (const e of root.entries)
-            if (e.live) e.live.dismiss()
+        for (const e of root.entries) root.closeLive(e.live)
         root.entries = []
         root.unread = 0
         root.rewrite()

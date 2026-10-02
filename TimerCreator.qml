@@ -14,8 +14,7 @@
 // Range is 1-30 minutes in 1-minute steps, matching the slider. The manual box
 // accepts finer values ("4:30") because that is the reason it exists; typing
 // there live-moves the slider, rounded to whole minutes so the readout stays
-// honest. But only Enter starts the exact typed value (still within the
-// 1-30 min range: "99" starts 30:00, not 99:00) — START starts the
+// honest. But only Enter starts the exact typed value — START starts the
 // slider's whole minutes, not what is in the box.
 import QtQuick
 import QtQuick.Layouts
@@ -46,6 +45,7 @@ Item {
     /// slider position in minutes, 1..30
     property real minutes: 25
     property string entry: ""
+    property string timerName: ""
     property bool entryBad: false
 
     readonly property real minMinutes: TimerState.minMinutes
@@ -85,12 +85,57 @@ Item {
         }
     }
 
+    // ---------------- name ----------------
+    Text {
+        id: nameLabel
+        anchors {
+            left: parent.left
+            top: readout.bottom; topMargin: root.gap
+        }
+        text: "Name"
+        color: Tokyo.trayGlyph
+        font { family: Tokyo.fontFamily; pixelSize: 10 }
+    }
+
+    Controls.TextField {
+        id: nameField
+        anchors {
+            left: parent.left; right: parent.right
+            top: nameLabel.bottom; topMargin: 4
+        }
+        implicitHeight: 26
+        text: root.timerName
+        placeholderText: "e.g. Tea, Focus, Break (optional)"
+        color: Tokyo.fg
+        placeholderTextColor: Tokyo.trayGlyph
+        font { family: Tokyo.fontFamily; pixelSize: 12 }
+        leftPadding: 8
+        rightPadding: 8
+        topPadding: 0
+        bottomPadding: 0
+        verticalAlignment: TextInput.AlignVCenter
+        selectByMouse: true
+
+        background: Rectangle {
+            radius: 6
+            color: Tokyo.panelFill
+            border.width: 1
+            border.color: nameField.activeFocus ? Tokyo.blue : Tokyo.paneEdge
+        }
+        onTextChanged: root.timerName = text
+        onAccepted: root.startFromEntry()
+        MouseArea {
+            anchors.fill: parent
+            onClicked: root.fieldActivated()
+        }
+    }
+
     // ---------------- slider ----------------
     Controls.Slider {
         id: sld
         anchors {
             left: parent.left; right: parent.right
-            top: readout.bottom; topMargin: root.gap
+            top: nameField.bottom; topMargin: root.gap
         }
         height: 22
         from: root.minMinutes
@@ -207,8 +252,9 @@ Item {
     }
 
     function start() {
-        TimerState.start(root.minutes * 60000)
+        TimerState.start(root.minutes * 60000, root.timerName)
         root.entry = ""
+        root.timerName = ""
         root.entryBad = false
         root.started()
     }
@@ -219,6 +265,7 @@ Item {
     function clear() {
         root.minutes = 25
         root.entry = ""
+        root.timerName = ""
         root.entryBad = false
     }
 
@@ -232,8 +279,9 @@ Item {
             return
         }
         root.minutes = Math.round(ms / 60000)
-        TimerState.start(ms)
+        TimerState.start(ms, root.timerName)
         root.entry = ""
+        root.timerName = ""
         root.entryBad = false
         root.started()
     }

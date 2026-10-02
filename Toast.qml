@@ -90,15 +90,30 @@ PopupWindow {
     /// resident in a client that thinks it is still being shown.
     function trim() {
         if (root.rows.length <= root.maxRows) return
-        for (const row of root.rows.slice(root.maxRows)) if (row.n) row.n.dismiss()
+        for (const row of root.rows.slice(root.maxRows)) close(row.n)
         root.rows = root.rows.slice(0, root.maxRows)
     }
 
+    /// Dismiss on the daemon, tolerating one the daemon has already released: a
+    /// Notification throws on any property access once it is closed, and an
+    /// uncaught throw here aborts the caller before it drops the row.
+    function close(n) {
+        if (n === null || n === undefined) return
+        try {
+            n.dismiss()
+        } catch (e) {
+            // Already gone; the row still goes.
+        }
+    }
+
     function remove(n) {
+        // By identity of the daemon's object, which is what `rows` holds. The
+        // delegate's `n` is the same object — unlike a ListView's modelData,
+        // which is a wrapper — so this does match.
         const at = root.rows.findIndex(r => r.n === n)
         if (at < 0) return
         root.rows = root.rows.slice(0, at).concat(root.rows.slice(at + 1))
-        if (n) n.dismiss()
+        close(n)
     }
 
     Rectangle {

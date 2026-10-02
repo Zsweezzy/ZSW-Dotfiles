@@ -19,6 +19,7 @@
 //               switch is just on/off for the app itself.
 //   POWER       sleep, reboot, shutdown.
 import QtQuick
+import QtQuick.Shapes
 import Quickshell
 
 PopupWindow {
@@ -176,6 +177,7 @@ PopupWindow {
         ? { powered: false, devices: [] } : root.pill.bt
     readonly property var btList: root.pill === null ? [] : root.pill.btList
     readonly property bool scanning: root.pill !== null && root.pill.scanning
+    readonly property string btBusy: root.pill === null ? "" : root.pill.btBusy
     readonly property string notice: root.pill === null ? "" : root.pill.notice
     readonly property bool ssidShown: root.pill !== null && root.pill.ssidShown
     readonly property bool ethUp: root.pill !== null && root.pill.ethUp
@@ -366,6 +368,8 @@ PopupWindow {
         /// this component resolve to a string.
         property string status: ""
         property color accent: Tokyo.dim
+        /// replaces the status word with a turning arc, so the row reads as
+        /// working on something rather than as a row with a label on it
         property bool busy: false
         property string glyph: ""
         signal clicked()
@@ -403,9 +407,63 @@ PopupWindow {
         Text {
             id: stateText
             anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-            text: dr.busy ? "…" : dr.status
-            color: dr.busy ? Tokyo.yellow : Tokyo.dim
+            visible: !dr.busy
+            text: dr.status
+            color: Tokyo.dim
             font { family: Tokyo.fontFamily; pixelSize: 10; letterSpacing: 0.8 }
+        }
+
+        // The spinner is a three-quarter arc turning forever, drawn in place of
+        // the status word rather than beside it: this row's right-hand slot is
+        // one piece of state, and a spinner next to a word is two. A bare
+        // ellipsis was the previous answer and it did not read as motion — a
+        // static "…" looks like a label that happens to be truncated.
+        Item {
+            id: spin
+            visible: dr.busy
+            anchors { right: parent.right; rightMargin: 5; verticalCenter: parent.verticalCenter }
+            width: 11
+            height: 11
+
+            // Same legibility reasoning as the gauge ring: a 270° arc is one
+            // long curve, and CurveRenderer plus 4x MSAA keeps its edges smooth
+            // on a surface with no multisampling of its own.
+            Shape {
+                id: ring
+                anchors.fill: parent
+                preferredRendererType: Shape.CurveRenderer
+                layer.enabled: true
+                layer.samples: 4
+
+                readonly property real r: Math.min(ring.width, ring.height) / 2 - 1
+
+                ShapePath {
+                    strokeWidth: 1.6
+                    strokeColor: Tokyo.yellow
+                    fillColor: "transparent"
+                    capStyle: ShapePath.RoundCap
+                    PathAngleArc {
+                        centerX: ring.width / 2
+                        centerY: ring.height / 2
+                        radiusX: ring.r
+                        radiusY: ring.r
+                        startAngle: 90
+                        sweepAngle: 270
+                    }
+                }
+            }
+
+            // RotationAnimator rather than a plain RotationAnimation: this is a
+            // pure transform on an unchanging path, so it stays off the render
+            // thread's sync path and never competes with a panel repaint. Bound
+            // to `running` so a row that stops being busy stops burning frames.
+            RotationAnimator on rotation {
+                from: 0
+                to: 360
+                duration: 900
+                loops: Animation.Infinite
+                running: spin.visible
+            }
         }
         MouseArea {
             id: hover
@@ -878,6 +936,7 @@ PopupWindow {
                               : modelData.paired ? Tokyo.fg : Tokyo.dim
                         status: modelData.connected ? "CONNECTED"
                               : modelData.paired ? "PAIRED" : "NEW"
+                        busy: root.btBusy === modelData.mac
                         onClicked: {
                             if (root.pill !== null)
                                 root.pill.toggleDevice(modelData.mac,

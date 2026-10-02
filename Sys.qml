@@ -26,6 +26,15 @@ Module {
     property real ramTotal: 0       // GB
     property real ramPct: 0         // %
 
+    // disk: free space on / plus the throughput over it. The rates are the
+    // difference between consecutive diskstats samples — see disk.sh for why
+    // the subtraction happens here and not in the script.
+    property real diskFree: 0       // GB
+    property real diskTotal: 0      // GB
+    property real diskPct: 0        // % used
+    property real diskRead: 0       // bytes/s
+    property real diskWrite: 0      // bytes/s
+
     // gpu.sh prints " n/a" on a card with no amdgpu counters, and gpuVram stays
     // 0 there — so the same expression that prints the VRAM figure falls back
     // to the utilization on its own, no second code path.
@@ -61,6 +70,7 @@ Module {
         gpuPoll.refresh()
         cpuPoll.refresh()
         memPoll.refresh()
+        diskPoll.refresh()
     }
 
     // ---------- parsers ----------
@@ -100,6 +110,42 @@ Module {
         }
     }
 
+    /// disk.sh: "718.4|841.1|15|41431857|27052588" — free GB, total GB, used %,
+    /// cumulative sectors read, cumulative sectors written. The rates are the
+    /// difference between the last two samples over the wall time between them,
+    /// so the `refresh()` on open (which is not on the poll boundary) still
+    /// shows the true MB/s instead of a spike or a stall.
+    function applyDisk(out) {
+        const p = String(out).split("|")
+        const free = parseFloat(p[0])
+        if (!isNaN(free)) root.diskFree = free
+        const total = parseFloat(p[1])
+        if (!isNaN(total)) root.diskTotal = total
+        const pct = parseFloat(p[2])
+        if (!isNaN(pct)) root.diskPct = pct
+
+        const sr = parseFloat(p[3])
+        const sw = parseFloat(p[4])
+        const now = Date.now()
+        if (!isNaN(sr) && !isNaN(sw) && root.diskLastSec > 0) {
+            // 512-byte sectors (the diskstats unit, fixed by the kernel ABI),
+            // kept in bytes/s so the flyout can pick its own unit the same way
+            // network-monitor.sh does for the link rates.
+            const dt = (now - root.diskLastSec) / 1000
+            if (dt > 0) {
+                root.diskRead = Math.max(0, (sr - root.diskLastR) * 512 / dt)
+                root.diskWrite = Math.max(0, (sw - root.diskLastW) * 512 / dt)
+            }
+        }
+        root.diskLastR = sr
+        root.diskLastW = sw
+        root.diskLastSec = now
+    }
+
+    property real diskLastR: 0
+    property real diskLastW: 0
+    property real diskLastSec: 0
+
     Poll {
         id: gpuPoll
         command: [Tokyo.scriptDir + "/gpu.sh"]
@@ -117,5 +163,11 @@ Module {
         command: [Tokyo.scriptDir + "/mem.sh"]
         interval: 1000
         onResult: output => root.applyMem(output)
+    }
+    Poll {
+        id: diskPoll
+        command: [Tokyo.scriptDir + "/disk.sh"]
+        interval: 1000
+        onResult: output => root.applyDisk(output)
     }
 }

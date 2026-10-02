@@ -233,10 +233,15 @@ Item {
                     visible: !row.fired
                     anchors {
                         left: parent.left; right: parent.right; bottom: parent.bottom
-                        leftMargin: 4; rightMargin: 4
+                        leftMargin: 0; rightMargin: 0
+                    bottomMargin: 0
                     }
-                    height: 12
+                    height: 18
                     hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton
+                    cursorShape: Qt.SizeHorCursor
+                    preventStealing: true
+                    z: 10
                     // A press is a drag of zero length, so the two handlers
                     // below do the same arithmetic and differ only in that
                     // `pressed` is already true for the second one.
@@ -267,18 +272,7 @@ Item {
                         left: parent.left; right: parent.right
                         leftMargin: 4; rightMargin: 4
                         verticalCenter: parent.verticalCenter
-                        // Lifts the text off the bar. Measured on the offscreen
-                        // pipeline (the one round 3 validated against live),
-                        // row-0 template, at both ends of this change: at
-                        // rowH 36 / offset −2 the "of mm:ss" ink bottom sat at
-                        // row-local 30.0 with the bar's top at 31.0 — 1 px of
-                        // air, exactly what round 3 measured live. At 38 / −4
-                        // the same ink bottom measures 30.0 and the bar's top
-                        // 33.0 — 3 px. A (38 / −2) intermediate read 31.0 /
-                        // 33.0: the taller row moved the ink down 1 px while
-                        // pushing the bar down 2, and the offset −4 pulled
-                        // that pixel back. Bar top is pure arithmetic (rowH − 5).
-                        verticalCenterOffset: -4
+                        verticalCenterOffset: -4   // keeps the bar clear: air measured below
                     }
                     spacing: 8
 
@@ -294,27 +288,72 @@ Item {
                         Layout.fillWidth: true
 
                         Text {
-                            text: row.fired
-                                ? "done"
-                                : TimerState.fmt(TimerState.remainingMs(row.t))
+                            id: nameText
+                            visible: !nameEditBox.visible
+                            text: row.t.name || (row.fired ? "done" : TimerState.fmt(TimerState.remainingMs(row.t)))
                             color: row.accent
-                            font { family: Tokyo.fontFamily; pixelSize: 16; bold: true }
+                            font {
+                                family: Tokyo.fontFamily
+                                pixelSize: row.t.name ? 12 : 16
+                                bold: true
+                            }
+                            elide: Text.ElideRight
+                            width: textColumn.width
+                            MouseArea {
+                                anchors.fill: parent
+                                onDoubleClicked: {
+                                    nameEditField.text = row.t.name || ""
+                                    nameEditBox.visible = true
+                                    nameEditField.forceActiveFocus()
+                                    nameEditField.selectAll()
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            id: nameEditBox
+                            visible: false
+                            height: 22
+                            radius: 4
+                            color: Tokyo.panelFill
+                            border.width: 1
+                            border.color: Tokyo.blue
+                            width: textColumn.width
+                            z: 100
+
+                            Controls.TextField {
+                                id: nameEditField
+                                anchors.fill: parent
+                                color: Tokyo.fg
+                                font { family: Tokyo.fontFamily; pixelSize: 11 }
+                                leftPadding: 4
+                                rightPadding: 4
+                                topPadding: 0
+                                bottomPadding: 0
+                                verticalAlignment: TextInput.AlignVCenter
+                                selectByMouse: true
+                                background: Item {}
+                                activeFocusOnPress: true
+                                focus: nameEditBox.visible
+                                onAccepted: {
+                                    TimerState.rename(row.t.id, nameEditField.text)
+                                    nameEditBox.visible = false
+                                }
+                                onActiveFocusChanged: {
+                                    if (!activeFocus) nameEditBox.visible = false
+                                }
+                            }
                         }
                         Text {
-                            // The same line in every state, on purpose. "paused ·
-                            // of 30:00" measured 91.9 px in the 86.8 px this
-                            // column actually has, so it overhung by 5.1 px into
-                            // the 8 px gap before the buttons — it stopped being
-                            // inside the box it belongs in, and that is all.
-                            // Nothing on the row clips and neither Text elides,
-                            // so every glyph painted; no letter was ever lost.
-                            // It was also the fifth way this row said "paused":
-                            // the big time, the left glyph, the pause button
-                            // and the bar are all yellow already, and the bar
-                            // has to keep that job now that it is draggable.
-                            text: "of " + TimerState.fmt(row.t.totalMs)
+                            text: row.fired
+                                ? "finished  " + TimerState.fmt(row.t.totalMs)
+                                : (row.paused
+                                    ? "paused · of " + TimerState.fmt(row.t.totalMs)
+                                    : TimerState.fmt(TimerState.remainingMs(row.t)) + " · of " + TimerState.fmt(row.t.totalMs))
                             color: Tokyo.trayGlyph
-                            font { family: Tokyo.fontFamily; pixelSize: 9 }
+                            font { family: Tokyo.fontFamily; pixelSize: 10 }
+                            elide: Text.ElideRight
+                            width: textColumn.width
                         }
                     }
 

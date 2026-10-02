@@ -27,8 +27,14 @@ Module {
     fragments: [
         { text: "", color: unread > 0 ? Tokyo.cyan : Tokyo.dim },
         {
-            text: unread > 0 ? (unread > 9 ? "9+" : String(unread)) : "",
-            color: unread > 0 ? Tokyo.cyan : Tokyo.dim,
+            // Hidden, not emptied. An empty string measures the same (35px both
+            // ways — Qt gives a zero-width delegate no spacing), so this is
+            // about the contract rather than the pixels: a fragment that is not
+            // there says so with visible, and nothing has to remember that ""
+            // means gone.
+            visible: unread > 0,
+            text: unread > 9 ? "9+" : String(unread),
+            color: Tokyo.cyan,
         },
     ]
     hPad: unread > 0 ? 10 : 12
