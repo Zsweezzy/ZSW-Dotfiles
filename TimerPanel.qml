@@ -232,17 +232,18 @@ Item {
                 // Every way the box closes goes through here. The obvious way —
                 // the field losing the focus — cannot be relied on for a flyout
                 // close: nothing here can check whether Qt drops item focus when
-                // a popup window is hidden, and whether a leave event still
-                // reaches the grab strip on a surface that is unmapping. So the
-                // host's reset() closes it explicitly for every row instead of
-                // depending on either.
+                // a popup window is hidden. So the host's reset() closes it
+                // explicitly for every row instead of depending on it.
                 function closePrecise() {
                     preciseBox.visible = false
                 }
 
-                // Enter, and only Enter, applies. Everything else — the field
-                // losing focus, or the pointer leaving the strip — closes the
-                // box and throws away whatever was typed.
+                // Enter, and only Enter, applies; losing the focus discards
+                // whatever was typed. The box is opened only by a deliberate
+                // right-click on the strip, which focuses and selects the field
+                // so it can be typed into at once — so it stays up until one of
+                // those two, and nothing about where the pointer goes can close
+                // it under the user's hands.
                 function commitPrecise() {
                     const typed = preciseField.text.trim()
                     row.closePrecise()
@@ -267,6 +268,12 @@ Item {
                 // covers, because a 3 px target is not a target — but the bar
                 // itself keeps its 3 px and stays exactly where it is. This is
                 // an input surface laid over the row, not a resize of it.
+                //
+                // Two gestures live on the one strip, and they are documented
+                // together because they share every handler: the LEFT drag
+                // scrubs the playhead, and a RIGHT-click opens the precise-entry
+                // box above the bar. Both are deliberate — a plain pass of the
+                // pointer now does neither.
                 //
                 // 18 px is the bar's 3 px plus enough slack to be a real target
                 // with a mouse. It also reaches up over the "of mm:ss" line just
@@ -301,7 +308,11 @@ Item {
                     }
                     height: 18
                     hoverEnabled: true
-                    acceptedButtons: Qt.LeftButton
+                    // The right button as well as the left one: the right-click
+                    // opens the precise box, and without it listed here the press
+                    // is never delivered to the item at all. `hoverEnabled` is
+                    // not read for its flag — it is what makes `cursorShape` show.
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
                     cursorShape: Qt.SizeHorCursor
                     preventStealing: true
                     // A press is a drag of zero length, so the two handlers
@@ -316,25 +327,33 @@ Item {
                     // remaining to 0 and fire a running timer — chime and
                     // notification — from a mouse merely crossing the panel.
                     onPressed: (mouse) => {
-                        preciseWait.stop()
+                        // LOAD BEARING, not defensive: a right press sets
+                        // `pressed` exactly as a left one does, so without this
+                        // the right-click would scrub the playhead as well as
+                        // opening the box.
+                        if (mouse.button !== Qt.LeftButton) return
                         row.closePrecise()
                         row.scrubTo(mouse.x)
                     }
-                    onPositionChanged: (mouse) => { if (pressed) row.scrubTo(mouse.x) }
+                    // `mouse.button` is the button that changed, `mouse.buttons`
+                    // the set held down right now — the left bit is set through a
+                    // left drag and is not set during a right press, which is
+                    // what stops a held right button from scrubbing.
+                    onPositionChanged: (mouse) => {
+                        if (pressed && (mouse.buttons & Qt.LeftButton)) row.scrubTo(mouse.x)
+                    }
                     // Release is the only thing that writes. It fires wherever
                     // the button came up — a drag that wandered off the strip
                     // still commits, because the press still owns the grab and
                     // `mouse.x` is the position the user is actually pointing at.
                     onReleased: row.commitScrub()
                     onCanceled: row.cancelScrub()
-                    onEntered: preciseWait.start()
-                    // NOT a drag end. The press holds the grab when the pointer
-                    // leaves, so `released` still arrives and the drag carries
-                    // on outside the strip; clearing here would throw away
-                    // every drag that strayed.
-                    onExited: {
-                        preciseWait.stop()
-                        hoverSettle.restart()
+                    // `clicked` rather than `pressed`, because the press has to
+                    // stay free for the scrub above. It fires for a left click
+                    // too, so the guard is what keeps a left click doing exactly
+                    // what it did — scrub and commit — and not opening the box.
+                    onClicked: (mouse) => {
+                        if (mouse.button === Qt.RightButton) row.openPrecise()
                     }
                 }
 
@@ -515,39 +534,17 @@ Item {
                     }
                 }
 
-                // Precise entry: resting the pointer on the strip for one
-                // second opens a box to type an exact remaining time into. The
-                // delay is what keeps a sweep across several bars from opening
-                // five boxes at once. Deliberately started on the hover and not
-                // on the press, so it can never pop open under a drag.
-                Timer {
-                    id: preciseWait
-                    interval: 1000
-                    onTriggered: row.openPrecise()
-                }
-
-                // The strip and this box touch, and they are two separate
-                // MouseAreas, so whichever one Qt tells first would be a guess.
-                // The leave only schedules this; by the time it runs, both hover
-                // flags have settled and the answer is unambiguous.
-                Timer {
-                    id: hoverSettle
-                    interval: 0
-                    onTriggered: {
-                        if (!grabArea.containsMouse && !boxHover.containsMouse) row.closePrecise()
-                    }
-                }
-
                 Rectangle {
                     id: preciseBox
                     visible: false
                     // Inside the row, above the bar, so it can never reach the
-                    // row above. Its top edge sits on the grab strip's top edge,
-                    // so the two do not overlap and a click inside the box can
-                    // never fall through into a drag. It runs from the row's
-                    // left margin to the text column's right edge, so the whole
-                    // time it is editing is covered while the three buttons past
-                    // that edge stay clickable.
+                    // row above. It does overlap the grab strip's top 6 px, which
+                    // is harmless now the strip has no pointer-leave gesture: the
+                    // field fills the box and sits above the strip, so a press in
+                    // that band lands in the field and not on the playhead. It
+                    // runs from the row's left margin to the text column's right
+                    // edge, so the whole time it is editing is covered while the
+                    // three buttons past that edge stay clickable.
                     //
                     // The right edge is arithmetic rather than
                     // `right: textColumn.right`. The column is placed by the
@@ -607,20 +604,6 @@ Item {
                             if (!activeFocus) row.closePrecise()
                         }
                     }
-
-                    // Hover only, and declared after the field on purpose: put
-                    // it first and the field is above it and takes every event,
-                    // so it would never learn the pointer had left. It must not
-                    // swallow the clicks that put a caret in the field and drag
-                    // out a selection either, which is what `Qt.NoButton` is
-                    // for — it lets the press fall through to the field.
-                    MouseArea {
-                        id: boxHover
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        acceptedButtons: Qt.NoButton
-                        onExited: hoverSettle.restart()
-                    }
                 }
             }
         }
@@ -668,8 +651,7 @@ Item {
         // The precise boxes go too, closed by hand rather than left to the
         // focus loss that normally does it. The rows are reused, not rebuilt, so
         // a `visible: true` here survives into the next opening of the pane —
-        // and whether Qt drops item focus on a hidden popup window, or delivers
-        // a leave event to the grab strip on an unmapping surface, is not
+        // and whether Qt drops item focus on a hidden popup window is not
         // something this code can check. This is: the box is closed either way.
         //
         // `cancelScrub()` is the same argument one step along. Its only caller
