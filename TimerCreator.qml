@@ -1,9 +1,9 @@
 // TimerCreator.qml — "set a new timer": slider + manual entry + Start.
 //
-// The "new timer" block: a readout, a 1-30 min slider, a manual-entry box and a
-// START button. With TimerWindow.qml gone there is one host — ClockFlyout's
-// timers pane — so every size in here is a constant rather than something the
-// host negotiates.
+// The "new timer" block: a readout, a 1-30 min slider, a Name field, a
+// manual-entry box and a START button. With TimerWindow.qml gone there is one
+// host — ClockFlyout's timers pane — so every size in here is a constant rather
+// than something the host negotiates.
 //
 // Deliberately anchored rather than a Column: Qt can polish a positioner before
 // all of its children exist and never polish it again, which left every child
@@ -113,11 +113,15 @@ Item {
     }
 
     // ---------------- name ----------------
+    // Declared above the slider but anchored below it: the order asked for is
+    // length first (readout, slider), then the name, then the precise entry and
+    // START. Anchors, not declaration order, decide where a block is drawn, so
+    // the declaration order is left alone.
     Text {
         id: nameLabel
         anchors {
             left: parent.left
-            top: readout.bottom; topMargin: root.gap
+            top: sld.bottom; topMargin: root.gap
         }
         text: "Name"
         color: Tokyo.trayGlyph
@@ -165,7 +169,7 @@ Item {
         id: sld
         anchors {
             left: parent.left; right: parent.right
-            top: nameField.bottom; topMargin: root.gap
+            top: readout.bottom; topMargin: root.gap
         }
         height: 22
         from: root.minMinutes
@@ -209,7 +213,7 @@ Item {
         id: entryRow
         anchors {
             left: parent.left; right: parent.right
-            top: sld.bottom; topMargin: root.gap
+            top: nameField.bottom; topMargin: root.gap
         }
         spacing: 8
 
