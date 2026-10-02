@@ -199,6 +199,14 @@ Variants {
                 tooltipHost: tip
                 Layout.alignment: Qt.AlignVCenter
             }
+            // Beside the net+power pill and before it, so the machine's power
+            // mode sits next to the switch that turns the machine off. Last on
+            // the right still goes to Settings, keeping its power glyph against
+            // the screen edge.
+            PowerMode {
+                tooltipHost: tip
+                Layout.alignment: Qt.AlignVCenter
+            }
             // The net icons and the power glyph are one pill now: the links the
             // machine is actually on sit next to the switch that changes them.
             // Last on the right, so the power glyph is against the screen edge.
