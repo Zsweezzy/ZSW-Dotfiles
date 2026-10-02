@@ -221,8 +221,14 @@ PopupWindow {
                     required property int index
                     width: list.width
                     height: root.rowH - 4
-                    radius: 6
-                    color: rowHover.containsMouse ? Tokyo.pane : "transparent"
+                    // The toast's card, verbatim, so a row read at a glance is
+                    // the shape it was when it arrived. `panelHover` rather than
+                    // `pane`/`bgHighlight`: Tokyo.qml documents it as the hover
+                    // for a `panelFill` surface.
+                    radius: Tokyo.pillRadius
+                    color: rowHover.containsMouse ? Tokyo.panelHover : Tokyo.panelFill
+                    border.color: Tokyo.paneEdge
+                    border.width: 1
                     Behavior on color { ColorAnimation { duration: 110 } }
 
                     NotifyIcon {

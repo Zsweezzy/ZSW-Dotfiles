@@ -29,9 +29,23 @@ Singleton {
 
     // ---------- bounds (shared by the panel and the pill) ----------
     readonly property int minMinutes: 1
+    /// The SLIDER's range, and only that. The slider is for the short ones —
+    /// a tea break, a stretch — and its readout says so. It is deliberately
+    /// not the ceiling on anything else.
     readonly property int maxMinutes: 30
+    /// The hard ceiling: 24 h. Every writer clamps against `maxMs` below
+    /// (`start`, `retime`, `nudge`, and the creator's `parse`), and it was
+    /// derived from `maxMinutes`, so the slider's 30 was quietly the longest
+    /// timer that could be set at all: typing "45" in the manual box started
+    /// 30:00, because the slider range and the clamp were one number.
+    ///
+    /// It is bigger than the slider on purpose, and `maxMs` follows IT rather
+    /// than `maxMinutes`. Once timers can be longer than half an hour, a clamp
+    /// of 30 minutes would not be a cap but a silent truncation — `+1` on a
+    /// paused 45-minute timer, or on a finished one, would cut it back to 30.
+    readonly property int maxEntryMinutes: 1440
     readonly property int minMs: minMinutes * 60000
-    readonly property int maxMs: maxMinutes * 60000
+    readonly property int maxMs: maxEntryMinutes * 60000
 
     // ---------- state ----------
     property var timers: []
@@ -260,7 +274,12 @@ Singleton {
             const left = Math.max(1000, Math.min(root.maxMs, t.remaining + delta))
             root.replace(id, { remaining: left, totalMs: Math.max(t.totalMs, left) })
         } else {
-            const ends = t.endsAt + delta
+            // The ceiling goes on the DEADLINE, not on the remainder: a running
+            // timer has no remainder to clamp — it has a moment to stop at —
+            // and with `maxMs` at 24 h an unclamped `endsAt` grew by a minute
+            // on every press, forever. With `ends` capped, the total below
+            // cannot exceed `maxMs` either.
+            const ends = Math.min(t.endsAt + delta, root.now + root.maxMs)
             root.replace(id, { endsAt: ends, totalMs: Math.max(t.totalMs, ends - root.now) })
         }
     }

@@ -154,6 +154,35 @@ Item {
                     ? (row.paused ? Tokyo.trayGlyph : Tokyo.green)
                     : (row.paused ? Tokyo.yellow : Tokyo.blue)
 
+                // The drag lives HERE and not in TimerState, and that is the
+                // whole reason scrubbing ever worked at all. `scrub()` writes
+                // through `replace()`, which reassigns `TimerState.timers`, and
+                // `model: TimerState.timers` on the Repeater rebuilds every
+                // delegate on a reassignment — so a scrub called from a press
+                // handler destroyed the very MouseArea holding that press
+                // before the pointer had moved a pixel. Every value the row
+                // shows during a drag therefore comes from `dragMs`, and there
+                // is exactly one write to the state, on release.
+                //
+                // -1 = not dragging, so 0 (a playhead dragged to the end, which
+                // is legitimate) is not mistaken for "no drag".
+                property real dragMs: -1
+                readonly property bool dragging: row.dragMs >= 0
+
+                // What every visible part of the row reads. ONE property, so
+                // the dragged value and the timer's own value cannot disagree:
+                // the big time, the "· of mm:ss" line, the precise box's prefill
+                // and the bar fill are all routed through here rather than
+                // each calling remainingMs() and drifting out of step.
+                readonly property real shownRemainingMs: row.dragging
+                    ? row.dragMs
+                    : TimerState.remainingMs(row.t)
+                // Same value, expressed as the bar's fill. Equals
+                // TimerState.progress() when nothing is being dragged.
+                readonly property real shownProgress: row.t.totalMs > 0
+                    ? Math.max(0, Math.min(1, 1 - row.shownRemainingMs / row.t.totalMs))
+                    : 0
+
                 // x across the grab strip -> how much is left. 0 at the strip's
                 // left edge is nothing left, 1 at its right edge is the whole
                 // total still to run — which is why this is a playhead and not
@@ -161,7 +190,31 @@ Item {
                 function scrubTo(x) {
                     if (grabArea.width <= 0) return
                     const fraction = Math.max(0, Math.min(1, x / grabArea.width))
-                    TimerState.scrub(row.t.id, row.t.totalMs * (1 - fraction))
+                    row.dragMs = row.t.totalMs * (1 - fraction)
+                }
+
+                // The single write, on release. The local value is dropped
+                // FIRST and the number stashed in a local: `scrub()` destroys
+                // this delegate, and there must not be a frame in which the row
+                // is showing a dragged value against a `modelData` that has
+                // already moved on.
+                //
+                // Releasing at the far end writes 0 and the timer fires, which
+                // is right — that is the same thing scrubbing to the end used
+                // to do, one frame earlier.
+                function commitScrub() {
+                    if (!row.dragging) return
+                    const ms = row.dragMs
+                    row.dragMs = -1
+                    TimerState.scrub(row.t.id, ms)
+                }
+
+                // A lost mouse grab (window gone, popup unmapping) means no
+                // release will ever arrive, so the drag is thrown away rather
+                // than left frozen on screen. The 200 ms tick cannot clear it:
+                // nothing the state owns knows this row was ever dragged.
+                function cancelScrub() {
+                    row.dragMs = -1
                 }
 
                 // Prefilled with the time that is LEFT, not the total: that is
@@ -171,7 +224,7 @@ Item {
                 // open of this row with the previous attempt still in it.
                 function openPrecise() {
                     preciseBox.visible = true
-                    preciseField.text = TimerState.fmt(TimerState.remainingMs(row.t))
+                    preciseField.text = TimerState.fmt(row.shownRemainingMs)
                     preciseField.forceActiveFocus()
                     preciseField.selectAll()
                 }
@@ -209,27 +262,37 @@ Item {
                     TimerState.retime(row.t.id, ms)
                 }
 
-                // The playhead's grab area: a 12 px transparent strip on the
+                // The playhead's grab area: an 18 px transparent strip on the
                 // row's bottom edge. It has to be bigger than the 3 px bar it
                 // covers, because a 3 px target is not a target — but the bar
                 // itself keeps its 3 px and stays exactly where it is. This is
                 // an input surface laid over the row, not a resize of it.
                 //
-                // 12 px is the bar's 3 px plus enough slack to be a real target
+                // 18 px is the bar's 3 px plus enough slack to be a real target
                 // with a mouse. It also reaches up over the "of mm:ss" line just
                 // above the bar, which is the band the pointer is aiming at when
                 // it goes for the bar.
                 //
                 // Declared BEFORE the RowLayout on purpose. A later sibling
                 // paints on top and takes the clicks first, so this has to sit
-                // UNDER the three PillButtons: their boxes reach down into the
-                // bottom 3 px of this strip, and a strip on top would quietly
-                // eat that much of their click area.
+                // UNDER the three PillButtons. The overlap is the strip's TOP 6
+                // px: the strip is bottom-anchored, so it occupies row-local
+                // 20..38 in a 38 px row, while the layout centres at 19 - 4 and
+                // the buttons are 22 tall, so they occupy 4..26. So it is the
+                // TOP of this strip that sits under the buttons and the bottom
+                // that hangs free — the strip on top would quietly eat the
+                // bottom 6 px of their click area, right where the playhead
+                // gesture starts.
+                //
+                // So there is deliberately NO `z` here — declaration order is
+                // what puts the buttons first, and this used to carry `z: 10` as
+                // well, which put it straight back on top of them. The two rules
+                // disagreed and the one with the number won.
                 MouseArea {
                     id: grabArea
-                    // A finished timer is locked, and gets no grab area at all.
-                    // `visible: false` is enough to say that — an invisible item
-                    // takes no input either way.
+                    // A finished timer is locked, and gets no grab area and no
+                    // handle at all. `visible: false` is enough to say that — an
+                    // invisible item takes no input either way.
                     visible: !row.fired
                     anchors {
                         left: parent.left; right: parent.right; bottom: parent.bottom
@@ -241,7 +304,6 @@ Item {
                     acceptedButtons: Qt.LeftButton
                     cursorShape: Qt.SizeHorCursor
                     preventStealing: true
-                    z: 10
                     // A press is a drag of zero length, so the two handlers
                     // below do the same arithmetic and differ only in that
                     // `pressed` is already true for the second one.
@@ -259,7 +321,17 @@ Item {
                         row.scrubTo(mouse.x)
                     }
                     onPositionChanged: (mouse) => { if (pressed) row.scrubTo(mouse.x) }
+                    // Release is the only thing that writes. It fires wherever
+                    // the button came up — a drag that wandered off the strip
+                    // still commits, because the press still owns the grab and
+                    // `mouse.x` is the position the user is actually pointing at.
+                    onReleased: row.commitScrub()
+                    onCanceled: row.cancelScrub()
                     onEntered: preciseWait.start()
+                    // NOT a drag end. The press holds the grab when the pointer
+                    // leaves, so `released` still arrives and the drag carries
+                    // on outside the strip; clearing here would throw away
+                    // every drag that strayed.
                     onExited: {
                         preciseWait.stop()
                         hoverSettle.restart()
@@ -290,7 +362,7 @@ Item {
                         Text {
                             id: nameText
                             visible: !nameEditBox.visible
-                            text: row.t.name || (row.fired ? "done" : TimerState.fmt(TimerState.remainingMs(row.t)))
+                            text: row.t.name || (row.fired ? "done" : TimerState.fmt(row.shownRemainingMs))
                             color: row.accent
                             font {
                                 family: Tokyo.fontFamily
@@ -349,7 +421,7 @@ Item {
                                 ? "finished  " + TimerState.fmt(row.t.totalMs)
                                 : (row.paused
                                     ? "paused · of " + TimerState.fmt(row.t.totalMs)
-                                    : TimerState.fmt(TimerState.remainingMs(row.t)) + " · of " + TimerState.fmt(row.t.totalMs))
+                                    : TimerState.fmt(row.shownRemainingMs) + " · of " + TimerState.fmt(row.t.totalMs))
                             color: Tokyo.trayGlyph
                             font { family: Tokyo.fontFamily; pixelSize: 10 }
                             elide: Text.ElideRight
@@ -378,6 +450,7 @@ Item {
 
                 // progress bar
                 Rectangle {
+                    id: progressBar
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom
                               leftMargin: 4; rightMargin: 4; bottomMargin: 2 }
                     height: 3
@@ -386,7 +459,8 @@ Item {
                     radius: height / 2
                     color: Tokyo.bgHighlight
                     Rectangle {
-                        width: parent.width * TimerState.progress(row.t)
+                        id: progressFill
+                        width: parent.width * row.shownProgress
                         height: parent.height
                         radius: parent.radius
                         // A finished timer greys its bar out, because the bar is
@@ -399,10 +473,45 @@ Item {
                             // Off while the pointer has the bar. A 250 ms ease on
                             // a playhead the pointer is driving leaves the bar
                             // trailing behind it and settling somewhere the
-                            // pointer is not.
-                            enabled: !grabArea.pressed
+                            // pointer is not — and it must key off the row's own
+                            // drag property, not `grabArea.pressed`, because the
+                            // displayed width is the row's number during a drag
+                            // and the press alone is no longer what is showing it.
+                            enabled: !row.dragging
                             NumberAnimation { duration: 250; easing.type: Easing.OutQuad }
                         }
+                    }
+
+                    // The handle: where the playhead is. A bar with no handle
+                    // gives the pointer nothing to aim at and nothing to say
+                    // that the strip is draggable at all.
+                    //
+                    // 7 px is what fits without being clipped: the bar is 3 px
+                    // tall on a 2 px bottom margin, so its centre sits 3.5 px
+                    // above the row's bottom edge and a 7 px circle reaches
+                    // exactly down to it inside the 38 px row — the row height
+                    // that the five-rows-in-227 budget in `rowH` spends, so
+                    // nothing here may claim a pixel more of it. Vertically it
+                    // therefore also stays clear of the PillButtons, which end
+                    // some 8 px higher.
+                    //
+                    // `x` is bound to the FILL's width rather than recomputing
+                    // the fraction, because that width is what `Behavior on
+                    // width` animates: read the fill and the handle rides the
+                    // same easing when the timer ticks, and with the Behavior
+                    // switched off during a drag it tracks the pointer exactly.
+                    // Clamped so the circle stays inside the bar at both ends.
+                    Rectangle {
+                        id: progressHandle
+                        visible: !row.fired
+                        width: 7
+                        height: 7
+                        radius: width / 2
+                        y: (parent.height - height) / 2
+                        x: Math.max(0, Math.min(parent.width - width, progressFill.width))
+                        color: row.dragging ? Tokyo.fg : row.accent
+                        border.width: 1
+                        border.color: Tokyo.bgDark
                     }
                 }
 
@@ -562,9 +671,16 @@ Item {
         // and whether Qt drops item focus on a hidden popup window, or delivers
         // a leave event to the grab strip on an unmapping surface, is not
         // something this code can check. This is: the box is closed either way.
+        //
+        // `cancelScrub()` is the same argument one step along. Its only caller
+        // is `onCanceled`, so a drag abandoned by an unmapping surface — a
+        // grab loss nothing here can observe — would leave the row showing a
+        // dragged value with the width Behavior disabled, frozen at it until
+        // the next press.
         for (let i = 0; i < rows.count; ++i) {
             const item = rows.itemAt(i)
             if (item) item.closePrecise()
+            if (item) item.cancelScrub()
         }
     }
 }

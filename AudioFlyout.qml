@@ -503,7 +503,7 @@ PopupWindow {
 
                         Text {
                             width: parent.width - 40
-                            text: "Up to 150%"
+                            text: "Allow volume to go up to 150%"
                             elide: Text.ElideRight
                             color: root.overboost ? Tokyo.cyan : Tokyo.fg
                             font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize }
