@@ -62,12 +62,11 @@ Item {
     Rectangle {
         id: card
         width: parent.width
-        // The taller of the icon and the text block, plus the action row when
-        // there is one, plus the padding either side. Derived from the text
-        // rather than guessed at, so a four-line body grows the card instead of
-        // spilling out of it.
+        // The taller of the icon and the text block, plus the padding either
+        // side. Derived from the text rather than guessed at, so a four-line
+        // body grows the card instead of spilling out of it.
         height: 20 + Math.max(40, textCol.implicitHeight)
-        radius: Tokyo.pillRadius
+        radius: Tokyo.popupRadius
         color: Tokyo.panelFill
         border.color: Tokyo.paneEdge
         border.width: 1

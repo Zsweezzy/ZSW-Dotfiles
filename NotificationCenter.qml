@@ -133,8 +133,16 @@ PopupWindow {
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
         height: content.implicitHeight + root.padV * 2
         color: Tokyo.bgDark
-        radius: Tokyo.pillRadius
-        border.color: Qt.lighter(box.color, 1 + 0.25 * root.t)
+        radius: Tokyo.popupRadius
+        // A distinct 1px outline, like the launcher panel's. `paneEdge` rather
+        // than a `Qt.lighter` of our own fill: `box.color` is `bgDark`
+        // (#16161e), so lightening it by 1.25 lands near #1f1f29 — an outline
+        // nine units off the fill it borders, i.e. nothing — and `paneEdge` is
+        // exactly what it is for, a card reads as a card because of its outline
+        // and an outline at rule strength is lost in the fill beside it. The
+        // reveal still fades in on `opacity: root.t`, so nothing is lost by the
+        // border no longer tracking the open animation.
+        border.color: Tokyo.paneEdge
         border.width: 1
         opacity: root.t
         // Rises the last 8px up into the pill it hangs from, fading as it goes.
@@ -221,10 +229,15 @@ PopupWindow {
                     required property int index
                     width: list.width
                     height: root.rowH - 4
-                    // The toast's card, verbatim, so a row read at a glance is
-                    // the shape it was when it arrived. `panelHover` rather than
-                    // `pane`/`bgHighlight`: Tokyo.qml documents it as the hover
-                    // for a `panelFill` surface.
+                    // Deliberately still `pillRadius`, not the slab's own
+                    // `popupRadius`: this row is an inner surface nested inside
+                    // the panel, which is the relationship the launcher already
+                    // has between `.launcher-panel` (20px) and its `.result-row`
+                    // (12px) inside `.result-list`. A row that matched the slab's
+                    // own corner radius would stop reading as a widget sitting in
+                    // a panel and start reading as a second, smaller slab.
+                    // `panelHover` rather than `pane`/`bgHighlight`: Tokyo.qml
+                    // documents it as the hover for a `panelFill` surface.
                     radius: Tokyo.pillRadius
                     color: rowHover.containsMouse ? Tokyo.panelHover : Tokyo.panelFill
                     border.color: Tokyo.paneEdge

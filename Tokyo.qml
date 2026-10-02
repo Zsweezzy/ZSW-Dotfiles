@@ -119,6 +119,18 @@ Singleton {
     // for exactly that reason; at 10 and 10 the corner does not animate.
     readonly property int pillRadius: 10
     readonly property int panelRadius: 10
+    // popupRadius is the one surface radius that is not a Hyprland window: it is
+    // the corner of a standalone floating slab — the toast card, the
+    // notification centre's panel — which the user's own popups already draw at
+    // 20px, the `border-radius` of the SUPER+K launcher panel and the SUPER+N
+    // notepad. Those two float free of the bar, so they are allowed to be a
+    // shape rather than a continuation of it, and at 10 they read as a bar
+    // fragment that happened to drift. It is a separate token rather than a
+    // bigger pillRadius because the reverse also matters: anything nested
+    // *inside* one of these slabs — a notification row in the centre, an entry
+    // in the launcher's list — keeps pillRadius, so the pair still steps down
+    // from slab to widget the way the launcher steps from 20 to 12.
+    readonly property int popupRadius: 20
     readonly property real pillMarginV: 4
     readonly property real pillHeight: barHeight - pillMarginV * 2 // 26
     readonly property real pillHPad: 12                           // padding: 0 12px
