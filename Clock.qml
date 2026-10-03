@@ -27,7 +27,6 @@ Module {
 
     fg: Tokyo.fg
     hoverStyle: true                       // it opens a flyout
-    interactive: true
     /// shared ClockFlyout (Bar.qml) — may be null in previews
     property var flyoutHost: null
 
