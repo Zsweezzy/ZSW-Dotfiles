@@ -105,6 +105,7 @@ Variants {
             id: toast
             store: barRoot.notifications
             anchorItem: toastAnchor
+            screenName: win.screen.name
         }
 
         // ---------- left ----------

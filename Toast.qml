@@ -15,7 +15,6 @@
 // rather than its top-left.
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 
 PopupWindow {
     id: root
@@ -29,6 +28,9 @@ PopupWindow {
     property var store: null
     /// the bar's zero-size top-right corner marker (Bar.qml: toastAnchor)
     property var anchorItem: null
+    /// the bar window's own screen name, handed in by Bar.qml. Not read back
+    /// off `root.screen`, which is this popup's — and does not exist yet.
+    property string screenName: ""
     /// how many rows fit before the stack is trimmed
     property int maxRows: 4
     /// how long a row stays after it arrives, in ms. 0 = until dismissed.
@@ -44,13 +46,16 @@ PopupWindow {
 
     // There is one Toast per bar window and one notification per arrival, so
     // without this every monitor's stack would show the same toast at once. The
-    // window on the focused monitor takes it and the rest ignore it. The
-    // fallback is the first screen, so a notification arriving before Hyprland
-    // has reported a focus still lands somewhere.
-    readonly property string wantScreen: Hyprland.focusedMonitor !== null
-        ? Hyprland.focusedMonitor.name
-        : (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "")
-    readonly property bool mine: root.screen !== null && root.screen.name === root.wantScreen
+    // bar whose screen has focus takes it and the rest ignore it.
+    //
+    // Compared against the bar's screen name, not this popup's own `screen`.
+    // A PopupWindow has no QWindow at all until it first becomes visible, and
+    // with no window `screen` reports the primary screen — so every Toast in
+    // the shell reads DP-1 here until something has already been pushed. Gating
+    // on that made the first push a coin toss: with focus anywhere but DP-1 no
+    // Toast matched itself, nothing was pushed, nothing ever became visible,
+    // and the notification was silently dropped on every monitor.
+    readonly property bool mine: root.screenName === Focus.monitorName
 
     readonly property real padH: 12
     readonly property real padV: 10
