@@ -166,25 +166,23 @@ PopupWindow {
     /// 462-wide gap, so there is nothing for the overlap to land on.
     readonly property real drop: root.pillH
     /// The fillet at the joint: how far the panel's top edge sweeps up the
-    /// widget's side before it becomes the widget's side. Bounded by the
-    /// widget's own straight left side — a `pillRadius` round rect of height
-    /// `drop` has straight sides only from `pillRadius` to `drop - pillRadius`,
-    /// and the arc's tangent point has to land in that run or it starts on a row
-    /// that is already curving and kinks. `drop - pillRadius` is therefore the
-    /// largest arc that fits, and at its tangent point the fillet meets the
-    /// widget's own corner exactly where that corner becomes vertical, so the
-    /// two arcs join without a break.
+    /// widget's side before it becomes the widget's side. Capped by
+    /// `panelRadius` so every corner on the resting flyout wears one number —
+    /// `drop - pillRadius` (16) is the largest arc that *fits* the widget's
+    /// straight run, but it is larger than any other corner, so the two arcs
+    /// nearest the eye disagreed with the four that framed them. 10 still lands
+    /// inside that run (10..16) and still meets the widget's own corner where it
+    /// turns vertical.
     ///
-    /// Capped by the shape's own top edge, and that cap is the whole trick: the
-    /// arc is drawn tangent to the *live* edge rather than to the edge's final
-    /// resting place, so the widget's side, the fillet and the top edge are one
-    /// continuous outline at every value of `t` and not only at t=1. A fillet
-    /// pinned to the resting place and faded in at the end is the same silhouette
-    /// for the 150ms in between, hanging above an edge that is still six rows
-    /// below where it will end up. The cap degenerates the fillet to a point at
-    /// t=0, so it needs no opacity of its own, and 0.1 rather than 0 because an
-    /// SVG arc with a zero radius is not a legal path.
-    readonly property real fillet: Math.max(0.1, Math.min(root.drop - Tokyo.pillRadius, shape.y))
+    /// The `shape.y` cap is the rest of the trick: the arc is drawn tangent to the
+    /// *live* top edge rather than to its final resting place, so the widget's
+    /// side, the fillet and the edge are one continuous outline at every value of
+    /// `t` and not only at t=1. A fillet pinned to the resting place and faded in
+    /// at the end is the same silhouette for the ~100ms in between, hanging above
+    /// an edge that is still six rows short of it. The cap degenerates the fillet
+    /// to a point at t=0, so it needs no opacity of its own, and 0.1 rather than
+    /// 0 because an SVG arc with a zero radius is not a legal path.
+    readonly property real fillet: Math.max(0.1, Math.min(Tokyo.panelRadius, shape.y))
     /// How far the shape's top edge has come down over the widget's own bottom
     /// corner, 0..1 — which is how much of the corner is uncovered and so how
     /// much of the patch that squares it has to be at full strength. Reads the
@@ -228,7 +226,9 @@ PopupWindow {
 
     // ---------------- data ----------------
 
-    /// local wall clock. Drives every date/time line and the boot timestamp.
+    /// Local wall clock, and the fallback for `clock` when no bar handed over a
+    /// pill. Reads it directly and nothing else should: its timer only runs in
+    /// that case, so outside a standalone preview this value never advances.
     property var now: new Date()
 
     /// [{ label, clock, delta, abbrev }] — the extra zones, from clock-panel.sh
@@ -238,12 +238,23 @@ PopupWindow {
 
     // One tick for the whole flyout. A timer per block would let the clock, the
     // date and the uptime disagree about what time it is for up to a second.
+    // Only while it is actually the source of truth, though — see `clock`.
     Timer {
         interval: 1000
         repeat: true
-        running: true
+        running: root.pill === null
         onTriggered: root.now = new Date()
     }
+
+    /// The one clock this panel reads, for every date and time line in it.
+    /// The face below already had to take the pill's `now` (see there), so
+    /// without this the panel's own seconds and the face's seconds come from two
+    /// timers: two timers start at two instants, so they tick on different
+    /// phases against the wall-clock second and can be a full second apart —
+    /// and both are on screen together for the whole of the morph, one inside
+    /// the pill and one inside the panel. The pill owns the clock whenever there
+    /// is one, so the fallback timer above does not run in the real shell at all.
+    readonly property var clock: root.pill !== null ? root.pill.now : root.now
 
     // clock-panel.sh prints "<uptime-secs>|<CityCode>\tHH:MM:SS\t<delta>\t<abbrev>|…"
     // on a single line, so SplitParser hands the whole thing over at once.
@@ -287,7 +298,7 @@ PopupWindow {
 
     /// When the machine came up, derived rather than read: boot = now - uptime.
     readonly property var booted: root.upSecs > 0
-        ? new Date(root.now.getTime() - root.upSecs * 1000)
+        ? new Date(root.clock.getTime() - root.upSecs * 1000)
         : null
 
     // ---------------- date helpers ----------------
@@ -411,19 +422,30 @@ PopupWindow {
         timerPanel.reset()
     }
 
-    // One curve, both directions. The fly-in is the fly-out played backwards:
-    // OutQuart over 200 ms, which is exactly the time-reverse of the InQuart
-    // 200 ms below. The panel therefore looks the same going up as coming down
-    // — the same motion, reversed — instead of opening on a springy overshoot
-    // that the close never had, which read as the panel being *placed* rather
-    // than *drawn out of the pill*.
+    // One curve, both directions, and the spring is only on the way IN.
+    // Two stages, which is what the `SequentialAnimation` is for: out to 1.04,
+    // then back to 1. The overshoot is most of the difference between "grew" and
+    // "was replaced" — it is the only thing telling the eye this was one
+    // rectangle the whole way. This was a single `NumberAnimation` to exactly 1,
+    // which is what made the morph read as wonky: it decelerated into a dead stop
+    // at its final size and looked placed rather than drawn. Every `min(1, t)`
+    // and clamped mix downstream already assumed the 1.04 and had nothing to
+    // clamp; `room` is still sized for it. The close is the reverse of the open,
+    // InQuart 200 ms with no overshoot, so the panel looks the same going up as
+    // coming down instead of springing out of the door it was just let in by.
     SequentialAnimation {
         id: openAnim
         NumberAnimation {
             target: root; property: "t"
-            from: 0; to: 1
-            duration: 200
+            from: 0; to: 1.04
+            duration: 180
             easing.type: Easing.OutQuart
+        }
+        NumberAnimation {
+            target: root; property: "t"
+            to: 1
+            duration: 120
+            easing.type: Easing.OutQuad
         }
     }
 
@@ -547,8 +569,8 @@ PopupWindow {
     //
     // Neither piece is faded in, and that is the part that took the thinking.
     // The joint's resting place is a constant and the morph moves the top edge
-    // for 150ms, so anything drawn at the resting place and faded in at the end
-    // spends those 150ms hovering above an edge that is still six rows short of
+    // for ~100ms, so anything drawn at the resting place and faded in at the end
+    // spends those ~100ms hovering above an edge that is still six rows short of
     // it — the shoulder comes in as a wedge hanging in the bar, which is the
     // silhouette this whole arrangement exists to lose, only fainter. Tied to
     // the edge instead, both pieces are simply *at* the joint in every frame:
@@ -894,7 +916,7 @@ PopupWindow {
                                     left: parent.left; right: parent.right
                                     top: timeLabel.bottom; topMargin: 5
                                 }
-                                text: Qt.formatDateTime(root.now, "HH:mm:ss")
+                                text: Qt.formatDateTime(root.clock, "HH:mm:ss")
                                 color: Tokyo.fg
                                 font { family: Tokyo.fontFamily; pixelSize: 28; bold: true; letterSpacing: 0.5 }
                                 elide: Text.ElideRight
@@ -1040,7 +1062,7 @@ PopupWindow {
                                     left: parent.left; right: parent.right
                                     top: dateLabel.bottom; topMargin: 5
                                 }
-                                text: Qt.formatDateTime(root.now, "dddd")
+                                text: Qt.formatDateTime(root.clock, "dddd")
                                 color: Tokyo.fg
                                 font { family: Tokyo.fontFamily; pixelSize: 24; bold: true }
                                 elide: Text.ElideRight
@@ -1052,7 +1074,7 @@ PopupWindow {
                                     left: parent.left; right: parent.right
                                     top: weekday.bottom; topMargin: 3
                                 }
-                                text: Qt.formatDateTime(root.now, "dd MMMM yyyy")
+                                text: Qt.formatDateTime(root.clock, "dd MMMM yyyy")
                                 color: Tokyo.fg
                                 font { family: Tokyo.fontFamily; pixelSize: 14 }
                                 elide: Text.ElideRight
@@ -1067,9 +1089,9 @@ PopupWindow {
                                     left: parent.left; right: parent.right
                                     top: fullDate.bottom; topMargin: 3
                                 }
-                                text: Qt.formatDateTime(root.now, "dd.MM.yyyy")
-                                    + "  ·  week " + root.weekNumber(root.now)
-                                    + "  ·  " + root.moonPhase(root.now)
+                                text: Qt.formatDateTime(root.clock, "dd.MM.yyyy")
+                                    + "  ·  week " + root.weekNumber(root.clock)
+                                    + "  ·  " + root.moonPhase(root.clock)
                                 color: Tokyo.trayGlyph
                                 font { family: Tokyo.fontFamily; pixelSize: 10 }
                                 elide: Text.ElideRight
@@ -1186,7 +1208,7 @@ PopupWindow {
         y: 0
         width: root.pillW
         height: root.pillH
-        now: root.pill !== null ? root.pill.now : root.now
+        now: root.clock
         glyphMix: root.glyphMix
         // The same latched hover the shape's fill uses, for the same reason: the
         // face is cyan on the hovered pill in the bar, and it must not come back

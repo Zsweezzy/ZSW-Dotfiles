@@ -60,7 +60,13 @@ Item {
         anchors.centerIn: parent
         width: root.contentW
         height: 25
-        opacity: 1 - root.glyphMix
+        // Half the `glyphMix` range. The two looks are not variants of each
+        // other — stacked digits against one centred glyph — so dissolving them
+        // through each other spends the middle of the morph at 50% of both, and
+        // what that reads as is ghosting. Each gets half the range and they hand
+        // over at 0, where the outgoing face is gone before the incoming one is
+        // visible at all. Same total duration, no overlap.
+        opacity: 1 - Math.min(1, root.glyphMix * 2)
         // Off at exactly 0, so the last frame of a fade is the same as no item.
         visible: opacity > 0
 
@@ -70,6 +76,7 @@ Item {
             width: parent.width
             height: 15
             verticalAlignment: Text.AlignVCenter
+            horizontalAlignment: Text.AlignHCenter
             text: Qt.formatDateTime(root.now, "HH:mm:ss")
             // Cyan on hover, like every other label in the bar. The date does
             // not follow it: a 9 px line changing shade under a 13 px one that
@@ -93,6 +100,11 @@ Item {
             width: parent.width
             height: 10
             verticalAlignment: Text.AlignVCenter
+            // Centred, and the reason is `contentW`: the box is as wide as the
+            // *widest* of the three looks, and the readings fill it. The date is
+            // 9px against the time's 13px bold, so left-aligned it sat ~4px left
+            // of centre — measurably off, and only against the time above it.
+            horizontalAlignment: Text.AlignHCenter
             text: Qt.formatDateTime(root.now, "ddd dd MMM")
             color: Tokyo.trayGlyph
             font {
@@ -111,7 +123,9 @@ Item {
         id: glyph
         anchors.centerIn: parent
         text: Tokyo.clockGlyph
-        opacity: root.glyphMix
+        // The other half of `glyphMix`, offset so this starts where `readings`
+        // finishes: zero together, never partial together.
+        opacity: Math.max(0, (root.glyphMix - 0.5) * 2)
         visible: opacity > 0
         color: root.hovered ? Tokyo.cyan : Tokyo.fg
         font {
