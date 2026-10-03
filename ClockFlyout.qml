@@ -146,6 +146,19 @@ PopupWindow {
     /// click-to-close strip is never sitting over a row the panes can be pressed
     /// on. See there.
     readonly property real contentIn: 0.35
+    /// One arrival's slice of the morph: 0 before `from`, 1 after `to`.
+    ///
+    /// `panel` spends 0.35..0.85 fading in as a single wash, which is why the
+    /// open reads as "a panel appeared" rather than "this filled up": every
+    /// consumer up to now has had all of it or none of it at the same instant.
+    /// Handing each thing its own slice of the same `t` costs one function and
+    /// buys separate beats — the panes resolve one after the other, and the
+    /// clock pane's three blocks resolve one after the other inside its pane.
+    /// Every slice stays inside the panel's own 0.35..0.85 fade, so nothing
+    /// pops in after the shape has stopped being transparent.
+    function ramp(from, to) {
+        return Math.max(0, Math.min(1, (root.t - from) / (to - from)))
+    }
     // The pill's *implicit* width, not its `width`. The bar's layout is free to
     // leave whatever it likes in `width`, and the shape's closed end has to be
     // the pill's own idea of how wide it is rather than one layout pass's idea.
@@ -812,6 +825,8 @@ PopupWindow {
                     accent: Tokyo.magenta
                     Layout.preferredWidth: root.cellW
                     Layout.preferredHeight: root.cellH
+                    opacity: root.ramp(0.42, 0.82)
+                    transform: Translate { y: (1 - root.ramp(0.42, 0.82)) * 8 }
 
                     // The two bulk controls ride in the title row, the one place a
                     // cell gets for something that is not the cell's own content.
@@ -877,6 +892,8 @@ PopupWindow {
                     accent: Tokyo.blue
                     Layout.preferredWidth: root.cellW
                     Layout.preferredHeight: root.cellH
+                    opacity: root.ramp(0.50, 0.90)
+                    transform: Translate { y: (1 - root.ramp(0.50, 0.90)) * 8 }
 
                     // Three blocks stacked in one pane, in the order they are asked
                     // for: what time is it (here and elsewhere), what day is it,
@@ -895,6 +912,8 @@ PopupWindow {
                         Item {
                             id: timeBlock
                             anchors { left: parent.left; right: parent.right; top: parent.top }
+                            opacity: root.ramp(0.54, 0.86)
+                            transform: Translate { y: (1 - root.ramp(0.54, 0.86)) * 6 }
                             // measured off the last child, never an implicit height:
                             // the blocks are plain Items, so an unset `height` would
                             // make `bottom` collapse onto `top` and the next block
@@ -1045,6 +1064,8 @@ PopupWindow {
                                 left: parent.left; right: parent.right
                                 top: timeBlock.bottom; topMargin: 14
                             }
+                            opacity: root.ramp(0.60, 0.92)
+                            transform: Translate { y: (1 - root.ramp(0.60, 0.92)) * 6 }
                             readonly property real tail: isoDate.y + isoDate.height
                             height: tail
 
@@ -1105,6 +1126,8 @@ PopupWindow {
                                 left: parent.left; right: parent.right
                                 top: dateBlock.bottom; topMargin: 14
                             }
+                            opacity: root.ramp(0.66, 0.98)
+                            transform: Translate { y: (1 - root.ramp(0.66, 0.98)) * 6 }
                             readonly property real tail: daysLine.y + daysLine.height
                             height: tail
 
