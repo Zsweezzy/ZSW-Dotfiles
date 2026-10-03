@@ -612,9 +612,14 @@ Item {
         // directly below the list when it is not. A `y` binding rather than a
         // `top` anchor because this needs *two* branches and an anchor bound to
         // a conditional keeps the value it was first given.
+        //
+        // `.y + .height`, not `.bottom`: `Item.bottom` is not a property at all,
+        // so it reads as `undefined`, `undefined + gap` is NaN, and the rule —
+        // plus `creator.y`, which chains off it — lands nowhere. The same trap
+        // cost the toast its whole text column once.
         y: root.pinFormToBottom
             ? creator.y - root.gap - 1
-            : rowsArea.bottom + root.gap
+            : rowsArea.y + rowsArea.height + root.gap
     }
 
     TimerCreator {
