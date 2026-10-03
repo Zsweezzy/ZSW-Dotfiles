@@ -1,6 +1,5 @@
 // NetworkMonitor.qml — shared per-adapter counters and latency snapshots.
 import QtQuick
-import Quickshell.Io
 
 Item {
     id: root

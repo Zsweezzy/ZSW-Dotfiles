@@ -371,7 +371,7 @@ PopupWindow {
                         id: phoneTip
                         width: tipText.width + 20
                         height: tipText.height + 20
-                        radius: 8
+                        radius: Tokyo.pillRadius
                         color: Tokyo.bgDark
                         border.color: Tokyo.bgHighlight
                         border.width: 1
