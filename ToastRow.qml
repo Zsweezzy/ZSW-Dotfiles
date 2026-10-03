@@ -29,11 +29,7 @@ Item {
     ///
     /// Required, not assigned. When a Repeater's model is an array of objects,
     /// QML fills a delegate's required properties from the matching key — so
-    /// `[{n: notification}]` fills this with no expression in between. Every
-    /// other way of handing the notification to the delegate was tried and
-    /// none of them survived: a `modelData.n` binding evaluated to null as
-    /// soon as the row was on screen, which showed as a toast with an icon and
-    /// no text at all.
+    /// `[{n: notification}]` fills this with no expression in between.
     required property var n
     /// the store, for the icon map
     property var store: null
@@ -107,7 +103,12 @@ Item {
             x: 62
             y: 10
             // Stops short of the × rather than running the summary under it.
-            width: dismiss.left - x - 6
+            // `.x`, not `.left`: in this Qt build Item.left is a QQuickAnchorLine
+            // object, not a number, so the arithmetic below went NaN, the width
+            // became 0, and every glyph in the column silently vanished — a card
+            // with an icon and a × and no text. `.x` is the plain number, and it
+            // is in the same card-relative space as `x`, so the two subtract.
+            width: dismiss.x - x - 6
             spacing: 2
 
             Text {
