@@ -22,9 +22,13 @@ PopupWindow {
     property var pill: null
 
     readonly property real gap: 6
-    readonly property real padH: 16
-    readonly property real padV: 14
+    readonly property real padH: 8
+    readonly property real padV: 8
     readonly property real cell: 132
+    /// air between two dials. The card's width reserves room for it AND the
+    /// Row spends it — one number, so the dials can't drift off-centre from
+    /// the DISK strip and PROCESSES card, which both span the full width.
+    readonly property real cellGap: 8
     /// air between the dials and the strip, and the strip's own height
     readonly property real diskGap: 12
     readonly property real diskH: 40
@@ -86,7 +90,7 @@ PopupWindow {
 
     onVisibleChanged: if (!root.visible) root.disarm()
 
-    implicitWidth: root.cell * 3 + root.padH * 2
+    implicitWidth: root.cell * 3 + root.cellGap * 2 + root.padH * 2
     implicitHeight: box.height + root.gap
 
     function toggleFor(item) {
@@ -116,7 +120,7 @@ PopupWindow {
                 left: parent.left; top: parent.top
                 leftMargin: root.padH; topMargin: root.padV
             }
-            spacing: 8
+            spacing: root.cellGap
 
             // ---------- gpu: ring = utilization, middle = VRAM allocated ----------
             Column {
