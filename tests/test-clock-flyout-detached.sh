@@ -159,25 +159,23 @@ need("clip" not in scrub["ClockFace.qml"],
 need("QtQuick.Shapes" not in raw["ClockFace.qml"],
      "criterion 6: ClockFace.qml no longer imports QtQuick.Shapes")
 
-# Every animation *type* that can move something. An earlier version of this list
-# named four and stopped, which left the door open for the fifth: a `states` block
-# with a `Transition` over a `SpringAnimation` is the same slide the other four
-# were, and it was the shape a re-added morph is most likely to take — a state
-# machine is how you write one when you are not thinking about the ban list. So
-# the rule is by capability rather than by name: of every animation type in the
-# three files, the only one allowed is `ColorAnimation`, and a `Transition` or a
-# `states` block is banned outright. A colour tween cannot move a face; a
-# `ColorAnimation` on anything but `color` would, which is why the `Behavior on`
-# property is checked by name immediately below. Checked on scrubbed code — these
-# are type names, and a comment that merely discusses them is not a defect.
+# ---- criterion 3: what animation is allowed, and what it may touch ----
+# The morph is gone. The open is not: the panel slides down into place and fades
+# up, on an inner Item, in 150 ms. That is one deliberate exception, and it is
+# pinned by target and property rather than permitted by type — "no
+# NumberAnimation anywhere in the flyout" is the rule that has to be relaxed to
+# allow this one, and relaxing a ban list by type is precisely how the slide (and
+# then the morph behind it) comes back.
+#
+# Still banned in every file, by capability rather than by name: `states`, and
+# `Transition`, and anything that is not the one allowed tween. Those three are
+# how a morph gets written when nobody is thinking about the ban list — a state
+# machine with a spring under it is the same slide, wearing a different hat.
+#
+# Still banned in the faces, without exception: any animation that is not a
+# colour tween. A face must never move. A `ColorAnimation` on anything but
+# `color` could, which is why the `Behavior on` property is checked by name.
 for f in FILES:
-    every = re.findall(r"\w*Animation", scrub[f])
-    colours = re.findall(r"\bColorAnimation\b", scrub[f])
-    need(len(every) == len(colours),
-         "criterion 3: every animation in %s is a colour tween (%d of type(s), "
-         "%d ColorAnimation; %s)"
-         % (f, len(every), len(colours),
-            ", ".join(sorted(set(every) - set(colours))) or "none"))
     need("Transition" not in scrub[f],
          "criterion 3: %s has no Transition — a state machine is how the morph "
          "comes back" % f)
@@ -185,6 +183,15 @@ for f in FILES:
          "criterion 3: %s has no states block" % f)
     need(re.search(r"Behavior on (?!color)\w+", scrub[f]) is None,
          "criterion 3: every remaining Behaviour in %s is on color" % f)
+
+for f in ("ClockFace.qml", "Clock.qml"):
+    every = re.findall(r"\w*Animation", scrub[f])
+    colours = re.findall(r"\bColorAnimation\b", scrub[f])
+    need(len(every) == len(colours),
+         "criterion 3: every animation in %s is a colour tween (%d of type(s), "
+         "%d ColorAnimation; %s)"
+         % (f, len(every), len(colours),
+            ", ".join(sorted(set(every) - set(colours))) or "none"))
 
 # ---- criterion 3: whatever Behaviour is left, and its figure ----
 # `Behavior on color` is allowed (hovering a face changes the ink in 120 ms), but
@@ -204,10 +211,191 @@ need(not over,
      "criterion 3: no Behaviour over 120ms (%s)"
      % ", ".join("%s %sms" % (f, d) for f, _, d in over) or "none")
 
-# ---- criterion 3: open and close are one assignment ----
+# ---- criterion 3: the reveal, pinned by target, property and figure ----
+# One number drives everything: `t` runs 0 shut to 1 open, and the Item's `y` and
+# `opacity` are both expressions of it. So the panel slides and fades as one
+# gesture, and there is exactly one animation per direction rather than two that
+# could disagree about where the panel is. The figures are the sibling panels'
+# (SettingsFlyout.qml:83-106), which is what "just backwards" means — InQuart is
+# OutQuart run in reverse, over a shorter window.
 fl = scrub["ClockFlyout.qml"]
-need(re.search(r"root\.visible = !root\.visible", fl) is not None,
-     "criterion 3: open/close is `visible = !visible`")
+tweens = re.findall(r"NumberAnimation\s*\{([^{}]*)\}", fl)
+kinds = set(re.findall(r"\w*Animation", fl))
+need(kinds <= {"NumberAnimation", "SequentialAnimation"},
+     "criterion 3: the flyout's only animation types are NumberAnimation and the "
+     "container that runs them in turn (%s)"
+     % (", ".join(sorted(kinds)) or "none"))
+need(len(tweens) == 2,
+     "criterion 3: one tween per direction — the open and the close (%d)"
+     % len(tweens))
+
+pairs = []
+for t in tweens:
+    tgt = re.search(r"target:\s*(\w+)", t)
+    prop = re.search(r'property:\s*"([\w.]+)"', t)
+    pairs.append("%s.%s" % (tgt.group(1), prop.group(1))
+                 if tgt and prop else "unreadable")
+need(pairs == ["root.t", "root.t"],
+     "criterion 3: both tweens drive `root.t` and nothing else (%s)"
+     % ", ".join(pairs))
+
+
+def easing(t):
+    m = re.search(r"easing\.type:\s*Easing\.(\w+)", t)
+    return m.group(1) if m else None
+
+
+def dur(t):
+    m = re.search(r"duration:\s*(\d+)", t)
+    return int(m.group(1)) if m else None
+
+
+opens = [t for t in tweens if easing(t) == "OutQuart"]
+closes = [t for t in tweens if easing(t) == "InQuart"]
+need(len(opens) == 1 and len(closes) == 1,
+     "criterion 3: exactly one OutQuart open and one InQuart close (%d/%d)"
+     % (len(opens), len(closes)))
+
+if opens:
+    o = opens[0]
+    need(dur(o) == 260,
+         "criterion 3: the open is 260ms — the sibling panels' figure (%s)"
+         % dur(o))
+    need(re.search(r"from:\s*0\s*;", o) is not None
+         and re.search(r"to:\s*1\b", o) is not None,
+         "criterion 3: the open runs t 0 -> 1, with `from:` stated rather than "
+         "inherited")
+if closes:
+    c = closes[0]
+    need(dur(c) == 200,
+         "criterion 3: the close is 200ms — quicker than the entrance (%s)"
+         % dur(c))
+    need(re.search(r"to:\s*0\b", c) is not None,
+         "criterion 3: the close runs t back to 0")
+    # Load-bearing, and the reason the close is allowed to interrupt an open.
+    need(re.search(r"\bfrom\s*:", c) is None,
+         "criterion 3: the close states no `from:` — it must start from wherever "
+         "`t` actually is, or a close landing mid-open jumps")
+if opens and closes:
+    need(dur(opens[0]) > dur(closes[0]),
+         "criterion 3: the exit is quicker than the entrance — a panel you are "
+         "closing is one you have already decided about")
+
+need(re.search(r"property real t:\s*0\b", fl) is not None,
+     "criterion 3: `t` is the panel's single progress number, and starts shut")
+need("ScriptAction { script: root.hide() }" in fl,
+     "criterion 3: the close hides the window itself, by calling hide() once the "
+     "slide is finished — not from the toggle")
+need(re.search(r"property bool closing:\s*false", fl) is not None,
+     "criterion 3: there is a `closing` flag — the exit is animated, so a second "
+     "click can land while it is still in flight")
+
+hide_fn = re.search(r"function hide\(\)\s*\{([^{}]*)\}", fl)
+need(hide_fn is not None
+     and "root.visible = false" in hide_fn.group(1)
+     and "root.closing = false" in hide_fn.group(1),
+     "criterion 3: hide() clears `closing` and takes the window down")
+close_fn = re.search(r"function close\(\)\s*\{([^{}]*)\}", fl)
+need(close_fn is not None
+     and "closeAnim.start()" in close_fn.group(1)
+     and "root.visible" not in close_fn.group(1),
+     "criterion 3: close() starts the exit and never touches `visible` itself — "
+     "cutting it here would strand `t` above 0 for the next open")
+
+# The animated Item must be free to move. An anchored item has its `y` rewritten
+# on every anchoring pass, so a tween writing to an anchored `y` runs to
+# completion and moves nothing — which reads on screen as "the animation stopped
+# working" with nothing in the log to explain it. Sized from the window's own
+# numbers instead, and offset rather than anchored.
+citem = re.search(r"Item\s*\{\s*\n\s*id:\s*content\b", fl)
+need(citem is not None, "criterion 3: there is an inner Item `content` to move")
+if citem:
+    cbody = block(fl, citem.start())
+    # `content`'s OWN declarations, not its descendants'. `grid` inside it is
+    # anchored to `box`, which is correct and has nothing to do with whether the
+    # animated Item may be moved — so this reads only the lines at the Item's own
+    # indent level.
+    pad = re.match(r"[ ]*", cbody.split("\n", 1)[1]).group(0)
+    own = [ln for ln in cbody.split("\n")
+           if ln.startswith(pad) and not ln.startswith(pad + " ")]
+    need(not any("anchor" in ln for ln in own),
+         "criterion 3: `content` is not anchored — an anchored y is rewritten "
+         "under the tween, so the panel would sit still and the tween would "
+         "still run to 0 (%s)"
+         % "; ".join(ln.strip() for ln in own if "anchor" in ln))
+    need(any(re.search(r"width:\s*parent\.width", ln) for ln in own)
+         and any(re.search(r"height:\s*parent\.height", ln) for ln in own),
+         "criterion 3: `content` takes the window's own size")
+    # The bug this line exists for: a `content` Item that does not actually wrap
+    # the surface compiles, loads, and animates an empty box of nothing.
+    need("id: box" in cbody,
+         "criterion 3: the surface `box` is inside `content`, so the slide moves "
+         "the panel and not an empty Item")
+    # Both properties read `t`, so the slide and the fade cannot fall out of step
+    # with each other — and neither can quietly go missing on its own.
+    need(any(re.search(r"y:\s*\(1\s*-\s*root\.t\)\s*\*\s*-root\.slideFrom", ln)
+             for ln in own),
+         "criterion 3: `content.y` is a function of `t`")
+    need(any(re.search(r"opacity:\s*root\.t\s*$", ln) for ln in own),
+         "criterion 3: `content.opacity` is `t` — a panel that slides without "
+         "fading is not the reveal either")
+
+# What must never be tweened is the window. A change to implicitWidth or
+# implicitHeight is a compositor round-trip per frame, so `t` may drive the panel's
+# position and opacity but never its size.
+need(not re.search(r'target:\s*root\s*;\s*property:\s*'
+                   r'"(width|height|implicitWidth|implicitHeight)"', fl),
+     "criterion 3: nothing tweens the window's size — an xdg_popup resize is a "
+     "compositor round-trip per frame")
+need(not re.search(r"target:\s*(box|grid)\b", fl),
+     "criterion 3: no tween targets the surface or the grid directly")
+need(not re.search(r"implicit(?:Width|Height)\s*:[^;]*\bt\b", fl),
+     "criterion 3: the window's own dimensions do not read `t`")
+
+# Movement is displacement, not duration: the slide is 6-14px and the fade rides
+# the same number, so a longer or shorter `slideFrom` is the dial, not the curve.
+m = re.search(r"readonly property \w+ slideFrom:\s*(\d+)", fl)
+v = int(m.group(1)) if m else None
+need(v is not None and 6 <= v <= 14,
+     "criterion 2: slideFrom is 6-14 — movement is displacement, not duration "
+     "(got %s)" % v)
+
+# ---- criterion 3: the toggle opens, closes, and reverses a close in flight ----
+toggle_m = re.search(r"function toggleFor\([^)]*\)\s*\{", fl)
+if toggle_m:
+    tb = block(fl, toggle_m.start())
+    anim_ids = re.findall(r"\w*Animation\s*\{\s*id:\s*(\w+)", fl)
+    need(set(anim_ids) == {"openAnim", "closeAnim"},
+         "criterion 3: the flyout declares one open and one close animation (%s)"
+         % ", ".join(sorted(anim_ids)))
+    # Order matters and the reason is a frame: `openAnim.start()` applies
+    # `from:` on its first animation tick, so a reveal started before the window
+    # is up can finish against a window that is not showing yet. `t = 0` is also
+    # written by hand, because a tween that only learned `from:` on its first tick
+    # would show the panel at rest for one frame and then yank it up and back.
+    if "root.visible = true" in tb and "openAnim.start()" in tb:
+        need(tb.index("root.visible = true") < tb.rindex("openAnim.start()"),
+             "criterion 3: the window is shown before the reveal starts")
+    else:
+        need(False, "criterion 3: the window is shown before the reveal starts")
+    need(re.search(r"root\.t\s*=\s*0", tb) is not None,
+         "criterion 3: the toggle parks `t` at 0 before the reveal runs")
+    need(re.search(r"closeAnim\.start\(\)", tb) is not None,
+         "criterion 3: the toggle closes as well as opens")
+    # The panel is dismissed by the animation, not by the click: setting visible
+    # from the toggle would cut it off mid-slide.
+    need(re.search(r"root\.visible\s*=\s*false", tb) is None,
+         "criterion 3: the toggle never sets visible false — closeAnim owns the "
+         "dismissal, so the panel is not cut off mid-slide")
+    need("root.visible = !root.visible" not in fl,
+         "criterion 3: open and close are no longer one bare toggle — each branch "
+         "parks `t` and starts its own animation")
+    # A click during the exit reverses it. Without this the close runs to 0 on a
+    # panel the user has just reopened.
+    need(re.search(r"if \(root\.closing\)", tb) is not None
+         and "closeAnim.stop()" in tb,
+         "criterion 3: a click during the exit stops the close and reopens")
+
 need("relativeX" not in fl and "relativeY" not in fl,
      "criterion 1: no relativeX/relativeY (deprecated in 0.3.1)")
 
