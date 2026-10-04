@@ -372,7 +372,19 @@ PopupWindow {
         /// working on something rather than as a row with a label on it
         property bool busy: false
         property string glyph: ""
+        /// Opt-in, and off by default: this row is also the wifi network list
+        /// and the scan button, and neither of those has anything to forget. A
+        /// new call site therefore cannot grow a × by forgetting to ask.
+        property bool forgetable: false
+        /// Hover as state, rather than reading `hover.containsMouse` at each
+        /// use site: the reveal is decided once here, because the × and the
+        /// status word are competing for one slot and must not disagree about
+        /// which of them owns it.
+        property bool hovered: hover.containsMouse
+        readonly property bool forgetShown: dr.forgetable && dr.hovered
+                                              && !dr.busy
         signal clicked()
+        signal forgotten()
         implicitHeight: 26
         implicitWidth: 200
 
@@ -407,7 +419,11 @@ PopupWindow {
         Text {
             id: stateText
             anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-            visible: !dr.busy
+            // Same rule the spinner follows, one more competitor: whatever holds
+            // the slot hides the word. It is hidden rather than emptied so the
+            // name's right anchor — which is this item's left edge — does not
+            // move under the pointer and reflow the row as the mouse arrives.
+            visible: !dr.busy && !forgetShown
             text: dr.status
             color: Tokyo.dim
             font { family: Tokyo.fontFamily; pixelSize: 10; letterSpacing: 0.8 }
@@ -471,6 +487,44 @@ PopupWindow {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: dr.clicked()
+        }
+
+        // Forget, for a paired bluetooth row and nothing else. Declared AFTER
+        // the whole-row MouseArea above and given an explicit z on top of it:
+        // that area is anchored to fill the row, so whichever of the two Qt
+        // asks first takes the click, and if that is the row then a click on
+        // the × forgets nothing and toggles the connection instead.
+        Rectangle {
+            id: forgetHit
+            // A named handle on the one thing a test cannot reach from outside
+            // an inline component — its inner ids are private to this scope.
+            objectName: "forgetHit"
+            visible: forgetShown
+            z: 1
+            anchors { right: parent.right; rightMargin: 4
+                      verticalCenter: parent.verticalCenter }
+            width: 20; height: 20
+            radius: 5
+            color: forgetMouse.containsMouse ? Tokyo.bgHighlight : "transparent"
+
+            // Same glyph, size and hover plate as the toast dismiss, so a
+            // forget and a dismiss are the same shape to the hand.
+            Text {
+                anchors.centerIn: parent
+                text: "×"
+                color: Tokyo.dim
+                font { family: Tokyo.fontFamily; pixelSize: 13 }
+            }
+            MouseArea {
+                id: forgetMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                // forget, and ONLY forget. `dr.clicked()` here as well would
+                // make one click drop the pairing and immediately ask the
+                // device to pair again, which is the opposite of forgetting it.
+                onClicked: dr.forgotten()
+            }
         }
     }
 
@@ -937,11 +991,18 @@ PopupWindow {
                         status: modelData.connected ? "CONNECTED"
                               : modelData.paired ? "PAIRED" : "NEW"
                         busy: root.btBusy === modelData.mac
+                        // Only a paired device can be forgotten — bluez has no
+                        // record to remove for one that was merely seen.
+                        forgetable: modelData.paired
                         onClicked: {
                             if (root.pill !== null)
                                 root.pill.toggleDevice(modelData.mac,
                                                        modelData.paired,
                                                        modelData.connected)
+                        }
+                        onForgotten: {
+                            if (root.pill !== null)
+                                root.pill.forgetDevice(modelData.mac)
                         }
                     }
                 }

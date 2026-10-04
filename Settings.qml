@@ -422,6 +422,18 @@ Module {
         confirm.start()
     }
 
+    function forgetDevice(mac) {
+        root.notice = ""
+        // No busy spinner here, unlike toggleDevice: a forget is immediate, and
+        // the row is about to leave the list anyway — spinning would only claim
+        // the row is doing something when what it is doing is disappearing.
+        root.run(Tokyo.scriptDir + "/bt-dev.sh", ["forget", mac])
+        // bt-dev.sh returns as soon as bluez is told, and the removal lands a
+        // moment later, so the list on screen is still stale. The same
+        // confirming poll a toggle uses is what finally drops the row.
+        confirm.start()
+    }
+
     // One timer for every deferred re-poll: whatever was just clicked needs a
     // beat to actually take effect before the poll will show it.
     Timer {
