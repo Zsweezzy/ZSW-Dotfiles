@@ -40,6 +40,10 @@ the file watcher is dead from a bare `touch`.
 
 ## Conventions
 
+- **New UI? Read `DESIGN.md` first.** Tokens (which colour for which job,
+  radius, border, type scale), the rules this tree actually follows, and the
+  QML traps that silently render nothing. Colours, fonts and radii come from
+  `Tokyo.qml` by name — never a literal.
 - QML files use **4 spaces**. `grep -cP '\t'` is 0 across all of them. Check
   the file before inserting anything.
 - Timer ranges: `TimerState.maxMinutes` is the slider bound;
