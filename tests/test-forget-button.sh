@@ -138,7 +138,25 @@ probe=$(mktemp -d)
 # Tokyo is a pragma Singleton, so it resolves from the probe's own directory.
 ln -sf "$PWD/Tokyo.qml" "$probe/"
 
-python3 - "$probe" <<'PY' || fail=1
+# The A/B baseline is the parent of the commit that introduced `forgetable` —
+# NOT HEAD. HEAD is the trap: while the change is uncommitted HEAD *is* the
+# pre-change file, so the comparison is real; the moment it is committed HEAD
+# *becomes* the change, the comparison degenerates into the file against itself,
+# and the guard that has to protect the shipped code is the one that dies.
+# `-S` finds every commit that changed the occurrence count, tail -1 is the
+# oldest of them, i.e. the one that introduced the feature. An empty search
+# means the feature exists in no commit yet (suite run against a working tree),
+# so fall back to HEAD, which is the correct baseline in that case.
+intro=$(git log --format=%H -S 'forgetable' -- SettingsFlyout.qml | tail -1)
+base_rev=${intro:+${intro}^}
+base_rev=${base_rev:-HEAD}
+# The path belongs on the ref, not only in the line above: `git show <sha>^`
+# with no path prints the commit's diff, not the file, and the diff has no
+# `component DeviceRow` in it to extract.
+base_ref=$base_rev:SettingsFlyout.qml
+printf '  ..   A/B baseline: %s\n' "$base_ref" >&2
+
+python3 - "$probe" "$base_ref" <<'PY' || fail=1
 import sys
 
 def code(text):
@@ -161,7 +179,7 @@ def block(text, start):
 import subprocess
 comp_new = block(code(open("SettingsFlyout.qml").read()),
                  code(open("SettingsFlyout.qml").read()).index("component DeviceRow: Item"))
-base = subprocess.run(["git", "show", "HEAD:SettingsFlyout.qml"],
+base = subprocess.run(["git", "show", sys.argv[2]],
                       capture_output=True, text=True, check=True).stdout
 comp_base = block(code(base), code(base).index("component DeviceRow: Item"))
 
@@ -347,12 +365,18 @@ for label, why in (("pairedOff", "a paired row not hovered"),
     need(r["hitOwner"] == "other",
          "the row's own click area still owns the right slot on %s" % why)
 
-# the wifi row did not move: same name width as it had before this change
+# the wifi row did not move: same name width as it had before this change.
+# `forgetW == -1` is the proof the baseline really is pre-change — if it ever
+# reads 20 the baseline has drifted onto the changed file and every comparison
+# below it is the file against itself.
+need(base["forgetW"] == -1,
+     "the A/B baseline really predates the feature (no × in it, got %s)"
+     % base["forgetW"])
 need(m["wifiRow"]["nameW"] == base["nameW"],
-     "wifi rows render exactly as they did at HEAD (%s vs %s)"
+     "wifi rows render exactly as they did before the change (%s vs %s)"
      % (m["wifiRow"]["nameW"], base["nameW"]))
-need(base["forgetW"] == -1 and m["wifiRow"]["wordVisible"] == base["wordVisible"],
-     "the wifi row's status word is still drawn, as at HEAD")
+need(m["wifiRow"]["wordVisible"] == base["wordVisible"],
+     "the wifi row's status word is still drawn, as before the change")
 
 sys.exit(1 if fails else 0)
 PY
