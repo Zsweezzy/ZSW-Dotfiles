@@ -381,8 +381,22 @@ PopupWindow {
         /// status word are competing for one slot and must not disagree about
         /// which of them owns it.
         property bool hovered: hover.containsMouse
-        readonly property bool forgetShown: dr.forgetable && dr.hovered
-                                              && !dr.busy
+        // NOT just `dr.hovered`. `hover` and the ×'s own MouseArea are
+        // SIBLINGS, and Qt delivers hover to the deepest item under the cursor
+        // and then to its ancestors only — never sideways. So the moment the
+        // pointer crosses onto the plate, `forgetMouse` becomes the hover leaf,
+        // `hover.containsMouse` goes false, and a reveal that reads only
+        // `dr.hovered` hides the × from under the cursor — which then re-hides
+        // it and re-shows it on every subsequent move. Measured, 1px steps
+        // across the plate: VVVVVV.V.V.V.V.V.V.V.V.
+        // The consequence is not cosmetic: while the × is hidden it is out of
+        // the hit test, so the press falls through to the whole-row MouseArea
+        // and TOGGLES the connection instead of forgetting. `||` breaks the
+        // cycle without a latch: over the row -> shown -> the plate can then
+        // hold hover -> still shown; off both -> both false -> hidden.
+        readonly property bool forgetShown: dr.forgetable && !dr.busy
+                                              && (dr.hovered
+                                                  || forgetMouse.containsMouse)
         signal clicked()
         signal forgotten()
         implicitHeight: 26
@@ -404,6 +418,7 @@ PopupWindow {
             font { family: Tokyo.fontFamily; pixelSize: 11 }
         }
         Text {
+            objectName: "rowName"
             anchors {
                 left: g.visible ? g.right : parent.left
                 leftMargin: g.visible ? 7 : 6
@@ -418,6 +433,7 @@ PopupWindow {
         }
         Text {
             id: stateText
+            objectName: "stateWord"
             anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
             // Same rule the spinner follows, one more competitor: whatever holds
             // the slot hides the word. It is hidden rather than emptied so the
@@ -483,6 +499,10 @@ PopupWindow {
         }
         MouseArea {
             id: hover
+            // Named so a test can tell "the row's own click area got it" apart
+            // from "nothing got it". Returning a bare `other` for both makes a
+            // dead right-hand slot indistinguishable from a working row.
+            objectName: "rowHit"
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
@@ -491,9 +511,14 @@ PopupWindow {
 
         // Forget, for a paired bluetooth row and nothing else. Declared AFTER
         // the whole-row MouseArea above and given an explicit z on top of it:
-        // that area is anchored to fill the row, so whichever of the two Qt
-        // asks first takes the click, and if that is the row then a click on
-        // the × forgets nothing and toggles the connection instead.
+        // that area is anchored to fill the row, so z is what decides which of
+        // the two takes a press — and if it is the row, a click on the × forgets
+        // nothing and toggles the connection instead.
+        //
+        // z only decides who gets the press. Whether the × is THERE to get it
+        // is `forgetShown` above, and that is the half that was broken: a
+        // hidden × is out of the hit test, so a hover bug silently becomes a
+        // click bug. Both halves are covered by tests/test-forget-button.sh.
         Rectangle {
             id: forgetHit
             // A named handle on the one thing a test cannot reach from outside

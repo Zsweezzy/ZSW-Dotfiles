@@ -423,7 +423,12 @@ Module {
     }
 
     function forgetDevice(mac) {
-        root.notice = ""
+        // Say something, unlike toggleDevice's silent clear: `run` is
+        // execDetached and bt-dev.sh pipes both of its commands to /dev/null,
+        // so a forget that fails returns nothing to notice and the row just
+        // sits there for 4s looking broken. This matches what joinWifi,
+        // leaveWifi and scanBluetooth already do.
+        root.notice = "Forgetting…"
         // No busy spinner here, unlike toggleDevice: a forget is immediate, and
         // the row is about to leave the list anyway — spinning would only claim
         // the row is doing something when what it is doing is disappearing.
