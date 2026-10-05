@@ -113,22 +113,25 @@ Item {
 
             Text {
                 width: parent.width
-                text: root.n ? root.n.appName : ""
+                text: root.n ? (root.n.appName || root.n.app || "") : ""
                 color: Tokyo.dim
                 elide: Text.ElideRight
                 font { family: Tokyo.fontFamily; pixelSize: 10; letterSpacing: 0.8 }
+                visible: root.n !== null && String(root.n.appName || root.n.app || "") !== ""
             }
             Text {
                 width: parent.width
-                text: root.n ? root.n.summary : ""
+                text: root.n ? (root.n.summary || root.n.body || root.n.appName || root.n.app || "Notification") : ""
                 color: root.n !== null && root.n.urgency === 2 ? Tokyo.red : Tokyo.fg
                 elide: Text.ElideRight
+                maximumLineCount: 3
+                wrapMode: Text.WordWrap
                 font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
             }
             Text {
                 width: parent.width
-                visible: root.n !== null && String(root.n.body || "") !== ""
-                text: root.n ? root.n.body : ""
+                visible: root.n !== null && String(root.n.body || "") !== "" && String(root.n.body) !== String(root.n.summary)
+                text: root.n ? (root.n.body || root.n.summary || "") : ""
                 color: Tokyo.dim
                 elide: Text.ElideRight
                 maximumLineCount: 3
@@ -142,7 +145,7 @@ Item {
             id: dismiss
             anchors { right: parent.right; rightMargin: 4
                       verticalCenter: parent.verticalCenter }
-            width: 20; height: 20
+            width: 28; height: 28
             radius: 5
             color: dHover.containsMouse ? Tokyo.bgHighlight : "transparent"
 
