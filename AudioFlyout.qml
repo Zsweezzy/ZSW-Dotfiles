@@ -41,7 +41,12 @@ PopupWindow {
     readonly property real padV: 12
     readonly property int rowHeight: 36
 
-    implicitWidth: 360
+    // 392, not the 360 it was: the device rows gained a percentage readout, and
+    // at 360 the device name was left with 98px — enough for "USB Audio" and
+    // nothing else, so the longest names all elided to the same stub. The
+    // panel is anchored to the pill, not sized by the bar, so widening it
+    // costs nothing but the room it takes on screen.
+    implicitWidth: 392
     implicitHeight: box.height + root.gap
 
     // ---------------- lists ----------------
@@ -440,6 +445,24 @@ PopupWindow {
         }
     }
 
+    /// The volume number, as a percentage. Extracted for the same reason as
+    /// VolumeSlider and MuteGlyph: the device rows and the app rows would
+    /// otherwise each carry their own copy and drift. Reaches past 100 when
+    /// AMPLIFY is on, which is the point — that is what the slider is showing.
+    component VolumePercent: Text {
+        id: vp
+        /// the PwAudioNode whose volume and mute state this reports; null
+        /// renders nothing rather than throwing
+        property var audio
+        text: vp.audio ? Math.round(vp.audio.volume * 100) + "%" : ""
+        // Recedes on mute, matching the app rows' long-standing behaviour —
+        // the mute glyph beside it turns yellow and is what carries the state.
+        color: vp.audio && vp.audio.muted ? Tokyo.bgHighlight : Tokyo.fg
+        font { family: Tokyo.fontFamily; pixelSize: 12 }
+        horizontalAlignment: Text.AlignRight
+        verticalAlignment: Text.AlignVCenter
+    }
+
     /// The speaker/mic glyph, doubling as the mute switch. `audio` is null
     /// when there is nothing to control yet.
     component MuteGlyph: Item {
@@ -788,14 +811,20 @@ PopupWindow {
                 spacing: 6
 
                 Text {
-                    // 26 = the 20px check + its 6px gap. 142 more when the
-                    // control is there: mute 20 + slider 110 + two gaps.
-                    width: parent.width - 26 - (row.controllable ? 142 : 0)
+                    // 26 = the 20px check + its 6px gap. The control column is
+                    // percent 40 + mute 20 + slider 110 plus the three gaps
+                    // between them and the check's — 214 — i.e. everything that
+                    // is not the name.
+                    width: parent.width - (row.controllable ? 214 : 26)
                     text: root.friendlyName(row.node)
                     elide: Text.ElideRight
                     color: row.isDefault ? Tokyo.blue : Tokyo.fg
                     font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize }
                     verticalAlignment: Text.AlignVCenter
+                }
+                VolumePercent {
+                    width: row.controllable ? 40 : 0
+                    audio: row.controllable ? root.audioFor(row.node, row.asInput) : null
                 }
                 MuteGlyph {
                     width: row.controllable ? 20 : 0
@@ -824,15 +853,16 @@ PopupWindow {
                 // something. On a row with no control it still spans the width.
                 // rightMargin, not `right: muteArea.left`: the glyph is a
                 // grandchild through the Row, and QML refuses to anchor to
-                // anything that is not a parent or a sibling. 144 = the Row's
-                // own 8px right margin + mute 20 + gap 6 + slider 110, i.e.
-                // everything from the mute glyph to the row's right edge. The
-                // check mark lives inside that span and stays non-clickable,
-                // which is right: it is a marker on a row already switched on.
+                // anything that is not a parent or a sibling. 206 = the Row's
+                // own 8px right margin + mute 20 + gap 6 + slider 110 + gap 6
+                // + percent 40 + gap 6, i.e. everything from the percentage's
+                // left edge to the row's right edge. The check mark lives inside
+                // that span and stays non-clickable, which is right: it is a
+                // marker on a row already switched on.
                 anchors {
                     left: parent.left; top: parent.top; bottom: parent.bottom
                     right: parent.right
-                    rightMargin: row.controllable ? 144 : 0
+                    rightMargin: row.controllable ? 206 : 0
                 }
                 hoverEnabled: true
                 onClicked: root.setDefault(row.node, row.asInput)
@@ -869,13 +899,9 @@ PopupWindow {
                     font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize }
                     verticalAlignment: Text.AlignVCenter
                 }
-                Text {
+                VolumePercent {
                     width: 40
-                    text: Math.round(row.node.audio.volume * 100) + "%"
-                    color: row.node.audio.muted ? Tokyo.bgHighlight : Tokyo.fg
-                    font { family: Tokyo.fontFamily; pixelSize: 12 }
-                    horizontalAlignment: Text.AlignRight
-                    verticalAlignment: Text.AlignVCenter
+                    audio: row.node ? row.node.audio : null
                 }
                 MuteGlyph {
                     width: 20
