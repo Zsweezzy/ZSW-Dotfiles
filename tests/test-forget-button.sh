@@ -180,13 +180,19 @@ ln -sf "$PWD/Tokyo.qml" "$probe/"
 # oldest of them, i.e. the one that introduced the feature. An empty search
 # means the feature exists in no commit yet (suite run against a working tree),
 # so fall back to HEAD, which is the correct baseline in that case.
-intro=$(git log --format=%H -S 'forgetable' -- SettingsFlyout.qml | tail -1)
+# Git paths are relative to the toplevel, not to $PWD. Here the toplevel IS
+# the config dir, but in the mirror repo it is two levels up, and a bare
+# `SettingsFlyout.qml` then names a file that does not exist — `git show`
+# exits 128 and every A/B row fails. `--show-prefix` is that same offset
+# (empty in this tree), so one expression is correct in both.
+rel=$(git rev-parse --show-prefix)
+intro=$(git log --format=%H -S 'forgetable' -- "$rel"SettingsFlyout.qml | tail -1)
 base_rev=${intro:+${intro}^}
 base_rev=${base_rev:-HEAD}
 # The path belongs on the ref, not only in the line above: `git show <sha>^`
 # with no path prints the commit's diff, not the file, and the diff has no
 # `component DeviceRow` in it to extract.
-base_ref=$base_rev:SettingsFlyout.qml
+base_ref=$base_rev:"$rel"SettingsFlyout.qml
 printf '  ..   A/B baseline: %s\n' "$base_ref" >&2
 
 # The shipped component, cut out once and handed to BOTH render layers, so
