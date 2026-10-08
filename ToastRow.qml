@@ -31,6 +31,12 @@ Item {
     /// QML fills a delegate's required properties from the matching key — so
     /// `[{n: notification}]` fills this with no expression in between.
     required property var n
+    /// The row's own index in `rows`. Required, and not taken from context:
+    /// declaring `required property var n` above switches the delegate to
+    /// required-property filling, and the unqualified `index` that used to come
+    /// from the Repeater's context is then simply not there — `onDone` threw
+    /// `ReferenceError: index is not defined` and the row never left the stack.
+    required property int index
     /// the store, for the icon map
     property var store: null
     /// how long this row stays, in ms
@@ -38,6 +44,18 @@ Item {
 
     /// emitted when the row has finished sliding out and can be dropped
     signal done()
+
+    /// True once the row has decided to leave. Every exit path funnels
+    /// through `leave()`, so `done()` fires exactly once per row: the ×, the
+    /// expiry timer and the daemon's `onClosed`/`onNChanged` can all arrive in
+    /// the same instant, and a second `done()` with the row already spliced
+    /// out of the model lands on a different row with the wrong index.
+    property bool leaving: false
+    function leave() {
+        if (root.leaving) return
+        root.leaving = true
+        root.done()
+    }
 
     readonly property color accent: n !== null && n.urgency === 2
         ? Tokyo.red          // NotificationUrgency.Critical
@@ -163,7 +181,7 @@ Item {
                 // `done()` rather than `dismiss()` on the daemon: it is the same
                 // path the timeout and the client's own close take, so a hand
                 // dismiss cannot land where an automatic one does not.
-                onClicked: root.done()
+                onClicked: root.leave()
             }
         }
 
@@ -192,7 +210,7 @@ Item {
                             : String(root.n.appName).toLowerCase().replace(/\s+/g, "-"),
                     ])
                 }
-                root.done()
+                root.leave()
             }
         }
     }
@@ -204,7 +222,7 @@ Item {
             ? root.n.expireTimeout
             : root.timeout
         repeat: false
-        onTriggered: root.done()
+        onTriggered: root.leave()
     }
 
     Component.onCompleted: {
@@ -213,7 +231,7 @@ Item {
         // whatever it happened to be.
         root.shown = 0
         Qt.callLater(() => root.shown = 1)
-        if (root.n === null) { root.done(); return }
+        if (root.n === null) { root.leave(); return }
         // `resident` is the client's own statement that this notification wants
         // to stay until it is acted on — a running transfer, a pending
         // question. Honouring it is the difference between a toast and a
@@ -222,12 +240,21 @@ Item {
         life.start()
     }
 
+    // The daemon's object dying — the client closed or replaced the
+    // notification, quickshell drops it — nulls `n`, which blanks every Text
+    // at once and leaves an empty card. Leave immediately: `onClosed` can no
+    // longer arrive from an object that is already gone, and the timer below
+    // would otherwise spend its remaining seconds on a card with nothing in it.
+    onNChanged: {
+        if (root.n === null || root.n === undefined) root.leave()
+    }
+
     // The notification expiring on its own — the client closed it, or it hit its
     // own timeout — takes the row with it, so the toast does not sit there
     // showing something that is no longer true.
     Connections {
         target: root.n
-        function onClosed() { root.done() }
+        function onClosed() { root.leave() }
     }
 
 

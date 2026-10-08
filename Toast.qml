@@ -103,12 +103,14 @@ PopupWindow {
         }
     }
 
-    function remove(n) {
-        // By identity of the daemon's object, which is what `rows` holds. The
-        // delegate's `n` is the same object — unlike a ListView's modelData,
-        // which is a wrapper — so this does match.
-        const at = root.rows.findIndex(r => r.n === n)
-        if (at < 0) return
+    function remove(at) {
+        // By the delegate's index, never by the daemon's object. That object is
+        // destroyed when the client closes the notification, which nulls the
+        // row's `n` — so an identity lookup finds nothing and the row then
+        // stays on screen forever with every Text blanked. `index` is the
+        // Repeater's, and it tracks `rows` on every reassignment.
+        if (at < 0 || at >= root.rows.length) return
+        const n = root.rows[at].n
         root.rows = root.rows.slice(0, at).concat(root.rows.slice(at + 1))
         close(n)
     }
@@ -132,7 +134,7 @@ PopupWindow {
                     width: column.width
                     store: root.store
                     timeout: root.timeout
-                    onDone: root.remove(n)
+                    onDone: root.remove(index)
                 }
             }
         }
