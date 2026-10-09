@@ -132,8 +132,8 @@ Item {
         // because that is what it was told to do; clamping width/height to the
         // painted size is what stops it, and since fillMode is
         // PreserveAspectFit the smaller axis already fits inside the box.
-        width: Math.min(root.size, Math.max(paintedWidth, 1))
-        height: Math.min(root.size, Math.max(paintedHeight, 1))
+        width: Math.min(root.size, Math.max(implicitWidth, 1))
+        height: Math.min(root.size, Math.max(implicitHeight, 1))
     }
 
     // ---------- 3. a glyph ----------
