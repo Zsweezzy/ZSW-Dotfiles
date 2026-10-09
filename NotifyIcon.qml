@@ -130,8 +130,9 @@ Item {
 
         // Never upscale. Image will happily stretch a 32px PNG into a 40px box
         // because that is what it was told to do; clamping width/height to the
-        // painted size is what stops it, and since fillMode is
-        // PreserveAspectFit the smaller axis already fits inside the box.
+        // image's intrinsic size (implicitWidth/implicitHeight) is what stops
+        // it, and since fillMode is PreserveAspectFit the smaller axis already
+        // fits inside the box.
         width: Math.min(root.size, Math.max(implicitWidth, 1))
         height: Math.min(root.size, Math.max(implicitHeight, 1))
     }
