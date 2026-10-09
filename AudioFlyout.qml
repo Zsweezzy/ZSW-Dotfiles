@@ -222,73 +222,6 @@ PopupWindow {
         return fb.node === node ? fb : null
     }
 
-    // ---------------- phone audio ----------------
-    // A phone streaming over bluetooth is a PipeWire *sink* named bluez5.*: the
-    // phone is the source, the PC is the A2DP receiver. So there is nothing to
-    // pair here and nothing to install — pairing happens in the settings flyout,
-    // and the moment the phone is connected its audio arrives as one of these
-    // nodes. The toggle is therefore just "make this the default sink", which is
-    // what sends the PC's sound out through the phone, and the un-toggle puts
-    // back whatever was default before.
-    function isPhoneAudio(node) {
-        if (!node) return false
-        // The name is the old test, kept because it costs nothing, but it is a
-        // naming convention rather than an interface. The driver says what a
-        // node really is in its own properties: anything the bluez5 driver
-        // built carries `api.bluez5.*` and `device.api = bluez…`, whatever it
-        // decided to call itself. That is the difference between a phone being
-        // connected and this row saying "no phone connected".
-        if (String(node.name || "").indexOf("bluez5") === 0) return true
-        const p = node.properties || {}
-        if (String(p["device.api"] || "").indexOf("bluez") === 0) return true
-        return ["api.bluez5.address", "api.bluez5.device",
-                "api.bluez5.media.sink", "api.bluez5.media.source",
-                "api.bluez5.profile"].some(k => p[k] !== undefined)
-    }
-    readonly property var phoneSinks: Pipewire.nodes.values
-        .filter(n => root.isPhoneAudio(n) && n.isSink && !n.isStream)
-    readonly property var phoneSink: root.phoneSinks.length > 0
-        ? root.phoneSinks[0] : null
-    /// DEACTIVATED: phone routing moved to the standalone `phone-audio` app
-    /// (phone → PC). Kept as fixed false so this legacy switch can never
-    /// re-route PC sound out through the phone. Old expression restored if the
-    /// module is ever brought back.
-    readonly property bool phoneAudioOn: false
-    /// what to go back to when the toggle is switched off: the first non-phone
-    /// output, which is the speakers in every setup where a phone has ever
-    /// connected. Held so it is not recomputed the moment the phone is default.
-    property int lastLocalSink: -1
-
-    // Whether the radio is even on. Needed because "no bluez5 sink" has two
-    // very different causes — the radio is off, or the radio is on and nothing
-    // is paired to it — and the fix is different for each. A permanently
-    // greyed-out switch cannot tell you which one it is.
-    property bool btRadio: true
-    Poll {
-        command: ["bluetoothctl", "show"]
-        // 10s: the radio is toggled in the settings flyout and the phone
-        // connects on its own, so this row has to wake up by itself rather
-        // than waiting for the flyout to be opened.
-        interval: 10000
-        onResult: output => {
-            root.btRadio = /Powered:\s*yes/.test(String(output))
-        }
-    }
-
-    /// Why the switch cannot be used. DEACTIVATED: the standalone `phone-audio`
-    /// app now owns phone routing (it routes *the phone's* audio to this PC);
-    /// this legacy switch routed the wrong direction (PC sound out through the
-    /// phone), so it was disabled to avoid fighting the new app.
-    readonly property string phoneAudioWhy: "Deactivated — phone audio is now "
-        + "handled by the phone-audio app (run `phone-audio on`)."
-    readonly property bool phoneAudioReady: false
-
-    function togglePhoneAudio(on) {
-        // no-op: legacy PC→phone routing deactivated — the standalone
-        // phone-audio app owns phone routing now (phone → PC). Remove this
-        // function together with its callers to delete the old UI entirely.
-    }
-
     function friendlyName(node) {
         // The phone's own name first: a bluez node is called
         // `bluez5.AA_BB_CC_DD_EE_FF_A2DP_SINK`, and the driver already knows
@@ -306,13 +239,6 @@ PopupWindow {
     // ---------------- window / anchoring ----------------
     PwObjectTracker {
         objects: root.trackedNodes
-    }
-    // The phone sink is tracked on its own: it is in no other list (a paired
-    // phone is a sink but not an app, and it is kept out of the output list so
-    // the speakers do not shuffle around under the user when a phone
-    // connects), and an untracked node's volume writes are dropped.
-    PwObjectTracker {
-        objects: root.phoneSinks
     }
 
     function toggleFor(item) {
@@ -503,10 +429,13 @@ PopupWindow {
             Item { height: 8 }
 
             // ---------- phone audio ----------
-            // Always drawn, ready or not. A switch that only appears once it
-            // works cannot be found, and the one time you want it is the time
-            // you are looking for it — so the row is permanent, greyed out
-            // when there is no phone, and hovering it says why. The switch
+            // Backed by the standalone `phone-audio` app (phone → PC): this row
+            // polls its status once a second through the PhoneAudio shim and
+            // the switch calls `phone-audio toggle`. Always drawn, ready or
+            // not. A switch that only appears once it works cannot be found,
+            // and the one time you want it is the time you are looking for it
+            // — so the row is permanent, greyed out when no phone is paired,
+            // and hovering it shows the app's status/reason. The switch
             // itself is the same shape as the settings flyout's, so the two
             // menus do not disagree about what "on" looks like.
             Column {
@@ -516,13 +445,13 @@ PopupWindow {
                 Text {
                     text: "PHONE AUDIO"
                     font { family: Tokyo.fontFamily; pixelSize: 10; bold: true; letterSpacing: 1.5 }
-                    color: root.phoneAudioReady ? Tokyo.blue : Tokyo.dim
+                    color: PhoneAudio.available ? Tokyo.blue : Tokyo.dim
                     leftPadding: 4
                     bottomPadding: 2
                 }
                 Rectangle {
                     width: parent.width; height: 1
-                    color: root.phoneAudioReady ? Tokyo.bgHighlight
+                    color: PhoneAudio.available ? Tokyo.bgHighlight
                                                 : Qt.rgba(0.18, 0.20, 0.30, 0.5)
                 }
 
@@ -533,7 +462,7 @@ PopupWindow {
                     radius: 6
                     // No hover fill when the row is dead: the fill is the
                     // "this does something" signal, and this does not.
-                    color: phoneHover.hovered && root.phoneAudioReady
+                    color: phoneHover.hovered && PhoneAudio.available
                            ? Tokyo.bgHighlight : "transparent"
 
                     Row {
@@ -546,22 +475,22 @@ PopupWindow {
 
                         Text {
                             width: parent.width - 60
-                            text: root.phoneSink
-                                ? root.friendlyName(root.phoneSink)
+                            text: PhoneAudio.available
+                                ? PhoneAudio.phone
                                 : "No phone connected"
                             elide: Text.ElideRight
-                            color: !root.phoneAudioReady ? Tokyo.dim
-                                  : root.phoneAudioOn ? Tokyo.cyan : Tokyo.fg
+                            color: !PhoneAudio.available ? Tokyo.dim
+                                  : PhoneAudio.on ? Tokyo.cyan : Tokyo.fg
                             font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize }
                             verticalAlignment: Text.AlignVCenter
                         }
                         Toggle {
                             width: 34; height: 18
                             anchors.verticalCenter: parent.verticalCenter
-                            checked: root.phoneAudioOn
-                            interactive: root.phoneAudioReady
-                            opacity: root.phoneAudioReady ? 1 : 0.4
-                            onToggled: root.togglePhoneAudio(!root.phoneAudioOn)
+                            checked: PhoneAudio.on
+                            interactive: PhoneAudio.available
+                            opacity: PhoneAudio.available ? 1 : 0.4
+                            onToggled: PhoneAudio.toggle()
                         }
                     }
 
@@ -575,8 +504,8 @@ PopupWindow {
                                   top: parent.top; bottom: parent.bottom }
                         hoverEnabled: true
                         onClicked: {
-                            if (root.phoneAudioReady)
-                                root.togglePhoneAudio(!root.phoneAudioOn)
+                            if (PhoneAudio.available)
+                                PhoneAudio.toggle()
                         }
                     }
 
@@ -585,9 +514,9 @@ PopupWindow {
                     // an inline explanation would make the whole panel jump
                     // taller every time the pointer crossed the row, which is
                     // worse than the problem it explains. This floats over the
-                    // rows below instead, and is only ever shown for a dead
-                    // row — when the switch works, the label already says what
-                    // it does.
+                    // rows below instead, and is shown whenever the routing is
+                    // OFF — the label alone cannot say why, and the app's
+                    // status reason is exactly the hint you need.
                     Rectangle {
                         id: phoneTip
                         width: tipText.width + 20
@@ -597,7 +526,7 @@ PopupWindow {
                         border.color: Tokyo.bgHighlight
                         border.width: 1
                         visible: opacity > 0.01
-                        opacity: (!root.phoneAudioReady && phoneHover.hovered)
+                        opacity: (!PhoneAudio.on && phoneHover.hovered)
                                  ? 1 : 0
                         Behavior on opacity {
                             NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
@@ -609,7 +538,7 @@ PopupWindow {
                             id: tipText
                             anchors { left: parent.left; right: parent.right
                                       top: parent.top; margins: 10 }
-                            text: root.phoneAudioWhy
+                            text: PhoneAudio.summary
                             color: Tokyo.fg
                             wrapMode: Text.WordWrap
                             width: 236
