@@ -249,9 +249,11 @@ PopupWindow {
         .filter(n => root.isPhoneAudio(n) && n.isSink && !n.isStream)
     readonly property var phoneSink: root.phoneSinks.length > 0
         ? root.phoneSinks[0] : null
-    /// true when the phone is what you are hearing
-    readonly property bool phoneAudioOn: root.phoneSink !== null
-        && Pipewire.defaultAudioSink === root.phoneSink
+    /// DEACTIVATED: phone routing moved to the standalone `phone-audio` app
+    /// (phone → PC). Kept as fixed false so this legacy switch can never
+    /// re-route PC sound out through the phone. Old expression restored if the
+    /// module is ever brought back.
+    readonly property bool phoneAudioOn: false
     /// what to go back to when the toggle is switched off: the first non-phone
     /// output, which is the speakers in every setup where a phone has ever
     /// connected. Held so it is not recomputed the moment the phone is default.
@@ -273,46 +275,18 @@ PopupWindow {
         }
     }
 
-    /// Why the switch cannot be used right now, in one sentence. This is the
-    /// tooltip, and it is ordered from the most fundamental cause down: no
-    /// point telling someone to pair a phone when the radio is off.
-    readonly property string phoneAudioWhy: {
-        if (root.phoneSink !== null)
-            return "Send this PC's sound out through your phone."
-        if (!root.btRadio)
-            return "Bluetooth is off. Turn it on in the quick menu first."
-        return "No phone connected. Pair one in the quick menu, then press "
-             + "play on the phone — it shows up here as soon as it streams."
-    }
-    readonly property bool phoneAudioReady: root.phoneSink !== null
+    /// Why the switch cannot be used. DEACTIVATED: the standalone `phone-audio`
+    /// app now owns phone routing (it routes *the phone's* audio to this PC);
+    /// this legacy switch routed the wrong direction (PC sound out through the
+    /// phone), so it was disabled to avoid fighting the new app.
+    readonly property string phoneAudioWhy: "Deactivated — phone audio is now "
+        + "handled by the phone-audio app (run `phone-audio on`)."
+    readonly property bool phoneAudioReady: false
 
     function togglePhoneAudio(on) {
-        if (on) {
-            // Remember the speakers before leaving them.
-            if (Pipewire.defaultAudioSink !== root.phoneSink) {
-                for (let i = 0; i < root.outputDevices.length; i++) {
-                    const n = root.outputDevices[i]
-                    if (!root.isPhoneAudio(n) && n !== root.phoneSink) {
-                        root.lastLocalSink = i
-                        break
-                    }
-                }
-            }
-            Pipewire.preferredDefaultAudioSink = root.phoneSink
-        } else {
-            const back = root.outputDevices[root.lastLocalSink]
-            if (back !== undefined && back !== null) {
-                Pipewire.preferredDefaultAudioSink = back
-            } else {
-                // No speaker remembered — pick any non-phone output.
-                for (let i = 0; i < root.outputDevices.length; i++) {
-                    if (!root.isPhoneAudio(root.outputDevices[i])) {
-                        Pipewire.preferredDefaultAudioSink = root.outputDevices[i]
-                        break
-                    }
-                }
-            }
-        }
+        // no-op: legacy PC→phone routing deactivated — the standalone
+        // phone-audio app owns phone routing now (phone → PC). Remove this
+        // function together with its callers to delete the old UI entirely.
     }
 
     function friendlyName(node) {
