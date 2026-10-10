@@ -17,17 +17,19 @@ devs=""
 add_dev() {
     local mac=$1 conn=$2
     [ -n "$devs" ] && devs="$devs,"
-    devs="$devs{\"mac\":\"$(jesc "$mac")\",\"name\":\"$(jesc "$name")\",\"connected\":$conn}"
+    devs="$devs{\"mac\":\"$(jesc "$mac")\",\"name\":\"$(jesc "$name")\",\"connected\":$conn,\"icon\":\"$(jesc "$icon")\"}"
 }
 
 name=""
+icon=""
 # `devices` prefixes every line with the literal word "Device".
 while read -r word mac _; do
     [ "$word" = "Device" ] || continue
     [ -z "$mac" ] && continue
     info=$(bluetoothctl info "$mac" 2>/dev/null)
     name=$(printf '%s' "$info" | awk -F': ' '/Alias:|Name:/{print $2; exit}')
-    [ -z "$name" ] && name=$(bluetoothctl list 2>/dev/null | awk -v m="$mac:" '$2==m{print $3}')
+    [ -z "$name" ] && name=$mac
+    icon=$(printf '%s' "$info" | awk -F': ' '/Icon:/{print $2}')
     conn=false
     [ "$(printf '%s' "$info" | awk -F': ' '/Connected:/{print $2}')" = "yes" ] && conn=true
     add_dev "$mac" "$conn"

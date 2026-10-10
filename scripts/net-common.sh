@@ -13,6 +13,10 @@ jesc() {
     value=${value//$'\n'/\\n}
     value=${value//$'\r'/\\r}
     value=${value//$'\t'/\\t}
+    # C0 controls (bar \t\n\r, escaped above) and DEL are not legal raw in a
+    # JSON string; one in a device name makes Qt's strict JSON.parse throw and
+    # blanks the whole list, so strip whatever is left.
+    value=$(printf '%s' "$value" | tr -d '\000-\010\013\014\016-\037\177')
     printf '%s' "$value"
 }
 

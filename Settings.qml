@@ -242,6 +242,27 @@ Module {
     readonly property string wifiListCmd: Tokyo.scriptDir + "/wifi-list.sh"
     readonly property string btStateCmd: Tokyo.scriptDir + "/bt-state.sh"
 
+    /// bluez's `Icon:` class -> a Nerd Font glyph, so a row says what the
+    /// device is before you read its name. An unknown class falls back to the
+    /// plain bluetooth glyph.
+    function btGlyph(icon) {
+        switch (icon) {
+        case "input-gaming":    return "\uf11b"
+        case "input-keyboard":  return "\uf11c"
+        case "input-mouse":     return "\uf245"
+        case "audio-card":
+        case "audio-headset":
+        case "audio-headphones": return "\uf025"
+        case "phone":           return "\uf10b"
+        case "computer":        return "\uf109"
+        case "printer":         return "\uf02f"
+        case "camera-photo":
+        case "camera-video":    return "\uf030"
+        case "video-display":   return "\uf108"
+        default:                return "\uf293"
+        }
+    }
+
     property var wl: ({ radio: true, active: "", networks: [] })
     property var bt: ({ powered: true, devices: [] })
     /// discovery results, kept apart from the paired list on purpose: scanning
@@ -254,6 +275,9 @@ Module {
     /// A MAC and not a bool because pairing is per device: the row you clicked
     /// is the one spinning, not the whole bluetooth section.
     property string btBusy: ""
+    /// true while btBusy's click wants the device CONNECTED (vs disconnected),
+    /// so the row settles on the state the click asked for, not a guess.
+    property bool btBusyTarget: false
     property string notice: ""
 
     /// Paired devices and the scan results are one list between them; a paired
@@ -268,13 +292,13 @@ Module {
             if (!d.name) continue
             seen[d.mac] = true
             out.push({ mac: d.mac, name: d.name, paired: true,
-                       connected: d.connected === true })
+                       connected: d.connected === true, icon: d.icon || "" })
         }
         for (let i = 0; i < root.found.length; i++) {
             const d = root.found[i]
             if (seen[d.mac] || !d.name) continue
             out.push({ mac: d.mac, name: d.name, paired: false,
-                       connected: false })
+                       connected: false, icon: d.icon || "" })
         }
         return out
     }
@@ -301,6 +325,7 @@ Module {
         active: false
         onResult: out => {
             root.scanning = false
+            root.notice = ""
             try {
                 root.found = JSON.parse(out).devices || []
             } catch (e) {
@@ -325,9 +350,29 @@ Module {
     function parseBt(out) {
         try {
             const o = JSON.parse(out)
+            const devices = Array.isArray(o.devices) ? o.devices : []
+            // Settle a busy row on the truth, not a guessed timeout: bt-dev.sh
+            // can hold ~40s on a pair, so clear the spinner only once the
+            // device's connected state matches what the click wanted, or once
+            // it is gone from both lists. A brand-new device is not in the
+            // paired list until the pair lands — it is only in `found` — so
+            // that list has to count too or the spinner dies at the first poll.
+            if (root.btBusy !== "") {
+                let dev = null
+                for (let i = 0; i < devices.length; i++)
+                    if (devices[i].mac === root.btBusy) { dev = devices[i]; break }
+                if (dev === null)
+                    for (let i = 0; i < root.found.length; i++)
+                        if (root.found[i].mac === root.btBusy) { dev = root.found[i]; break }
+                if (dev === null
+                        || (dev.connected === true) === root.btBusyTarget) {
+                    root.btBusy = ""
+                    root.notice = ""
+                }
+            }
             return {
                 powered: o.powered === true,
-                devices: Array.isArray(o.devices) ? o.devices : [],
+                devices: devices,
             }
         } catch (e) {
             return root.bt
@@ -513,13 +558,16 @@ Module {
         // up to 25s waiting on the phone, and a row that only spins once the
         // script returns looks like nothing happened for those 25 seconds.
         root.btBusy = mac
+        root.btBusyTarget = (!paired || !connected)
         if (!paired || !connected)
             root.run(Tokyo.scriptDir + "/bt-dev.sh", ["connect", mac])
         else
             root.run(Tokyo.scriptDir + "/bt-dev.sh", ["disconnect", mac])
-        // Pairing waits on a tap on the other device, so this is deliberately
-        // slower than a radio toggle.
-        confirm.start()
+        // No fixed confirm: bt-dev.sh can hold ~40s, so the row is held by the
+        // two watches below until the state actually changes (btWatch polls) or
+        // the pair fails outright (btGuard, the 45s backstop).
+        btWatch.start()
+        btGuard.start()
     }
 
     function forgetDevice(mac) {
@@ -549,7 +597,24 @@ Module {
     Timer {
         id: confirm
         interval: 4000
-        onTriggered: { root.refreshAll(); root.notice = ""; root.btBusy = "" }
+        onTriggered: { root.refreshAll(); root.notice = "" }
+    }
+
+    // btBusy is owned by parseBt, which clears it when the device settles; a
+    // poll this fast just gets the settle answer sooner for a quick op.
+    Timer {
+        id: btWatch
+        interval: 1500
+        repeat: true
+        running: root.btBusy !== ""
+        onTriggered: btPoll.refresh()
+    }
+    // Backstop for a pair that simply fails: the state never changes, so the
+    // settle-on-result above never fires and the row would spin forever.
+    Timer {
+        id: btGuard
+        interval: 45000
+        onTriggered: if (root.btBusy !== "") { root.btBusy = ""; root.notice = "" }
     }
 
     /// The pill is the three glyphs and nothing else: no link name, no SSID, no

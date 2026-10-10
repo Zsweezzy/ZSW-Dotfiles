@@ -17,6 +17,9 @@ case "$1" in
         if [ "$(bluetoothctl info "$mac" 2>/dev/null | awk -F': ' '/Paired:/{print $2}')" != "yes" ]; then
             bluetoothctl --timeout 25 pair "$mac" >/dev/null 2>&1
         fi
+        # bluedevil trusts on pair; a paired device bluez does not trust will
+        # not auto-reconnect.
+        bluetoothctl trust "$mac" >/dev/null 2>&1
         bluetoothctl --timeout 15 connect "$mac" >/dev/null 2>&1
         ;;
     disconnect) bluetoothctl disconnect "$mac" >/dev/null 2>&1 ;;

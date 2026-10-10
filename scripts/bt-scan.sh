@@ -6,23 +6,32 @@
 . "$(dirname "$0")/net-common.sh"
 
 secs=${1:-8}
+# A scan holds the radio for its whole window, so refuse a typo like `abc`
+# before spawning anything rather than scanning with a bogus timeout.
+case "$secs" in
+    ''|*[!0-9]*|0) echo "usage: bt-scan.sh [seconds>0]" >&2; exit 2 ;;
+esac
 bluetoothctl power on >/dev/null 2>&1
-bluetoothctl --timeout "$secs" scan on >/dev/null 2>&1
 
-# Every device bluez has ever seen, not just this scan: `devices` is bluez's
-# cache, and a device that answered earlier but not now is still worth pairing.
+# ONLY the devices THIS scan reported. bluez's own `devices` list is a cache of
+# everything it has ever seen, so an earlier sighting that is not here now would
+# be listed as freshly found. [DEL] lines are devices that just went away.
+macs=$(bluetoothctl --timeout "$secs" scan on 2>/dev/null \
+    | sed 's/\x1b\[[0-9;]*m//g' \
+    | awk '$2 == "Device" && $1 != "[DEL]" {print $3}' \
+    | sort -u)
+
 devs=""
-while read -r word mac _; do
-    [ "$word" = "Device" ] || continue
-    [ -z "$mac" ] && continue
+while read -r mac; do
+    [ -n "$mac" ] || continue
     info=$(bluetoothctl info "$mac" 2>/dev/null)
     paired=false
     [ "$(printf '%s' "$info" | awk -F': ' '/Paired:/{print $2}')" = "yes" ] && paired=true
     name=$(printf '%s' "$info" | awk -F': ' '/Alias:|Name:/{print $2; exit}')
-    [ -z "$name" ] && name=$(bluetoothctl list 2>/dev/null | awk -v m="$mac:" '$2==m{print $3}')
+    [ -z "$name" ] && name=$mac
     icon=$(printf '%s' "$info" | awk -F': ' '/Icon:/{print $2}')
     [ -n "$devs" ] && devs="$devs,"
     devs="$devs{\"mac\":\"$(jesc "$mac")\",\"name\":\"$(jesc "$name")\",\"paired\":$paired,\"icon\":\"$(jesc "$icon")\"}"
-done <<< "$(bluetoothctl devices 2>/dev/null)"
+done <<< "$macs"
 
 printf '{"devices":[%s]}\n' "$devs"

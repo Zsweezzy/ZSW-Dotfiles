@@ -1121,6 +1121,10 @@ PopupWindow {
                 // would list every device in the room and drain the phone.
                 DeviceRow {
                     width: parent.width
+                    // With the radio off there is nothing to scan, and the scan
+                    // script would silently power the radio back on; bluedevil
+                    // does not offer scanning while off either.
+                    visible: root.bt.powered
                     // A scan is off until asked for: an always-on scan drains the
                     // phone's battery and makes every device in the room show up
                     // in the list uninvited.
@@ -1140,7 +1144,7 @@ PopupWindow {
                         required property var modelData
                         width: content.width
                         name: modelData.name
-                        glyph: modelData.paired ? "" : ""
+                        glyph: root.pill === null ? "" : root.pill.btGlyph(modelData.icon)
                         accent: modelData.connected ? Tokyo.cyan
                               : modelData.paired ? Tokyo.fg : Tokyo.dim
                         status: modelData.connected ? "CONNECTED"

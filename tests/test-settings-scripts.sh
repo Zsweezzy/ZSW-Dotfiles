@@ -77,7 +77,9 @@ for d in o["devices"]:
     # "Device" is the literal first column, not a MAC
     assert ":" in d["mac"], f"mac column was not parsed: {d['mac']!r}"
     assert isinstance(d["connected"], bool), d
-print("  ok   bt-state.sh: powered is a bool, macs are macs")
+    # bluez Icon: class, carried so the row can wear its device-type glyph
+    assert isinstance(d["icon"], str), f"icon must be a string: {d}"
+print("  ok   bt-state.sh: powered is a bool, macs are macs, icon is a string")
 PY
 
 # speedtest.sh spends the user's bandwidth to do its job, so the test hands it
@@ -106,7 +108,52 @@ o=json.load(sys.stdin)
 assert isinstance(o["devices"], list)
 for d in o["devices"]:
     assert ":" in d["mac"] and isinstance(d["paired"], bool), d
+    assert isinstance(d["icon"], str), d
 ' 2>/dev/null && ok "bt-scan.sh: one line, valid JSON" || bad "bt-scan.sh: bad output"
+
+# connecting must also TRUST the device: bluez will pair one and then refuse to
+# auto-reconnect it because it is not trusted, and bluedevil trusts on pair. The
+# radio is faked — a stub bluetoothctl logs its argv — so the trust call is
+# observable with no adapter present.
+t=$(mktemp -d)
+cat > "$t/bluetoothctl" <<'SH'
+#!/bin/bash
+printf '%s\n' "$*" >> "$BTCTL_LOG"
+exit 0
+SH
+chmod +x "$t/bluetoothctl"
+BTCTL_LOG="$t/log" PATH="$t:$PATH" bash scripts/bt-dev.sh connect AA:BB:CC:DD:EE:FF
+grep -q 'trust AA:BB:CC:DD:EE:FF' "$t/log" \
+    && ok "bt-dev.sh: connect trusts the paired device" \
+    || bad "bt-dev.sh: connect did not trust the device"
+rm -rf "$t"
+
+# a scan holds the radio for its whole window, so a non-integer seconds
+# argument must be refused before any bluetoothctl call happens, not scanned.
+t2=$(mktemp -d)
+cat > "$t2/bluetoothctl" <<'SH'
+#!/bin/bash
+printf '%s\n' "$*" >> "$SCAN_LOG"
+exit 0
+SH
+chmod +x "$t2/bluetoothctl"
+SCAN_LOG="$t2/log" PATH="$t2:$PATH" bash scripts/bt-scan.sh abc >/dev/null 2>&1
+rc=$?
+{ [ "$rc" -ne 0 ] && [ ! -f "$t2/log" ]; } \
+    && ok "bt-scan.sh: rejects a non-integer seconds argument without scanning" \
+    || bad "bt-scan.sh: 'abc' exited $rc (want non-zero) and/or scanned"
+rm -rf "$t2"
+
+# A C0 control byte in a device name cannot be escaped into JSON, so it must be
+# stripped: one such name makes Qt's JSON.parse throw and blanks the whole list.
+# 0x09/0x0a/0x0d are turned into \t/\n/\r by the escapes above, so they are not
+# what this catches.
+. scripts/net-common.sh
+esc=$(jesc "$(printf 'a\001b')")
+case "$esc" in
+    *$'\001'*) bad "jesc: left a raw control byte in the escaped value" ;;
+    *)         ok "jesc: strips raw C0 control bytes" ;;
+esac
 
 # the action scripts must not run for real here, so only their argument
 # handling is checked: a bad verb exits non-zero and touches nothing
