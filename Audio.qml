@@ -1,11 +1,11 @@
-// Audio.qml — waybar pulseaudio (PipeWire via the native Quickshell service).
+// Audio.qml — the audio pill: sink volume readout, wheel control, flyout.
 //
 //   format          {icon} {volume}%
 //   format-muted    \uf026 {volume}%
 //   format-icons    [\uf027, \uf027, \uf028]   (threshold at 67%)
-//   click           : toggle the AudioFlyout (per-app volume, in/out devices)
-//   right/middle    : audio-popup.py (legacy)
-//   scroll          : volume ±5%   (waybar's built-in scroll behavior)
+//   click/wheel     opens the AudioFlyout (per-app volume, in/out devices)
+//   right/middle    same flyout — there is no separate popup anymore
+//   scroll          volume ±5%, clamped to the shared overboost ceiling
 //   tooltip         : "{desc} {volume}%" (hidden while the flyout is open)
 import QtQuick
 import Quickshell
@@ -30,8 +30,8 @@ Module {
     }
 
     readonly property var sink: Pipewire.defaultAudioSink
-    readonly property real volume: sink ? sink.audio.volume : 0
-    readonly property bool muted: sink ? sink.audio.muted : false
+    readonly property real volume: sink && sink.audio ? sink.audio.volume : 0
+    readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
     readonly property int pct: Math.round(volume * 100)
 
     /// popup flyout to toggle (AudioFlyout, created in Bar.qml)
@@ -52,18 +52,19 @@ Module {
         }
     }
 
-    onClicked: button => {
-        if (button === Qt.LeftButton) {
-            if (root.flyoutHost) root.flyoutHost.toggleFor(root)
-            else Quickshell.execDetached([Tokyo.scriptDir + "/audio-popup"])
-        } else {
-            Quickshell.execDetached([Tokyo.scriptDir + "/audio-popup"])
-        }
+    // Every button opens the same flyout. The old audio-popup binary existed
+    // because the flyout was a bash clone that could not be toggled from the
+    // bar; the real flyout toggleFor() anchors itself to this pill, so there
+    // is nothing left for a second panel to do.
+    onClicked: () => {
+        if (root.flyoutHost) root.flyoutHost.toggleFor(root)
     }
 
     onWheelTick: dy => {
-        if (!sink) return
-        const vol = Math.min(1, Math.max(0, root.volume + (dy > 0 ? 0.05 : -0.05)))
+        if (!sink || !sink.audio) return
+        const ceiling = AudioStates.overboost ? 1.5 : 1
+        const vol = Math.max(0, Math.min(ceiling,
+                           root.volume + (dy > 0 ? 0.05 : -0.05)))
         sink.audio.volume = vol
     }
 }
