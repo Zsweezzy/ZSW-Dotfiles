@@ -546,6 +546,85 @@ PopupWindow {
                         }
                     }
                 }
+
+                // ---------- volume ----------
+                // The phone volume is 0-100, not the 0-1 the Pipewire sliders
+                // above use, so this row carries its own slider in the same
+                // shape as VolumeSlider. It dims the way the switch row above
+                // does when there is nothing to move: routing off, or the CLI
+                // reporting an unknown volume (-1).
+                Rectangle {
+                    id: phoneVolRow
+                    width: parent.width
+                    height: root.rowHeight
+                    radius: 6
+                    color: "transparent"
+                    opacity: (PhoneAudio.on && PhoneAudio.volume >= 0) ? 1 : 0.4
+                    Behavior on opacity { NumberAnimation { duration: 140 } }
+
+                    Row {
+                        anchors {
+                            left: parent.left; right: parent.right
+                            leftMargin: 8; rightMargin: 8
+                            verticalCenter: parent.verticalCenter
+                        }
+                        spacing: 6
+
+                        Text {
+                            width: parent.width - 162
+                            text: "Volume"
+                            elide: Text.ElideRight
+                            color: (PhoneAudio.on && PhoneAudio.volume >= 0)
+                                   ? Tokyo.cyan : Tokyo.dim
+                            font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize }
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        Text {
+                            width: 40
+                            text: PhoneAudio.volume >= 0
+                                  ? PhoneAudio.volume + "%" : "--"
+                            color: PhoneAudio.volume >= 0 ? Tokyo.fg : Tokyo.dim
+                            font { family: Tokyo.fontFamily; pixelSize: 12 }
+                            horizontalAlignment: Text.AlignRight
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        Controls.Slider {
+                            id: phoneVolSlider
+                            width: 110
+                            height: 22
+                            from: 0
+                            to: 100
+                            stepSize: 1
+                            enabled: PhoneAudio.on && PhoneAudio.volume >= 0
+                            value: PhoneAudio.volume >= 0 ? PhoneAudio.volume : 0
+                            onMoved: PhoneAudio.setVolume(phoneVolSlider.value)
+
+                            background: Rectangle {
+                                y: phoneVolSlider.topPadding + phoneVolSlider.availableHeight / 2 - height / 2
+                                width: phoneVolSlider.availableWidth
+                                height: 4
+                                radius: 2
+                                color: Tokyo.bgHighlight
+                                Rectangle {
+                                    width: phoneVolSlider.visualPosition * parent.width
+                                    height: parent.height
+                                    radius: parent.radius
+                                    color: Tokyo.magenta
+                                }
+                            }
+                            handle: Rectangle {
+                                x: phoneVolSlider.leftPadding + phoneVolSlider.visualPosition * (phoneVolSlider.availableWidth - width)
+                                y: phoneVolSlider.topPadding + phoneVolSlider.availableHeight / 2 - height / 2
+                                width: 12
+                                height: 12
+                                radius: 6
+                                color: phoneVolSlider.pressed ? Tokyo.fg : Tokyo.pink
+                                border.color: Tokyo.bgDark
+                                border.width: 1
+                            }
+                        }
+                    }
+                }
             }
 
             Item { height: 8 }
