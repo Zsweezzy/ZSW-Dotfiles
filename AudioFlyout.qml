@@ -144,7 +144,11 @@ PopupWindow {
         /// is eaten as if it were an echo of the poll. Measured: a source
         /// polled every 400ms whose volume stopped at 0.82 ignored every
         /// subsequent drag because of exactly this.
+        /// The pendingVolume guard is the drag twin: while a debounced write is
+        /// armed, a poll echo of the value BEFORE the write landed must not
+        /// pull the slider back down mid-drag.
         function absorbVolume(v) {
+            if (wpa.pendingVolume >= 0) return
             if (Math.abs(wpa.volume - v) < 0.001) return
             wpa.applyingVolume = true
             wpa.volume = v
@@ -155,43 +159,58 @@ PopupWindow {
             wpa.muted = m
         }
 
-        /// wpctl has NO get-mute command — asking for one prints the usage
-        /// banner and changes nothing — and `wpctl inspect` does not report
-        /// mute either (measured: 0 lines matching "mute" on a node that was
-        /// muted at the time). Measured working read:
-        /// `pactl get-source-mute <name>`, which speaks the same PipeWire graph
-        /// through the pulse shim. So the probe is wpctl for the number and
-        /// pactl for the flag, in one shell line, coming back as two:
-        ///
-        ///   Volume: 0.82
-        ///   Mute: no
-        ///
-        /// A source answers get-source-mute and a sink get-sink-mute; one of
-        /// the two always fails, so the second is the fallback of the first.
-        /// Poll emits per LINE, so both are read here.
+        /// Reads come as two separate one-shot probes, each addressing the node
+        /// the way its tool wants it: wpctl by numeric id, pactl by NAME. The
+        /// name is passed as a full argv element of `pactl` — never spliced
+        /// into a shell string — so a hostile node name (a stream called
+        /// `x; touch /tmp/pwn` or `$(...)` or with backticks) cannot escape
+        /// into a command. The old single `sh -c` line concatenated the name
+        /// into script text and ran it, which EXECUTED it: measured PWNED for
+        /// `$(...)`, backticks, `;` and `'` payloads. Two probes also pick the
+        /// right read from isSink with no guessing fallback.
         Poll {
             id: probe
             interval: 400
-            // No id means nothing to read: the command would still be non-empty
-            // and Poll would still spawn `sh` for it, five times a second, to
-            // run `true`. Park it instead.
+            // No id means nothing to read: park instead of spawning `sh`
+            // five times a second to run nothing.
             active: wpa.id >= 0
-            command: ["sh", "-c",
-                      wpa.id < 0 ? "true"
-                      : "wpctl get-volume " + wpa.id
-                        + " ; pactl get-source-mute " + wpa.node.name
-                        + " 2>/dev/null || pactl get-sink-mute " + wpa.node.name
-                        + " 2>/dev/null"]
+            command: ["wpctl", "get-volume", String(wpa.id)]
             onResult: output => {
-                const t = String(output)
-                const m = t.match(/Volume:\s*([0-9.]+)/)
+                const m = String(output).match(/Volume:\s*([0-9.]+)/)
                 if (m) wpa.absorbVolume(parseFloat(m[1]))
-                wpa.absorbMuted(/Mute:\s*yes/.test(t))
+            }
+        }
+        Poll {
+            id: muteProbe
+            interval: 400
+            active: wpa.id >= 0 && !!wpa.node
+            command: ["pactl",
+                      wpa.node && wpa.node.isSink ? "get-sink-mute" : "get-source-mute",
+                      wpa.node ? String(wpa.node.name) : ""]
+            onResult: output => wpa.absorbMuted(/Mute:\s*yes/.test(String(output)))
+        }
+
+        /// A drag on a slider fires onVolumeChanged once per tick and spawns
+        /// one wpctl per tick; the timer collapses a drag into a single write
+        /// of the last value it reached. Poll echoes never touch this path —
+        /// absorbVolume arms `applying`, which consumes them below.
+        property real pendingVolume: -1
+        Timer {
+            id: writeDebounce
+            interval: 120
+            onTriggered: {
+                if (wpa.pendingVolume >= 0) {
+                    wpa.writeVolume(wpa.pendingVolume)
+                    wpa.pendingVolume = -1
+                }
             }
         }
 
         onVolumeChanged: if (wpa.applyingVolume) wpa.applyingVolume = false
-                         else wpa.writeVolume(wpa.volume)
+                         else {
+                             wpa.pendingVolume = wpa.volume
+                             writeDebounce.restart()
+                         }
         onMutedChanged: if (wpa.applyingMuted) wpa.applyingMuted = false
                         else wpa.writeMute(wpa.muted)
     }
@@ -236,6 +255,89 @@ PopupWindow {
         else Pipewire.preferredDefaultAudioSink = node
     }
 
+    // ---------------- per-app routing ----------------
+    // pactl is the only way to move a running app's stream to another device
+    // (PipeWire alone cannot retarget a sink-input), so the MOVE drawer reads
+    // pactl's JSON state while it is open: sink-inputs map to apps by
+    // `properties.node.name` (PwNode.name) — pactl 17 has no node.id to match
+    // on — and each sink-input's `sink` field is the numeric index of the
+    // sink it currently plays through, looked up in the sink list. Nothing
+    // here puts a name into a shell string: every pactl argument is its own
+    // argv element, the same rule as the WpAudio probes.
+    /// the app whose MOVE drawer is open, or null
+    property var routeFor: null
+    /// pactl sink-inputs: [{index, sink, properties.node.name}]
+    property var routeStreams: []
+    /// pactl sinks: [{index, name, description}]
+    property var routeTargets: []
+    /// the drawer polls only while some app's MOVE view is open; closed, a
+    /// pactl every 1.5s is pure waste
+    Poll {
+        id: streamProbe
+        interval: 1500
+        active: !!root.routeFor
+        command: ["pactl", "--format=json", "list", "sink-inputs"]
+        // `active` gates the loop, but Poll runs one initial probe at load no
+        // matter what — ignore it while no drawer is open so a stale snapshot
+        // never sits in routeStreams. The parse depends on pactl 17 emitting
+        // the whole array as ONE line: SplitParser fires per line, and any
+        // multi-line format would fail the parse and degrade to "not playing"
+        // instead of crashing.
+        onResult: output => {
+            if (!root.routeFor) return
+            try {
+                const parsed = JSON.parse(String(output))
+                if (JSON.stringify(parsed) !== JSON.stringify(root.routeStreams))
+                    root.routeStreams = parsed
+            } catch (err) { root.routeStreams = [] }
+        }
+    }
+    Poll {
+        id: targetProbe
+        interval: 1500
+        active: !!root.routeFor
+        command: ["pactl", "--format=json", "list", "sinks"]
+        onResult: output => {
+            if (!root.routeFor) return
+            try {
+                const parsed = JSON.parse(String(output))
+                if (JSON.stringify(parsed) !== JSON.stringify(root.routeTargets))
+                    root.routeTargets = parsed
+            } catch (err) { root.routeTargets = [] }
+        }
+    }
+    /// drop the open drawer when its app's stream disappears
+    onAppsChanged: if (root.routeFor && !root.apps.includes(root.routeFor)) root.routeFor = null
+    /// the sink-input pactl knows for this app, or null
+    function sinkInputFor(app) {
+        if (!app || !app.name) return null
+        return root.routeStreams.find(s => s && s.properties
+                                          && s.properties["node.name"] === app.name) || null
+    }
+    /// the sink this app's stream currently plays through, or null
+    function routeDeviceFor(app) {
+        const si = root.sinkInputFor(app)
+        if (!si || si.sink === undefined) return null
+        return root.routeTargets.find(t => t && t.index === si.sink) || null
+    }
+    /// a sink's human name (pactl's description), like the device rows use
+    function friendlyTarget(target) {
+        return target ? (target.description || target.name || "Unknown") : "Unknown"
+    }
+    function moveApp(app, target) {
+        if (!target || !app || !app.name) return
+        // One app can have several sink-inputs under the same node.name (four
+        // Firefox streams are all "Firefox"); move every matching stream or
+        // the others would stay on the old device. Argv elements only.
+        const name = app.name
+        for (const si of root.routeStreams) {
+            if (si && si.properties && si.properties["node.name"] === name) {
+                Quickshell.execDetached(["pactl", "move-sink-input",
+                                         String(si.index), String(target.name)])
+            }
+        }
+    }
+
     // ---------------- window / anchoring ----------------
     PwObjectTracker {
         objects: root.trackedNodes
@@ -252,14 +354,15 @@ PopupWindow {
     // PipeWire takes a volume above 1.0 — that is exactly what "volume over
     // 100%" means in pavucontrol — and these sliders hand the number straight to
     // it. It is off by default because a boosted stream clips on its loud parts,
-    // so it has to be asked for rather than reached by accident.
-    property bool overboost: false
+    // so it has to be asked for rather than reached by accident. The flag lives
+    // in AudioStates (not here) because the bar wheel reads the same ceiling
+    // and both must agree after a config reload.
     /// whether the ADVANCED drawer at the bottom of the panel is open
     property bool advanced: false
     /// slider ceiling: 150% with overboost on, the ordinary 100% without it.
     /// Switching it off does not pull anything already above 100% back down —
     /// it only stops the slider from going there.
-    readonly property real maxVolume: root.overboost ? 1.5 : 1
+    readonly property real maxVolume: AudioStates.overboost ? 1.5 : 1
 
     /// The on/off switch, same shape as the settings flyout's: a capsule track
     /// with a knob that slides, so the knob's side is the state and no
@@ -311,13 +414,19 @@ PopupWindow {
         /// suppressed for a poll echo by its own `applying` flag — so both
         /// paths are the same line of code.
         property var audio
+        /// true = the phone shim channel: integer 0-100 and
+        /// PhoneAudio.setVolume instead of a 0-1 audio object.
+        property bool phoneLike: false
         height: 22
         from: 0
-        to: root.maxVolume
-        stepSize: 0.01
-        value: vs.audio ? vs.audio.volume : 0
+        to: vs.phoneLike ? 100 : root.maxVolume
+        stepSize: vs.phoneLike ? 1 : 0.01
+        value: vs.phoneLike
+               ? (PhoneAudio.volume >= 0 ? PhoneAudio.volume : 0)
+               : (vs.audio ? vs.audio.volume : 0)
         onMoved: {
-            if (vs.audio) vs.audio.volume = vs.value
+            if (vs.phoneLike) PhoneAudio.setVolume(vs.value)
+            else if (vs.audio) vs.audio.volume = vs.value
         }
 
         background: Rectangle {
@@ -389,6 +498,34 @@ PopupWindow {
             anchors.fill: parent
             enabled: !!mg.audio
             onClicked: if (mg.audio) mg.audio.muted = !mg.audio.muted
+        }
+    }
+
+    /// A thin loudness strip under a row, fed by PwNodePeakMonitor. The
+    /// monitor takes the PwNode itself (its `node` is PwNodeIface, the type
+    /// exported as PwNode — not the `.audio` interface), reports the max of
+    /// its channel peaks as 0..1, and only captures while the strip is
+    /// actually on screen — a meter for a closed flyout is a meter nobody
+    /// sees.
+    component PeakBar: Item {
+        id: pb
+        /// the PwNode to meter, or null for no meter
+        property var node
+        implicitHeight: 2
+        PwNodePeakMonitor {
+            id: mon
+            node: pb.node
+            enabled: root.visible && pb.visible
+        }
+        Rectangle {
+            anchors { left: parent.left; bottom: parent.bottom }
+            // the 0.02 floor keeps a silent-but-live stream from flashing a
+            // zero-width sliver in and out with every poll
+            width: parent.width * Math.max(mon.peak, 0.02)
+            height: parent.height
+            radius: 1
+            color: Tokyo.cyan
+            opacity: 0.85
         }
     }
 
@@ -588,40 +725,10 @@ PopupWindow {
                             horizontalAlignment: Text.AlignRight
                             verticalAlignment: Text.AlignVCenter
                         }
-                        Controls.Slider {
-                            id: phoneVolSlider
+                        VolumeSlider {
                             width: 110
-                            height: 22
-                            from: 0
-                            to: 100
-                            stepSize: 1
                             enabled: PhoneAudio.on && PhoneAudio.volume >= 0
-                            value: PhoneAudio.volume >= 0 ? PhoneAudio.volume : 0
-                            onMoved: PhoneAudio.setVolume(phoneVolSlider.value)
-
-                            background: Rectangle {
-                                y: phoneVolSlider.topPadding + phoneVolSlider.availableHeight / 2 - height / 2
-                                width: phoneVolSlider.availableWidth
-                                height: 4
-                                radius: 2
-                                color: Tokyo.bgHighlight
-                                Rectangle {
-                                    width: phoneVolSlider.visualPosition * parent.width
-                                    height: parent.height
-                                    radius: parent.radius
-                                    color: Tokyo.magenta
-                                }
-                            }
-                            handle: Rectangle {
-                                x: phoneVolSlider.leftPadding + phoneVolSlider.visualPosition * (phoneVolSlider.availableWidth - width)
-                                y: phoneVolSlider.topPadding + phoneVolSlider.availableHeight / 2 - height / 2
-                                width: 12
-                                height: 12
-                                radius: 6
-                                color: phoneVolSlider.pressed ? Tokyo.fg : Tokyo.pink
-                                border.color: Tokyo.bgDark
-                                border.width: 1
-                            }
+                            phoneLike: true
                         }
                     }
                 }
@@ -689,7 +796,7 @@ PopupWindow {
                     anchors { left: parent.left; leftMargin: 8
                               verticalCenter: parent.verticalCenter }
                     text: "ADVANCED"
-                    color: root.advanced || root.overboost ? Tokyo.blue : Tokyo.dim
+                    color: root.advanced || AudioStates.overboost ? Tokyo.blue : Tokyo.dim
                     font { family: Tokyo.fontFamily; pixelSize: 10; bold: true; letterSpacing: 1.5 }
                 }
                 Text {
@@ -734,13 +841,13 @@ PopupWindow {
                             width: parent.width - 40
                             text: "Allow volume to go up to 150%"
                             elide: Text.ElideRight
-                            color: root.overboost ? Tokyo.cyan : Tokyo.fg
+                            color: AudioStates.overboost ? Tokyo.cyan : Tokyo.fg
                             font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize }
                             verticalAlignment: Text.AlignVCenter
                         }
                         Toggle {
-                            checked: root.overboost
-                            onToggled: root.overboost = !root.overboost
+                            checked: AudioStates.overboost
+                            onToggled: AudioStates.overboost = !AudioStates.overboost
                         }
                     }
 
@@ -748,7 +855,7 @@ PopupWindow {
                         id: boostHover
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: root.overboost = !root.overboost
+                        onClicked: AudioStates.overboost = !AudioStates.overboost
                     }
                 }
             }
@@ -828,6 +935,14 @@ PopupWindow {
                 }
             }
 
+            PeakBar {
+                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                height: 2
+                // only the device you can actually control carries a meter
+                visible: row.controllable
+                node: row.node && row.node.audio ? row.node : null
+            }
+
             MouseArea {
                 id: hover
                 // Stops short of the volume control, or the row would eat every
@@ -855,45 +970,158 @@ PopupWindow {
     // ---------------- application row ----------------
     Component {
         id: appRow
-        Rectangle {
+        // A Column, not a plain Rectangle: the row carries its MOVE drawer
+        // beneath it, and only the Column's implicitHeight grows when the
+        // drawer is open. The other delegates stay Rectangles and the list
+        // keeps its even row heights.
+        Column {
             required property var modelData
             readonly property var node: modelData
 
-            id: row
+            id: col
             width: parent.width
-            height: root.rowHeight
-            radius: 6
-            color: "transparent"
 
-            Row {
-                anchors {
-                    left: parent.left; right: parent.right
-                    leftMargin: 8; rightMargin: 8
-                    verticalCenter: parent.verticalCenter
+            Rectangle {
+                id: row
+                width: parent.width
+                height: root.rowHeight
+                radius: 6
+                color: "transparent"
+
+                Row {
+                    anchors {
+                        left: parent.left; right: parent.right
+                        leftMargin: 8; rightMargin: 8
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: 6
+
+                    Text {
+                        // 98: the route glyph (20) is what ate the old 118.
+                        width: 98
+                        text: root.friendlyName(col.node)
+                        elide: Text.ElideRight
+                        color: Tokyo.fg
+                        font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize }
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    VolumePercent {
+                        width: 40
+                        audio: col.node ? col.node.audio : null
+                    }
+                    MuteGlyph {
+                        width: 20
+                        audio: col.node ? col.node.audio : null
+                    }
+
+                    // 150% with AMPLIFY on, the usual 100% ceiling without it.
+                    // 202 = the fixed siblings + their gaps, unchanged.
+                    VolumeSlider {
+                        width: parent.width - 202
+                        audio: col.node ? col.node.audio : null
+                    }
+
+                    // The move-to-device switch: opens this app's MOVE drawer.
+                    Item {
+                        width: 20
+                        height: parent.height
+                        Text {
+                            anchors.centerIn: parent
+                            text: "\uf0ec"
+                            color: root.routeFor === col.node ? Tokyo.cyan : Tokyo.fg
+                            font { family: Tokyo.fontFamily; pixelSize: 11 }
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: root.routeFor = (root.routeFor === col.node) ? null : col.node
+                        }
+                    }
                 }
-                spacing: 6
+
+                PeakBar {
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: 2
+                    node: col.node && col.node.audio ? col.node : null
+                }
+            }
+
+            // ---------- MOVE drawer ----------
+            // The list of every sink an app's stream could be sent to, with a
+            // check on the one it is playing through now. Polls run only while
+            // this drawer is open (see routeFor). The folded height goes to 0
+            // by hand for the same reason as the ADVANCED drawer: a hidden
+            // Column still counts its children.
+            Column {
+                width: parent.width
+                visible: root.routeFor === col.node
+                height: visible ? implicitHeight : 0
+                spacing: 2
 
                 Text {
-                    width: 118
-                    text: root.friendlyName(row.node)
+                    width: parent.width
+                    leftPadding: 8
+                    topPadding: 2
+                    bottomPadding: 2
+                    text: {
+                        const si = root.sinkInputFor(col.node)
+                        if (!si) return root.friendlyName(col.node) + " · not playing"
+                        return "MOVE " + root.friendlyName(col.node) + " TO"
+                    }
                     elide: Text.ElideRight
-                    color: Tokyo.fg
-                    font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize }
-                    verticalAlignment: Text.AlignVCenter
-                }
-                VolumePercent {
-                    width: 40
-                    audio: row.node ? row.node.audio : null
-                }
-                MuteGlyph {
-                    width: 20
-                    audio: row.node ? row.node.audio : null
+                    color: Tokyo.blue
+                    font { family: Tokyo.fontFamily; pixelSize: 10; bold: true; letterSpacing: 1.5 }
                 }
 
-                // 150% with AMPLIFY on, the usual 100% ceiling without it.
-                VolumeSlider {
-                    width: parent.width - 202
-                    audio: row.node ? row.node.audio : null
+                Repeater {
+                    model: root.routeTargets
+                    delegate: Rectangle {
+                        required property var modelData
+                        readonly property var target: modelData
+
+                        id: tgtRow
+                        width: parent.width
+                        height: 28
+                        radius: 4
+                        color: tgtHover.hovered ? Tokyo.bgHighlight : "transparent"
+                        // dead when pactl cannot see the app's stream (e.g. it
+                        // only exists inside PipeWire's graph so far)
+                        opacity: root.sinkInputFor(col.node) ? 1 : 0.5
+
+                        Row {
+                            anchors {
+                                left: parent.left; right: parent.right
+                                leftMargin: 8; rightMargin: 8
+                                verticalCenter: parent.verticalCenter
+                            }
+                            spacing: 6
+
+                            Text {
+                                width: parent.width - 26
+                                text: root.friendlyTarget(target)
+                                elide: Text.ElideRight
+                                color: root.routeDeviceFor(col.node) === target
+                                       ? Tokyo.cyan : Tokyo.fg
+                                font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize - 1 }
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            Text {
+                                width: 20
+                                text: "\uf00c" // check
+                                color: root.routeDeviceFor(col.node) === target
+                                       ? Tokyo.green : "transparent"
+                                font { family: Tokyo.fontFamily; pixelSize: 12 }
+                                horizontalAlignment: Text.AlignRight
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                        }
+                        MouseArea {
+                            id: tgtHover
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            enabled: !!root.sinkInputFor(col.node)
+                            onClicked: root.moveApp(col.node, target)
+                        }
+                    }
                 }
             }
         }
