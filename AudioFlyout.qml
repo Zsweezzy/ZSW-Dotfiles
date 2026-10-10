@@ -9,6 +9,8 @@
 //   Input devices    click a row → Pipewire.preferredDefaultAudioSource
 //                    the active input device also carries a volume slider
 //                    + mute, same as the active output device above
+//                    every input row also carries a headphones glyph that
+//                    loops that mic into the current output — "listen to mic"
 //   Applications     per-playback-app volume slider + mute toggle
 //   Advanced         bottom drawer: the switch that lifts the app sliders to
 //                    150% instead of 100%
@@ -336,6 +338,62 @@ PopupWindow {
                                          String(si.index), String(target.name)])
             }
         }
+    }
+
+    // ---------------- mic monitoring ----------------
+    // "Listen to this mic" is not something PipeWire puts on the node — it is a
+    // loopback the pulse layer owns. One module-loopback per source is loaded
+    // into pipewire-pulse, so the routing outlives a config reload: this panel
+    // remembers nothing, it reads the loaded modules back. No `sink=` is passed,
+    // so the loopback follows the default output rather than being pinned to
+    // whatever was default when it was switched on. latency_msec=1 because the
+    // pulse default (~200ms) is audible as a slap-back echo when you monitor
+    // yourself.
+    //
+    // `unload-module` addresses a module by its numeric index, and the JSON
+    // form of `list modules` carries no index (only `pactl list modules short`
+    // prints it) — so the probe reads the short form and pairs each loopback's
+    // index with the source named in its argument. The argument is a module
+    // loopback's own (`source=X sink=Y latency_msec=1`), never a newline, so a
+    // line-per-module grep is exact. The pipeline is a fixed string: no node
+    // name is ever spliced into it, the same rule the WpAudio probes and
+    // moveApp follow.
+    /// source name -> module index, for every loaded module-loopback
+    property var listenMods: ({})
+    Poll {
+        id: listenProbe
+        interval: 1000
+        // Only while the panel is open: nothing on screen reads it otherwise.
+        // Poll fires once at load regardless, which just seeds the real state.
+        active: root.visible
+        command: ["sh", "-c",
+                  "pactl list modules short | grep module-loopback | tr \"\\n\" \";\""]
+        onResult: output => {
+            const mods = {}
+            for (const line of String(output).split(";")) {
+                const f = line.split("\t")
+                if (f.length < 3 || f[1] !== "module-loopback") continue
+                const m = f[2].match(/source=(\S+)/)
+                if (m) mods[m[1]] = parseInt(f[0])
+            }
+            root.listenMods = mods
+        }
+    }
+    function isListening(node) {
+        return !!node && node.name !== undefined
+                && root.listenMods[node.name] !== undefined
+    }
+    function toggleListen(node) {
+        if (!node || !node.name) return
+        const idx = root.listenMods[node.name]
+        // Argv elements only — a hostile node name cannot reach a shell.
+        if (idx !== undefined)
+            Quickshell.execDetached(["pactl", "unload-module", String(idx)])
+        else
+            Quickshell.execDetached(["pactl", "load-module", "module-loopback",
+                                     "source=" + node.name, "latency_msec=1"])
+        // Show the new state without waiting out the whole interval.
+        listenProbe.refresh()
     }
 
     // ---------------- window / anchoring ----------------
@@ -844,6 +902,8 @@ PopupWindow {
             readonly property bool isDefault: node && (asInput
                 ? Pipewire.defaultAudioSource === node
                 : Pipewire.defaultAudioSink === node)
+            /// true while this input is looped into the output (see listenMods)
+            readonly property bool listening: root.isListening(row.node)
 
             id: row
             width: parent.width
@@ -875,8 +935,10 @@ PopupWindow {
                     // 26 = the 20px check + its 6px gap. The control column is
                     // percent 40 + mute 20 + slider 110 plus the three gaps
                     // between them and the check's — 214 — i.e. everything that
-                    // is not the name.
+                    // is not the name. An input row adds the 20px listen glyph
+                    // and its gap on the far right, so it reserves 26 more.
                     width: parent.width - (row.controllable ? 214 : 26)
+                           - (row.asInput ? 26 : 0)
                     text: root.friendlyName(row.node)
                     elide: Text.ElideRight
                     color: row.isDefault ? Tokyo.blue : Tokyo.fg
@@ -905,6 +967,30 @@ PopupWindow {
                     horizontalAlignment: Text.AlignRight
                     verticalAlignment: Text.AlignVCenter
                 }
+                // ---------- listen to mic ----------
+                // Input rows only; a zero-width no-op on output rows, so their
+                // layout is untouched. Lit cyan while the loopback is up. The
+                // MouseArea is on the glyph, and the row's own select MouseArea
+                // stops short of it (see `hover` below) so the two never both
+                // swallow one click.
+                Item {
+                    width: row.asInput ? 20 : 0
+                    height: parent.height
+                    visible: row.asInput
+                    Text {
+                        anchors.centerIn: parent
+                        // \uF025 headphones — "hear this", distinct from the
+                        // \uF130/\uF131 mic glyphs that mute the input itself.
+                        text: "\uf025"
+                        color: row.listening ? Tokyo.cyan : Tokyo.fg
+                        font { family: Tokyo.fontFamily; pixelSize: 12 }
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.toggleListen(row.node)
+                    }
+                }
             }
 
             MouseArea {
@@ -923,7 +1009,9 @@ PopupWindow {
                 anchors {
                     left: parent.left; top: parent.top; bottom: parent.bottom
                     right: parent.right
-                    rightMargin: row.controllable ? 206 : 0
+                    // 8px Row margin + 20px listen glyph on an input row, so
+                    // its click reaches the glyph and not this select handler.
+                    rightMargin: row.controllable ? 206 : (row.asInput ? 28 : 0)
                 }
                 hoverEnabled: true
                 onClicked: root.setDefault(row.node, row.asInput)
