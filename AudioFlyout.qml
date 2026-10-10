@@ -501,34 +501,6 @@ PopupWindow {
         }
     }
 
-    /// A thin loudness strip under a row, fed by PwNodePeakMonitor. The
-    /// monitor takes the PwNode itself (its `node` is PwNodeIface, the type
-    /// exported as PwNode — not the `.audio` interface), reports the max of
-    /// its channel peaks as 0..1, and only captures while the strip is
-    /// actually on screen — a meter for a closed flyout is a meter nobody
-    /// sees.
-    component PeakBar: Item {
-        id: pb
-        /// the PwNode to meter, or null for no meter
-        property var node
-        implicitHeight: 2
-        PwNodePeakMonitor {
-            id: mon
-            node: pb.node
-            enabled: root.visible && pb.visible
-        }
-        Rectangle {
-            anchors { left: parent.left; bottom: parent.bottom }
-            // the 0.02 floor keeps a silent-but-live stream from flashing a
-            // zero-width sliver in and out with every poll
-            width: parent.width * Math.max(mon.peak, 0.02)
-            height: parent.height
-            radius: 1
-            color: Tokyo.cyan
-            opacity: 0.85
-        }
-    }
-
     Rectangle {
         id: box
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
@@ -935,14 +907,6 @@ PopupWindow {
                 }
             }
 
-            PeakBar {
-                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                height: 2
-                // only the device you can actually control carries a meter
-                visible: row.controllable
-                node: row.node && row.node.audio ? row.node : null
-            }
-
             MouseArea {
                 id: hover
                 // Stops short of the volume control, or the row would eat every
@@ -1036,12 +1000,6 @@ PopupWindow {
                             onClicked: root.routeFor = (root.routeFor === col.node) ? null : col.node
                         }
                     }
-                }
-
-                PeakBar {
-                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: 2
-                    node: col.node && col.node.audio ? col.node : null
                 }
             }
 
