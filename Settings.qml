@@ -2,10 +2,12 @@
 //
 // Three glyphs, no text: the ethernet cable in blue while enp14s0 has carrier,
 // the wifi glyph while a link is associated, and the power glyph, which is the
-// same one the shutdown button in the flyout wears. Each net icon is there only
-// while its link is up, so the pill carries just the one that is actually
-// moving data. The power glyph is always there — it is the way into the menu,
-// and a pill that changes width as you unplug things is a moving target.
+// same one the shutdown button in the flyout wears. The wifi glyph carries the
+// link's strength — one to four arcs — so the bar says how good the connection
+// is without a number to read. Each net icon is there only while its link is
+// up, so the pill carries just the one that is actually moving data. The power
+// glyph is always there — it is the way into the menu, and a pill that changes
+// width as you unplug things is a moving target.
 //
 // Everything the pill used to say in a tooltip is now one click away in
 // SettingsFlyout, so no tooltip: the network block, the SSID reveal, the
@@ -47,6 +49,34 @@ Module {
     }
     /// wired wins when both are up — it is the link everything else rides on
     readonly property bool primaryEthernet: root.ethUp
+
+    // ---------- signal quality ----------
+    /// One tiering of the signal, so the pill's glyph, the flyout's rows and
+    /// the tile cannot disagree: 80/60/35 is also what the rows have always
+    /// used, and a link that reads 70% is one story everywhere it appears.
+    function bars(signal) {
+        return signal >= 80 ? 4 : signal >= 60 ? 3 : signal >= 35 ? 2 : 1
+    }
+    /// The MDI wifi-strength glyphs — one to four arcs, weakest first — as
+    /// found in the Nerd Font (U+F091F, U+F0922, U+F0925, U+F0928). Kept as
+    /// escapes and not literal characters because a raw PUA glyph is
+    /// invisible in a diff, which is how the wrong icon ships unnoticed.
+    readonly property var wifiGlyphs: ["\u{f091f}", "\u{f0922}", "\u{f0925}", "\u{f0928}"]
+    function signalGlyph(tier) {
+        return tier >= 1 && tier <= 4 ? root.wifiGlyphs[tier - 1] : "\uf1eb"
+    }
+    /// The active wifi adapter's signal (0-100) from network-monitor.sh, or
+    /// -1 while nothing has reported one — radio off, or the first sample is
+    /// still a second away. Never 0: 0 would mean "one bar of a real
+    /// reading", which is not the same statement as "no reading".
+    readonly property int wifiSignal: {
+        const a = root.findWifiAdapter(root.adapters)
+        return a && typeof a.signal === "number" ? a.signal : -1
+    }
+    /// What the wifi glyph wears wherever it appears: the strength tier while
+    /// there is a reading, the plain wifi glyph until there is one.
+    readonly property string wifiGlyph: root.wifiSignal < 0
+        ? "\uf1eb" : root.signalGlyph(root.bars(root.wifiSignal))
 
     // ---------- connection stats (was Net.qml, read by the flyout) ----------
     /// The WI-FI section's reveal/hide button, and the only thing that decides
@@ -312,6 +342,7 @@ Module {
         wifiListPoll.refresh()
         btPoll.refresh()
         lsPoll.refresh()
+        hdrPoll.refresh()
     }
 
     // ---------- airdrop (LocalSend) ----------
@@ -354,6 +385,66 @@ Module {
         settle.start()
     }
 
+    // ---------- live speedtest ----------
+    /// The peak the line can currently reach, {"down":…,"up":…} in Mbit/s.
+    /// `testing` is true only from shell start until the first run lands.
+    /// After that a refetch keeps the last result on screen, so the row
+    /// says it is measuring exactly once per boot and never blanks.
+    property var speed: ({ down: 0, up: 0, testing: true })
+    /// True while the flyout is open. The test runs either way; this only
+    /// picks the cadence — fast while someone is watching, a slow
+    /// background rhythm when the panel is shut.
+    property bool speedLive: false
+
+    Poll {
+        id: speedPoll
+        // Always on: Poll runs its command once at component load and then
+        // on the interval, so a boot gets its first test for free. The
+        // speedLive flag changes how often, never whether.
+        command: [Tokyo.scriptDir + "/speedtest.sh"]
+        // The script caps both transfers at 10s, so a run (~20s worst case)
+        // always lands inside the fast interval and two tests never overlap.
+        interval: root.speedLive ? 30000 : 600000
+        onResult: out => {
+            try {
+                const o = JSON.parse(out)
+                root.speed = {
+                    down: Number(o.down) > 0 ? Number(o.down) : 0,
+                    up: Number(o.up) > 0 ? Number(o.up) : 0,
+                    testing: false,
+                }
+            } catch (e) {
+                // Not our line (or a partial read): drop the spinner, keep
+                // the last good numbers.
+                root.speed = Object.assign({}, root.speed, { testing: false })
+            }
+        }
+    }
+
+    /// Open/close hook from the flyout. Opening kicks a run straight away so
+    /// the numbers are never older than the panel, and closing drops back to
+    /// the background cadence. The last result stays on screen either way --
+    /// `testing` was spent on the boot run and is never set again.
+    function setSpeedLive(on) {
+        if (root.speedLive === on) return
+        root.speedLive = on
+        if (on) speedPoll.refresh()
+    }
+
+    // ---------- HDR (the M28U on DP-1) ----------
+    /// Runtime-only, and read back rather than assumed: hdr.sh's `on`/`off`
+    /// each append a Hyprland monitor rule with no way to remove one, so the
+    /// pill mirrors the monitor's own `colorManagementPreset` instead of
+    /// holding a second copy that can drift.
+    property bool hdr: false
+
+    Poll {
+        id: hdrPoll
+        command: [Tokyo.scriptDir + "/hdr.sh", "status"]
+        interval: 30000
+        onResult: output => { root.hdr = output.trim() === "on" }
+    }
+
     // ---------- actions ----------
     // Actions (join/pair) are execDetached rather than polls: they can block
     // for seconds waiting on a phone, and a Poll would hold its process open
@@ -374,6 +465,15 @@ Module {
     function setBtRadio(on) {
         root.run(Tokyo.scriptDir + "/bt-radio.sh", [on ? "on" : "off"])
         root.bt = Object.assign({}, root.bt, { powered: on })
+        settle.start()
+    }
+
+    function setHdr(on) {
+        root.run(Tokyo.scriptDir + "/hdr.sh", [on ? "on" : "off"])
+        // Optimistic, like the radios: the monitor takes a beat to actually
+        // change mode, so waiting for the poll would leave the switch lagging
+        // behind the pointer.
+        root.hdr = on
         settle.start()
     }
 
@@ -462,7 +562,7 @@ Module {
             visible: root.ethUp,
         },
         {
-            text: "\uf1eb",
+            text: root.wifiGlyph,
             color: Tokyo.cyan,
             visible: root.wifiUp,
         },

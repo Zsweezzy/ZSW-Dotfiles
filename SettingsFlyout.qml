@@ -17,6 +17,8 @@
 //   AIRDROP     LocalSend. The tile is the whole feature: press it and the
 //               window opens, or comes forward if it is already open, and the
 //               switch is just on/off for the app itself.
+//   HDR         the M28U (DP-1) between HDR and SDR. Runtime-only, and the
+//               tile has no panel — pressing it flips the monitor.
 //   POWER       sleep, reboot, shutdown.
 import QtQuick
 import QtQuick.Shapes
@@ -45,8 +47,8 @@ PopupWindow {
     readonly property int tileW: 148
     readonly property int tileH: 56
 
-    // Three tiles and their two gaps: 444 + 16, plus the padding either side.
-    implicitWidth: root.tileW * 3 + root.padH * 2 + 16
+    // Four tiles and their three gaps: 592 + 24, plus the padding either side.
+    implicitWidth: root.tileW * 4 + root.padH * 2 + 24
     implicitHeight: box.height + root.gap
 
     // ---------------- the reveal ----------------
@@ -143,6 +145,10 @@ PopupWindow {
     // the time we hear about it. So there is nothing to animate — just drop `t`
     // so the next open starts from the top rather than mid-reveal.
     onVisibleChanged: {
+        // The speedtest runs either way; this only picks its cadence. Open
+        // kicks a fresh run so the row is current with the panel, close
+        // hands the pill back its slow background rhythm.
+        if (root.pill !== null) root.pill.setSpeedLive(visible)
         if (visible) return
         openAnim.stop()
         closeAnim.stop()
@@ -182,6 +188,11 @@ PopupWindow {
     readonly property bool ssidShown: root.pill !== null && root.pill.ssidShown
     readonly property bool ethUp: root.pill !== null && root.pill.ethUp
     readonly property bool wifiUp: root.pill !== null && root.pill.wifiUp
+    readonly property bool hdr: root.pill !== null && root.pill.hdr
+    /// The pill's wifi glyph, proxied for the tile: strength arcs while the
+    /// monitor has a reading, the plain wifi glyph until it does.
+    readonly property string wifiGlyph: root.pill === null
+        ? "\uf1eb" : root.pill.wifiGlyph
     readonly property var airdrop: root.pill === null
         ? { running: false } : root.pill.airdrop
 
@@ -212,10 +223,32 @@ PopupWindow {
         ? ""
         : (root.linkTab === 0 ? root.pill.ethernetTooltip : root.pill.wifiTooltip)
 
-    /// A bar of signal, so strength is a glance and not a number to read.
-    function bars(signal) {
-        return signal >= 80 ? 4 : signal >= 60 ? 3 : signal >= 35 ? 2 : 1
+    /// The speedtest line, split per direction so each figure carries its
+    /// own colour: download keeps the cyan this row always had, upload is
+    /// purple. The state words live on the download side and the upload
+    /// stays blank until there is a second figure, so "testing…" is shown
+    /// once rather than twice.
+    readonly property string speedDownText: {
+        const s = root.pill === null ? null : root.pill.speed
+        if (s === null || s.testing) return "testing…"
+        const down = s.down > 0 ? s.down.toFixed(1) : "–"
+        const up = s.up > 0 ? s.up.toFixed(1) : "–"
+        if (down === "–" && up === "–") return "no result"
+        // Same arrow pair the DISK strip uses: down is the download
+        // direction there and here, so the two panels read the same way.
+        return "\uf063 " + down + " Mbps"
     }
+    readonly property string speedUpText: {
+        const s = root.pill === null ? null : root.pill.speed
+        if (s === null || s.testing) return ""
+        const down = s.down > 0 ? s.down.toFixed(1) : "–"
+        const up = s.up > 0 ? s.up.toFixed(1) : "–"
+        if (down === "–" && up === "–") return ""
+        return "\uf062 " + up + " Mbps"
+    }
+
+    // Signal tiering lives on the pill (`bars`, `signalGlyph` in Settings.qml)
+    // so the rows, the tile and the bar's own glyph read one set of numbers.
 
     // ---------- shared bits ----------
     component SectionLabel: Text {
@@ -602,29 +635,45 @@ PopupWindow {
                 spacing: 8
                 opacity: root.stagger(0, root.staggerSpan)
                 transform: Translate { y: (1 - bandPowerRow.opacity) * 5 }
+                // One tile-width cell per action, aligned with the four tiles
+                // below: shutdown, reboot, sleep and log out each get a full
+                // cell (root.tileW). The row sums to content.width exactly.
                 PillButton {
-                    width: (content.width - 16) / 3
+                    width: root.tileW
                     text: "SHUTDOWN"
                     glyph: ""
                     accent: Tokyo.red
                     onClicked: Quickshell.execDetached(["systemctl", "poweroff"])
                 }
                 PillButton {
-                    width: (content.width - 16) / 3
+                    width: root.tileW
                     text: "REBOOT"
                     glyph: ""
                     accent: Tokyo.magenta
                     onClicked: Quickshell.execDetached(["systemctl", "reboot"])
                 }
                 PillButton {
-                    width: (content.width - 16) / 3
+                    width: root.tileW
                     text: "SLEEP"
                     glyph: ""
                     accent: Tokyo.yellow
                     onClicked: Quickshell.execDetached(["systemctl", "suspend"])
                 }
+                // Log out rather than power down: `hyprctl dispatch exit`
+                // ends the session and leaves the machine at the login
+                // screen, which is the one thing this row could not do. The
+                // sign-out glyph \uf08b, not the power glyph the other
+                // three wear — three identical buttons in one row is how a
+                // logout becomes an accidental shutdown.
+                PillButton {
+                    width: root.tileW
+                    text: "LOGOUT"
+                    glyph: "\uf08b"
+                    accent: Tokyo.blue
+                    onClicked: Quickshell.execDetached(["hyprctl", "dispatch", "exit"])
+                }
             }
-            // ================= the two tiles =================
+            // ================= the tiles =================
             Row {  id: bandTiles
                 width: parent.width
                 spacing: 8
@@ -635,7 +684,7 @@ PopupWindow {
                     id: wifiTile
                     width: root.tileW
                     height: root.tileH
-                    glyph: ""
+                    glyph: root.wifiGlyph
                     label: "Wi-Fi"
                     accent: Tokyo.cyan
                     lit: root.wifi.radio
@@ -696,6 +745,85 @@ PopupWindow {
                     onSwitched: {
                         if (root.pill !== null)
                             root.pill.setLocalSend(!root.airdrop.running)
+                    }
+                }
+
+                // HDR is runtime-only and has no detail panel of its own: the
+                // whole tile is the feature, so pressing the body flips it too
+                // rather than opening a panel with a single switch in it.
+                Tile {
+                    id: hdrTile
+                    width: root.tileW
+                    height: root.tileH
+                    glyph: ""
+                    label: "HDR"
+                    accent: Tokyo.magenta
+                    lit: root.hdr
+                    sub: root.hdr ? "On (10-bit)" : "SDR"
+                    onToggled: {
+                        if (root.pill !== null) root.pill.setHdr(!root.hdr)
+                    }
+                    onSwitched: {
+                        if (root.pill !== null) root.pill.setHdr(!root.hdr)
+                    }
+                }
+            }
+
+            // ================= SPEEDTEST =================
+            // The peak this line can currently reach, re-tested on a timer.
+            // The pill always runs the test; this panel only sets the
+            // cadence (onVisibleChanged) — fast while it is open, a slow
+            // background rhythm when it is not — so opening always finds a
+            // fresh run and a shut panel still keeps results coming.
+            //
+            // Two figures in one card rather than a gauge: down and up are
+            // read against each other, and a ring per direction would double
+            // the row to say half of what one line says.
+            Item {  id: bandSpeed
+                width: parent.width
+                height: 26
+                opacity: root.stagger(1, root.staggerSpan)
+                transform: Translate { y: (1 - bandSpeed.opacity) * 5 }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 6
+                    color: Tokyo.bg
+                    border.color: Tokyo.bgHighlight
+                    border.width: 1
+                }
+                Text {
+                    id: speedLabel
+                    anchors {
+                        left: parent.left; leftMargin: 10
+                        verticalCenter: parent.verticalCenter
+                    }
+                    text: "SPEEDTEST"
+                    color: Tokyo.yellow
+                    font { family: Tokyo.fontFamily; pixelSize: 10
+                           bold: true; letterSpacing: 1.5 }
+                }
+                Row {
+                    id: speedValue
+                    anchors {
+                        right: parent.right; rightMargin: 10
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: 12
+                    Text {
+                        width: implicitWidth
+                        elide: Text.ElideRight
+                        text: root.speedDownText
+                        color: Tokyo.cyan
+                        font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
+                    }
+                    Text {
+                        visible: root.speedUpText !== ""
+                        width: implicitWidth
+                        elide: Text.ElideRight
+                        text: root.speedUpText
+                        color: Tokyo.purple
+                        font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
                     }
                 }
             }
@@ -770,7 +898,10 @@ PopupWindow {
                             // clicking opens the password field. Neither means the
                             // network is open and clicking joins straight away. The
                             // glyph says which of the three it is before you try.
-                            glyph: root.bars(modelData.signal)
+                            // Strength as an arc glyph rather than the tier
+                            // number: the same glyph the bar's pill wears.
+                            glyph: (root.pill === null ? "\uf1eb"
+                                    : root.pill.signalGlyph(root.pill.bars(modelData.signal)))
                                    + (modelData.active ? ""
                                       : modelData.secure
                                           ? " "
@@ -930,10 +1061,9 @@ PopupWindow {
                     // same slot SHOW SSID uses on the wi-fi tab, because both are
                     // "this link is on / off" and neither belongs on the other tab.
                     //
-                    // No fourth tile: the tile row is three wide and the panel is
-                    // sized for it, and ethernet already has a panel of its own
-                    // under ADVANCED. Adding a tile to reach a switch that has
-                    // always been in this panel is a worse trade than one button.
+                    // No ethernet tile: it already has a panel of its own under
+                    // ADVANCED, and adding a tile for a switch that has always
+                    // been in this panel is a worse trade than one button.
                     PillButton {
                         anchors { right: parent.right
                                   verticalCenter: parent.verticalCenter }

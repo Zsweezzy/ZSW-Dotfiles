@@ -60,7 +60,7 @@ if [[ "$*" == *"IP4.DNS"* ]]; then
         *) printf '\n' ;;
     esac
 elif [[ "$*" == *"IN-USE,DEVICE"* ]]; then
-    printf '*:wlan0\n'
+    printf '*:wlan0:73\n'
 fi
 EOF
 chmod +x "$TMP/bin/nmcli"
@@ -115,6 +115,11 @@ first=$(run_monitor 1000000000)
 jq -e '.adapters | length == 3' <<<"$first" >/dev/null
 jq -e '[.adapters[].name] | sort == ["enp14s0", "tailscale0", "wlan0"]' <<<"$first" >/dev/null
 jq -e '.adapters[] | select(.name == "wlan0") | .ip == "192.168.178.75" and .activeWifi == true' <<<"$first" >/dev/null
+# Signal belongs to the link that has one, as a number between 0 and 100 —
+# it is what the pill's strength glyph and the flyout's rows are tiered on.
+jq -e '.adapters[] | select(.name == "wlan0") | .signal == 73' <<<"$first" >/dev/null
+jq -e '.adapters[] | select(.name == "enp14s0") | has("signal") | not' <<<"$first" >/dev/null
+jq -e '.adapters[] | select(.name == "tailscale0") | has("signal") | not' <<<"$first" >/dev/null
 jq -e '.adapters[] | select(.name == "enp14s0") | ((has("routerPing") | not) and (has("gateway") | not) and .dns == "192.168.178.1,1.1.1.1" and .mac == "aa:bb:cc:dd:ee:01" and .externalPing == "18.500 ms")' <<<"$first" >/dev/null
 jq -e '.adapters[] | select(.name == "tailscale0") | ((has("routerPing") | not) and (has("gateway") | not) and (has("dns") | not) and (has("mac") | not))' <<<"$first" >/dev/null
 

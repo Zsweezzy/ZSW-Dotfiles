@@ -74,9 +74,12 @@ done < <(
     done | LC_ALL=C sort
 )
 
-# Find the active Wi-Fi device once.  The visible Wifi module still owns its
-# SSID/label; this only lets the tooltip associate the right sample record.
-active_wifi=$(nmcli -t -f IN-USE,DEVICE dev wifi 2>/dev/null | awk -F: '$1 == "*" { print $2; exit }' || true)
+# Find the active Wi-Fi device and its signal in one read — the same cache
+# nmcli already answered with, so this costs no extra call per second.  The
+# visible Wifi module still owns the SSID/label; the signal is for the pill's
+# glyph, which wears a strength tier rather than one flat wifi icon.
+wifi_row=$(nmcli -t -f IN-USE,DEVICE,SIGNAL dev wifi 2>/dev/null | awk -F: '$1 == "*" { print $2, $3; exit }' || true)
+read -r active_wifi active_signal <<<"$wifi_row"
 [[ -n "$active_wifi" ]] || active_wifi="-"
 
 format_rate() {
@@ -106,6 +109,7 @@ declare -A adapter_sample_rx=()
 declare -A adapter_sample_tx=()
 declare -A adapter_wireless=()
 declare -A adapter_active_wifi=()
+declare -A adapter_signal=()
 
 for iface in "${interfaces[@]}"; do
     path="$SYSFS_NET/$iface"
@@ -157,8 +161,12 @@ for iface in "${interfaces[@]}"; do
     else
         adapter_wireless["$iface"]=false
     fi
+    # Empty for every link that is not the active wifi one: `signal` is a
+    # property of a link somebody can actually hear, not of a name in sysfs.
+    adapter_signal["$iface"]=
     if [[ "$active_wifi" == "$iface" ]]; then
         adapter_active_wifi["$iface"]=true
+        adapter_signal["$iface"]=$active_signal
     else
         adapter_active_wifi["$iface"]=false
     fi
@@ -246,14 +254,22 @@ for iface in "${interfaces[@]}"; do
     if [[ "${adapter_mac[$iface]}" != "-" ]]; then
         printf -v item '%s,"mac":"%s"' "$item" "$(jesc "${adapter_mac[$iface]}")"
     fi
+    # A reading, not a guess: nmcli can leave the field blank (radio off, no
+    # active row), and a signal of "" would parse as 0 and draw one bar for a
+    # link that reports nothing.
+    signal_json=
+    if [[ "${adapter_signal[$iface]}" =~ ^[0-9]+$ ]]; then
+        printf -v signal_json ',"signal":%s' "${adapter_signal[$iface]}"
+    fi
     printf -v item \
-        '%s,"rxRate":"%s","txRate":"%s","externalPing":"%s","wireless":%s,"activeWifi":%s}' \
+        '%s,"rxRate":"%s","txRate":"%s","externalPing":"%s","wireless":%s,"activeWifi":%s%s}' \
         "$item" \
         "$(jesc "${adapter_rx_rate[$iface]}")" \
         "$(jesc "${adapter_tx_rate[$iface]}")" \
         "$(jesc "$external_ping")" \
         "${adapter_wireless[$iface]}" \
-        "${adapter_active_wifi[$iface]}"
+        "${adapter_active_wifi[$iface]}" \
+        "$signal_json"
     json_items+=("$item")
     probe_index=$((probe_index + 1))
 done

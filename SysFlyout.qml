@@ -331,6 +331,13 @@ PopupWindow {
                         }
                     }
 
+                    // The two sort buttons take the same column widths, right
+                    // margins and spacing as the ProcRow below them (40/10/46),
+                    // so each one sits flush over the numbers it sorts. Sized
+                    // by the ROW's geometry rather than by what is left of it:
+                    // the header used to be a right-anchored Row of
+                    // natural-width labels, which put CPU a "MEM"'s width to
+                    // the right of the cpu% column it heads.
                     Row {
                         anchors {
                             right: parent.right; verticalCenter: parent.verticalCenter
@@ -338,9 +345,11 @@ PopupWindow {
                         spacing: 10
 
                         Text {
+                            width: 40
                             text: "CPU" + (root.sortKey === "cpu" ? " ▾" : "")
                             color: root.sortKey === "cpu" ? Tokyo.cyan : Tokyo.dim
                             horizontalAlignment: Text.AlignRight
+                            elide: Text.ElideRight
                             font {
                                 family: Tokyo.fontFamily; pixelSize: 9; bold: true
                             }
@@ -351,9 +360,11 @@ PopupWindow {
                             }
                         }
                         Text {
+                            width: 46
                             text: "MEM" + (root.sortKey === "mem" ? " ▾" : "")
                             color: root.sortKey === "mem" ? Tokyo.green : Tokyo.dim
                             horizontalAlignment: Text.AlignRight
+                            elide: Text.ElideRight
                             font {
                                 family: Tokyo.fontFamily; pixelSize: 9; bold: true
                             }
