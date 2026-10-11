@@ -7,11 +7,14 @@
 // nothing and the pill is exactly the plain clock it always was.
 //
 // The bar has room for the moment's essential two: pause/play on the left,
-// skip on the right, around a stationary square of the art. The spinning
-// record and everything else are the flyout's NOW PLAYING card; the title
-// lives there too, not here.
+// skip on the right, around a stationary square of the art. The controls are
+// bare white glyphs — in a 26px pill a bordered square per button is noise,
+// and the art square is the only shape that should compete with the clock
+// face. Disabled is a fade and nothing else. The glyphs are plain Text with a
+// widened MouseArea hitbox, duplicated twice rather than factored into a
+// component: this file's root is a positioner, and that is the one place this
+// Qt build does not hoist inline components.
 import QtQuick
-import QtQuick.Effects
 
 Row {
     id: root
@@ -20,16 +23,28 @@ Row {
     height: Tokyo.pillHeight
     spacing: 6
 
-    PillButton {
+    // pause / play — white glyph, no pill, no accent. The MouseArea bleeds
+    // 7px past the glyph so the touch target stays a button, not a stroke.
+    Text {
         anchors.verticalCenter: parent.verticalCenter
-        glyph: Media.isPlaying ? "\uF04C" : "\uF04B"     // pause / play
-        accent: Tokyo.green
-        enabled: Media.canToggle
-        onClicked: Media.togglePlaying()
+        text: Media.isPlaying ? "\uF04C" : "\uF04B"
+        color: Tokyo.fg
+        font { family: Tokyo.fontFamily; pixelSize: 13; bold: true }
+        opacity: Media.canToggle ? 1 : 0.4
+        Behavior on opacity {
+            NumberAnimation { duration: 120 }
+        }
+        MouseArea {
+            anchors.fill: parent
+            anchors.margins: -7
+            enabled: Media.canToggle
+            onClicked: Media.togglePlaying()
+        }
     }
 
-    // Stationary square. Greyscale like the flyout's record, but no spin and
-    // no circular mask — the bar reads it as a thumb, not a turntable.
+    // Stationary square. The cached file is already greyscale (media-art.sh
+    // bakes it), so a plain Image is all the black-and-white needs — no shader
+    // to lie about it.
     Item {
         anchors.verticalCenter: parent.verticalCenter
         width: 16
@@ -45,25 +60,29 @@ Row {
             border.width: 1
         }
         Image {
-            id: art
             anchors.fill: parent
+            visible: Media.artSource !== ""
             source: Media.artSource
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
-            visible: false          // drawn through the effect below
-        }
-        MultiEffect {
-            anchors.fill: parent
-            source: art
-            saturation: 0
         }
     }
 
-    PillButton {
+    // forward
+    Text {
         anchors.verticalCenter: parent.verticalCenter
-        glyph: "\uF051"                                 // forward
-        accent: Tokyo.blue
-        enabled: Media.canNext
-        onClicked: Media.next()
+        text: "\uF051"
+        color: Tokyo.fg
+        font { family: Tokyo.fontFamily; pixelSize: 13; bold: true }
+        opacity: Media.canNext ? 1 : 0.4
+        Behavior on opacity {
+            NumberAnimation { duration: 120 }
+        }
+        MouseArea {
+            anchors.fill: parent
+            anchors.margins: -7
+            enabled: Media.canNext
+            onClicked: Media.next()
+        }
     }
 }

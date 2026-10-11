@@ -13,10 +13,12 @@ pragma Singleton
 // One service, one answer.
 //
 // ART. MPRIS hands us `trackArtUrl`. Spotify points it at an https URL; a
-// browser usually points at nothing, or at a local file. Remote art is fetched
-// once by scripts/media-art.sh into a content-addressed cache and read back as a
-// file, so a reload or a network blip never blanks the record. `artUrl` stays as
-// the player sent it; `artSource` is what a view loads.
+// browser usually points at nothing, or at a local file. Either way the art is
+// fetched once by scripts/media-art.sh into a content-addressed cache and read
+// back as a file — a reload, a network blip or a re-digitized cover never
+// blanks the record, and the cached file is already greyscaled, so no view has
+// to run a shader for the black-and-white look. `artUrl` stays as the player
+// sent it; `artSource` is what a view loads.
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -111,25 +113,21 @@ Singleton {
     }
 
     // ---------- art ----------
-    /// Cached local path for the current remote art, or "" while it is fetched.
+    /// Cached local path for the current art, or "" while it is fetched.
     property string artPath: ""
     /// The URL the in-flight fetch was started for, so a result for a track we
     /// have already skipped past is dropped instead of drawn.
     property string fetchUrl: ""
 
-    readonly property string artSource: {
-        const u = root.artUrl;
-        if (u === "") return "";
-        if (u.indexOf("file://") === 0) return u;               // already local
-        return root.artPath !== "" ? "file://" + root.artPath : "";
-    }
+    readonly property string artSource: root.artPath !== "" ? "file://" + root.artPath : ""
 
     function refreshArt(): void {
         root.artPath = "";
         const u = root.artUrl;
         root.fetchUrl = u;
-        if (u === "" || u.indexOf("file://") === 0) return;
-        if (!/^https?:\/\//.test(u)) return;                    // fetch the web only
+        if (u === "") return;
+        // The script is the scheme gatekeeper (web and local files only); the
+        // argv is the URL, so nothing player-supplied reaches a shell.
         artProc.exec(["bash", Tokyo.scriptDir + "/media-art.sh", u]);
     }
 
