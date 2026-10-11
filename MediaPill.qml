@@ -1,63 +1,69 @@
-// MediaPill.qml — the "now playing" pill on the left of the clock.
+// MediaPill.qml — the "now playing" fragment fused into the bar's centre pill.
 //
-// It exists only while something is playing (`Media.active`): an idle deck
-// leaves no pill at all, the same way an idle player leaves no now-playing
-// line anywhere else. Clicking it opens the clock flyout — the same flyout the
-// clock pill opens, which now carries the NOW PLAYING card — so it is a second
-// door onto one panel rather than a panel of its own. It hands the flyout the
-// *clock* pill, not itself: the flyout reads `pill.now` for its seconds, and
-// this widget has no clock.
+// No chrome of its own: Clock.qml is the Module, and its Row centre-installs
+// this strip so an equal-width mirror behind the clock face keeps the face
+// dead centre no matter how wide the strip is (the pill grows and the clock
+// does not move). Idle — no player with a title — the strip collapses to
+// nothing and the pill is exactly the plain clock it always was.
 //
-// The disc is `Record.qml`, the same component the flyout card draws big, so
-// the small and the large record cannot drift apart.
+// The bar has room for the moment's essential two: pause/play on the left,
+// skip on the right, around a stationary square of the art. The spinning
+// record and everything else are the flyout's NOW PLAYING card; the title
+// lives there too, not here.
 import QtQuick
+import QtQuick.Effects
 
-Module {
+Row {
     id: root
 
-    /// shared ClockFlyout (Bar.qml) — may be null in previews
-    property var flyoutHost: null
-    /// the bar's Clock, so the flyout's clock keeps its single source
-    property var clockPill: null
-
-    fg: Tokyo.fg
-    hoverStyle: true
-    text: ""
     visible: Media.active
+    height: Tokyo.pillHeight
+    spacing: 6
 
-    implicitHeight: Tokyo.pillHeight
-    implicitWidth: content.implicitWidth + hPad * 2
+    PillButton {
+        anchors.verticalCenter: parent.verticalCenter
+        glyph: Media.isPlaying ? "\uF04C" : "\uF04B"     // pause / play
+        accent: Tokyo.green
+        enabled: Media.canToggle
+        onClicked: Media.togglePlaying()
+    }
 
-    Row {
-        id: content
-        anchors.centerIn: parent
-        spacing: 8
+    // Stationary square. Greyscale like the flyout's record, but no spin and
+    // no circular mask — the bar reads it as a thumb, not a turntable.
+    Item {
+        anchors.verticalCenter: parent.verticalCenter
+        width: 16
+        height: 16
 
-        Record {
-            anchors.verticalCenter: parent.verticalCenter
-            width: 16
-            height: 16
-            artSource: Media.artSource
-            spinning: Media.isPlaying
+        // Drawn fallback while there is no art (idle fetch, or none offered).
+        Rectangle {
+            anchors.fill: parent
+            visible: Media.artSource === ""
+            radius: 2
+            color: Tokyo.bgHighlight
+            border.color: Tokyo.bgDark
+            border.width: 1
         }
-
-        Text {
-            id: title
-            anchors.verticalCenter: parent.verticalCenter
-            // Fixed ceiling so one long video title cannot take the bar.
-            width: Math.min(implicitWidth, 150)
-            text: Media.title
-            elide: Text.ElideRight
-            color: (root.interactive && root.hoverStyle && root.lit) ? root.hoverFg : root.fg
-            font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize; letterSpacing: root.letterSpacing }
-            Behavior on color {
-                ColorAnimation { duration: 150; easing.type: Easing.OutQuad }
-            }
+        Image {
+            id: art
+            anchors.fill: parent
+            source: Media.artSource
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            visible: false          // drawn through the effect below
+        }
+        MultiEffect {
+            anchors.fill: parent
+            source: art
+            saturation: 0
         }
     }
 
-    onClicked: button => {
-        if (button === Qt.LeftButton && root.flyoutHost)
-            root.flyoutHost.toggleFor(root.clockPill)
+    PillButton {
+        anchors.verticalCenter: parent.verticalCenter
+        glyph: "\uF051"                                 // forward
+        accent: Tokyo.blue
+        enabled: Media.canNext
+        onClicked: Media.next()
     }
 }

@@ -1,20 +1,22 @@
-// ClockFlyout.qml — left-clicking the clock pill opens this: a 1x2 pair of
+// ClockFlyout.qml — left-clicking the clock pill opens this: a 1x3 row of
 // cards holding everything the bar used to spread over four separate pills.
 //
-//   +-------------------+-------------------+
-//   | TIMERS            | CLOCK             |
-//   | full timer panel  | TIME   local +    |
-//   |                   |        other zones |
-//   |                   | DATE   full date  |
-//   |                   | UPTIME since boot |
-//   +-------------------+-------------------+
+//   +-------------------+-------------------+-------------------+
+//   | NOW PLAYING       | TIMERS            | CLOCK             |
+//   | record + controls | full timer panel  | TIME   local +    |
+//   |                   |                   |        other zones |
+//   |                   |                   | DATE   full date  |
+//   |                   |                   | UPTIME since boot |
+//   +-------------------+-------------------+-------------------+
 //
 // This started as a 2x2 grid of four cells. Four cells meant four titles, four
 // rules and four sets of insets to keep in step, and the bar's centre spent the
 // same 452 px on two rows of 214 while the timer form — the one card with
 // something to type into — was squeezed into a square. Collapsing the three
 // time-ish cards into a single stacked card buys the timers card a full-height
-// half of the panel without widening the flyout at all.
+// half of the panel without widening the flyout at all. Now playing joined as
+// a third card on the left — the same edge the bar's media strip grows from —
+// keeping the panel one row and the clock card the thing that sizes it.
 //
 // One instance per bar window (created in Bar.qml), so it always opens on the
 // monitor you clicked. `grabFocus` dismisses it on any outside click.
@@ -86,11 +88,12 @@ PopupWindow {
     readonly property real pad: 8
     readonly property real cellGap: 8
     readonly property real cellW: 214
-    // Three cards in one row now: TIMERS | CLOCK | NOW PLAYING. The media
-    // card joined them rather than starting a second row, because a second row
-    // would add a whole cell of height to a panel that is already as tall as
-    // the clock card's three stacked blocks — and the clock card is what sets
-    // the height. One row keeps `cellH` the single thing that sizes the panel.
+    // Three cards in one row now: NOW PLAYING | TIMERS | CLOCK. The media
+    // card joined them on the left rather than starting a second row, because
+    // a second row would add a whole cell of height to a panel that is already
+    // as tall as the clock card's three stacked blocks — and the clock card is
+    // what sets the height. One row keeps `cellH` the single thing that sizes
+    // the panel.
     readonly property real panelW: pad * 2 + cellW * 3 + cellGap * 2
     /// One row of two, so the panel is only as tall as its content. Nothing sets
     /// this number: it is *measured* off the clock card's three stacked blocks
@@ -473,7 +476,19 @@ PopupWindow {
                 }
                 columns: 3
                 columnSpacing: root.cellGap
-                // ================= 1. timers =================
+                // ================= 1. now playing =================
+                // Leftmost, matching the bar: the pill's media strip grows from
+                // the clock's left, so the card that belongs to that strip sits
+                // on the matching edge of the panel. Same frame and height as the
+                // other two. It is the one card whose content is a live player
+                // rather than the clock, so it is also the one that can say
+                // "Nothing playing" — see MediaCard.qml.
+                MediaCard {
+                    Layout.preferredWidth: root.cellW
+                    Layout.preferredHeight: root.cellH
+                }
+
+                // ================= 2. timers =================
                 QuadCell {
                     title: "TIMERS"
                     accent: Tokyo.magenta
@@ -537,7 +552,7 @@ PopupWindow {
                     }
                 }
 
-                // ================= 2. clock / date / uptime =================
+                // ================= 3. clock / date / uptime =================
                 QuadCell {
                     id: clockPane
                     title: "CLOCK"
@@ -845,16 +860,6 @@ PopupWindow {
                     // again (see TimerCreator.qml) — and this stack is exactly the
                     // shape of thing that ends up a block too short.
                     readonly property real clockTail: uptimeBlock.y + uptimeBlock.tail
-                }
-
-                // ================= 3. now playing =================
-                // The third card, same frame and same height as the other two.
-                // It is the one card whose content is a live player rather than
-                // the clock, so it is also the one that can say "Nothing
-                // playing" — see MediaCard.qml.
-                MediaCard {
-                    Layout.preferredWidth: root.cellW
-                    Layout.preferredHeight: root.cellH
                 }
             }
         }
