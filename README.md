@@ -64,3 +64,13 @@ One-off tweaks live in `tweaks/<name>/`, each documented in
 - Spicetify-generated files (binary, tokens, states) are git-ignored.
 - Nothing sensitive is tracked here; KDE session/activity/wallet state is
   deliberately excluded from the sync pairs.
+
+## For AI agents and contributors
+
+- Config files keep their comments exactly as the app expects them — a `#`
+  line in a config is often semantic (a documented key), never strip it.
+  Zero-comment files stay zero-comment; `backup.sh` resyncs from `$HOME`
+  with `rsync --delete`, so hand edits here are proposals, not truth.
+- The sync direction is one-way (`$HOME` → repo). If you change a file here
+  on purpose, run `./backup.sh` on the live machine so the mirror and the
+  config agree again.
