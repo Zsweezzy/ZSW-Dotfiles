@@ -86,7 +86,12 @@ PopupWindow {
     readonly property real pad: 8
     readonly property real cellGap: 8
     readonly property real cellW: 214
-    readonly property real panelW: pad * 2 + cellW * 2 + cellGap
+    // Three cards in one row now: TIMERS | CLOCK | NOW PLAYING. The media
+    // card joined them rather than starting a second row, because a second row
+    // would add a whole cell of height to a panel that is already as tall as
+    // the clock card's three stacked blocks — and the clock card is what sets
+    // the height. One row keeps `cellH` the single thing that sizes the panel.
+    readonly property real panelW: pad * 2 + cellW * 3 + cellGap * 2
     /// One row of two, so the panel is only as tall as its content. Nothing sets
     /// this number: it is *measured* off the clock card's three stacked blocks
     /// (see `clockTail`), because the block heights are font metrics and the
@@ -466,7 +471,7 @@ PopupWindow {
                     left: parent.left; right: parent.right; top: parent.top
                     leftMargin: root.pad; rightMargin: root.pad; topMargin: root.pad
                 }
-                columns: 2
+                columns: 3
                 columnSpacing: root.cellGap
                 // ================= 1. timers =================
                 QuadCell {
@@ -840,6 +845,16 @@ PopupWindow {
                     // again (see TimerCreator.qml) — and this stack is exactly the
                     // shape of thing that ends up a block too short.
                     readonly property real clockTail: uptimeBlock.y + uptimeBlock.tail
+                }
+
+                // ================= 3. now playing =================
+                // The third card, same frame and same height as the other two.
+                // It is the one card whose content is a live player rather than
+                // the clock, so it is also the one that can say "Nothing
+                // playing" — see MediaCard.qml.
+                MediaCard {
+                    Layout.preferredWidth: root.cellW
+                    Layout.preferredHeight: root.cellH
                 }
             }
         }

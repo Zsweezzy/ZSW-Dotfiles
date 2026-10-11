@@ -184,10 +184,28 @@ Variants {
             // widget disappeared whenever its panel was open, which is a poor
             // thing for a widget to do when the panel is meant to look like it
             // belongs to it.
+            // LEFT of the clock: the now-playing pill, which exists only while
+            // a player is running and opens this same flyout.
+            MediaPill {
+                id: mediaPill
+                flyoutHost: clockFlyout
+                clockPill: clockPill
+                Layout.alignment: Qt.AlignVCenter
+            }
             Clock {
                 id: clockPill
                 flyoutHost: clockFlyout
                 Layout.alignment: Qt.AlignVCenter
+            }
+            // Mirror of the media pill's width. The row is centred by its own
+            // total width, so a pill on the left alone would shove the clock
+            // right by half of it; an equal gap on the right keeps the clock
+            // exactly where it was. It follows the pill's visibility and width,
+            // so an idle deck leaves the row — and the clock — untouched.
+            Item {
+                visible: mediaPill.visible
+                Layout.preferredWidth: mediaPill.visible ? mediaPill.implicitWidth : 0
+                Layout.preferredHeight: 1
             }
         }
 
