@@ -50,7 +50,7 @@ Module {
     Row {
         id: row
         anchors.centerIn: parent
-        spacing: 10   // +4 via the mirror too, so the face stays centred
+        spacing: 14   // +4 via the mirror too, so the face stays centred
 
         // pause, stationary art square, skip — the moment's essential controls.
         // The story (title, seek, shuffle, volume) is the flyout card's.
