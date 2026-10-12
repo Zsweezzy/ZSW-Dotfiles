@@ -4,7 +4,8 @@
 // this to the right of the clock face while an equal-width balance mirror on
 // the far left keeps the face dead centre — the pill grows to the right, the
 // clock does not move. Temperature only, no place name: the location, the
-// pressure, and the forecast are the flyout card's.
+// pressure, and the forecast are the flyout card's. Gray, like the reading it
+// is: this is a number on the clock, not a brand.
 import QtQuick
 
 Text {
@@ -12,10 +13,6 @@ Text {
 
     anchors.verticalCenter: parent.verticalCenter
     text: Weather.has ? Math.round(Weather.temp) + "°" : "–°"
-    color: Weather.has ? Tokyo.orange : Tokyo.dim
+    color: Weather.has ? Tokyo.fg : Tokyo.dim
     font { family: Tokyo.fontFamily; pixelSize: 13; bold: true }
-    opacity: Weather.has ? 1 : 0.6
-    Behavior on opacity {
-        NumberAnimation { duration: 200 }
-    }
 }

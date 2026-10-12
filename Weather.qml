@@ -41,7 +41,7 @@ Singleton {
     property string tempUnit: "°C"
     property int code: 0
     property bool isDay: true
-    /// [{ h, temp, code, isDay }] — future slots, 3h apart, location-local HH:mm
+    /// [{ h, temp, code, isDay }] — the next hours, 3h apart, location-local HH:mm
     property var flow: []
 
     // ---------- fetch ----------
@@ -91,7 +91,7 @@ Singleton {
                 root.tempUnit = String(o.tempUnit || "°C");
                 root.code = Number(o.code) || 0;
                 root.isDay = Number(o.isDay) !== 0;
-                root.flow = Array.isArray(o.flow) ? o.flow.slice(0, 6) : [];
+                root.flow = Array.isArray(o.flow) ? o.flow.slice(0, 12) : [];
                 root.has = true;
             }
         }

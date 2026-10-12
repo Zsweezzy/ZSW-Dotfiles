@@ -122,19 +122,19 @@ else
     PRES_UNIT="hPa"
 fi
 
-# ---------- flow: future hours, one every 3h, up to 6, pre-formatted local
+# ---------- flow: future hours, one every 3h, up to 12, pre-formatted local
 # time in the location's zone (the QML engine has no Intl / TimeZone) ----------
 NOW=$(date +%s)
 FLOW="$CACHE/weather-flow.json"
 FLOWH="$CACHE/weather-flow-h.json"
 jq -c -r --argjson now "$NOW" '
     ( [ .hourly.time | to_entries | map(select(.value > $now)) | .[0].key, 0 ][0] ) as $start
-    | ( [ $start + 18, (.hourly.time | length) ] | min ) as $end
+    | ( [ $start + 36, (.hourly.time | length) ] | min ) as $end
     | . as $d
     | [ range($start; $end; 3)
         | { t: $d.hourly.time[.], temp: $d.hourly.temperature_2m[.],
             code: ($d.hourly.weather_code[.] // 0), isDay: ($d.hourly.is_day[.] // 1) } ]
-    | .[0:6][]' "$FC" > "$FLOW" || exit 0
+    | .[0:12][]' "$FC" > "$FLOW" || exit 0
 : > "$FLOWH"
 while IFS= read -r line; do
     t=$(printf '%s' "$line" | jq -r '.t')

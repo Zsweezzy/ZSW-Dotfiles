@@ -6,18 +6,19 @@
 // an absence: the card stays put and says "reading weather…", so the flyout's
 // shape does not jump while the first fetch is in flight.
 //
-// Blocks, top-anchored and measured off their own tails (the clock card's
-// pattern): the place, the temperature with its condition, three figures
-// (pressure / humidity / wind, in the units `Weather` resolves for the
-// place), then FLOW — the next hours' temperatures, 3h apart, coloured by
-// whether they climb or fall from the reading before them.
+// Grayscale on purpose: the shell's coloured accents belong to the other three
+// cards, and this one is the quiet corner — everything is fg / dim / trayGlyph.
+// Bands divided by the hairline rule, the clock card's separator: the place,
+// the temperature with its condition, the three figures (pressure / humidity /
+// wind, in the units `Weather` resolves for the place), then FLOW — the next
+// thirty-six hours' temperatures, three hours apart, four to a row.
 import QtQuick
 
 QuadCell {
     id: root
 
     title: "WEATHER"
-    accent: Tokyo.orange
+    accent: Tokyo.fg
 
     // ---------- helpers ----------
     // Nerd Font "weather icons" glyphs, verified present in the font file.
@@ -89,38 +90,28 @@ QuadCell {
         default:   return "";
         }
     }
-    // The trend a flow slot shows: whether it climbs or falls from the slot
-    // before it — the first slot from the current reading. Green up, orange
-    // down, foreground when it holds.
-    function trendColor(index): color {
-        const prev = index === 0 ? Weather.temp : Weather.flow[index - 1].temp;
-        const v = Weather.flow[index].temp;
-        if (v > prev) return Tokyo.green;
-        if (v < prev) return Tokyo.orange;
-        return Tokyo.fg;
-    }
 
     // ---------- body ----------
     Item {
         id: weatherBody
         anchors { left: parent.left; right: parent.right; top: parent.top }
 
-        // ---------- block 1: the place ----------
+        // ---------- band 1: the place ----------
         Text {
             id: placeLine
             anchors { left: parent.left; right: parent.right; top: parent.top }
             text: Weather.has ? Weather.name : "reading weather…"
-            color: Weather.has ? Tokyo.trayGlyph : Tokyo.dim
+            color: Weather.has ? Tokyo.dim : Tokyo.trayGlyph
             font { family: Tokyo.fontFamily; pixelSize: 11 }
             elide: Text.ElideRight
         }
 
-        // ---------- block 2: temperature + condition ----------
+        // ---------- band 2: temperature + condition ----------
         Item {
             id: nowBlock
             anchors {
                 left: parent.left; right: parent.right
-                top: placeLine.bottom; topMargin: 4
+                top: placeLine.bottom; topMargin: 8
             }
             visible: Weather.has
             readonly property real tail: Math.max(
@@ -133,50 +124,61 @@ QuadCell {
                 anchors { left: parent.left; top: parent.top }
                 text: Math.round(Weather.temp) + "°"
                 color: Tokyo.fg
-                font { family: Tokyo.fontFamily; pixelSize: 28; bold: true; letterSpacing: 0.5 }
+                font { family: Tokyo.fontFamily; pixelSize: 34; bold: true; letterSpacing: 0.5 }
             }
             Text {
                 id: unit
-                anchors { left: bigTemp.right; leftMargin: 2; bottom: bigTemp.bottom; bottomMargin: 1 }
+                anchors { left: bigTemp.right; leftMargin: 3; bottom: bigTemp.bottom; bottomMargin: 3 }
                 text: Weather.tempUnit
                 color: Tokyo.fg
                 font { family: Tokyo.fontFamily; pixelSize: 13; bold: true }
             }
             Text {
                 id: condGlyph
-                anchors { right: parent.right; top: bigTemp.top; topMargin: -2 }
+                anchors { right: parent.right; top: parent.top; topMargin: 2 }
                 text: root.glyphFor(Weather.code, Weather.isDay)
-                color: Tokyo.orange
-                font { family: Tokyo.fontFamily; pixelSize: 20 }
+                color: Tokyo.trayGlyph
+                font { family: Tokyo.fontFamily; pixelSize: 15 }
             }
             Text {
                 id: condLabel
-                anchors { right: parent.right; top: condGlyph.bottom; topMargin: 1 }
-                width: 110
+                anchors { right: parent.right; top: condGlyph.bottom; topMargin: 0 }
+                width: 90
                 text: root.labelFor(Weather.code)
-                color: Tokyo.trayGlyph
+                color: Tokyo.dim
                 font { family: Tokyo.fontFamily; pixelSize: 10 }
                 horizontalAlignment: Text.AlignRight
                 elide: Text.ElideRight
             }
             Text {
                 id: feelsLine
-                anchors { left: parent.left; top: bigTemp.bottom; topMargin: 3 }
+                anchors { left: parent.left; top: bigTemp.bottom; topMargin: 4 }
                 text: "feels like " + Math.round(Weather.feels) + Weather.tempUnit
-                color: Tokyo.trayGlyph
+                color: Tokyo.dim
                 font { family: Tokyo.fontFamily; pixelSize: 10 }
             }
         }
 
-        // ---------- block 3: pressure / humidity / wind ----------
+        // ---------- separator ----------
+        Rectangle {
+            id: rule1
+            anchors {
+                left: parent.left; right: parent.right
+                top: nowBlock.bottom; topMargin: 10
+            }
+            height: 1
+            color: Tokyo.hairline
+        }
+
+        // ---------- band 3: pressure / humidity / wind ----------
         Item {
             id: detailBlock
             anchors {
                 left: parent.left; right: parent.right
-                top: nowBlock.bottom; topMargin: 8
+                top: rule1.bottom; topMargin: 10
             }
             visible: Weather.has
-            readonly property real tail: 26
+            readonly property real tail: wValue.y + wValue.height
             height: tail
 
             // Three equal fixed columns, driven from the left (the zones
@@ -190,7 +192,7 @@ QuadCell {
             }
             Text {
                 id: pValue
-                anchors { left: parent.left; top: pLabel.bottom; topMargin: 2 }
+                anchors { left: parent.left; top: pLabel.bottom; topMargin: 4 }
                 text: Weather.pressure + " " + Weather.pressureUnit
                 color: Tokyo.fg
                 font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
@@ -204,7 +206,7 @@ QuadCell {
             }
             Text {
                 id: hValue
-                anchors { left: hLabel.left; top: hLabel.bottom; topMargin: 2 }
+                anchors { left: hLabel.left; top: hLabel.bottom; topMargin: 4 }
                 text: Weather.humidity + "%"
                 color: Tokyo.fg
                 font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
@@ -218,38 +220,57 @@ QuadCell {
             }
             Text {
                 id: wValue
-                anchors { right: parent.right; top: wLabel.bottom; topMargin: 2 }
+                anchors { right: parent.right; top: wLabel.bottom; topMargin: 4 }
                 text: Math.round(Weather.wind) + " " + Weather.windUnit
                 color: Tokyo.fg
                 font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
             }
         }
 
-        // ---------- block 4: the weather flow ----------
-        Item {
-            id: flowBlock
+        // ---------- separator ----------
+        Rectangle {
+            id: rule2
             anchors {
                 left: parent.left; right: parent.right
                 top: detailBlock.bottom; topMargin: 10
             }
+            height: 1
+            color: Tokyo.hairline
+        }
+
+        // ---------- band 4: the weather flow ----------
+        Item {
+            id: flowBlock
+            anchors {
+                left: parent.left; right: parent.right
+                top: rule2.bottom; topMargin: 10
+            }
             visible: Weather.has && Weather.flow.length > 0
-            readonly property real tail: slots.y + slots.height
+            readonly property real tail: flowGrid.y + flowGrid.height
             height: tail
 
             Text {
                 id: flowLabel
                 anchors { left: parent.left; top: parent.top }
                 text: "FLOW"
-                color: Tokyo.orange
-                font { family: Tokyo.fontFamily; pixelSize: 10; bold: true; letterSpacing: 1.5 }
+                color: Tokyo.dim
+                font { family: Tokyo.fontFamily; pixelSize: 9; bold: true; letterSpacing: 1.5 }
             }
 
-            // Next hours, one column per slot: the time over the temperature,
-            // coloured by the slope against the slot before it.
+            // The next thirty-six hours, four to a row, three hours apart:
+            // the time over the temperature. One row's worth of whitespace is
+            // reserved so the grid does not jump when a slot arrives or ends.
             Item {
-                id: slots
-                anchors { left: parent.left; right: parent.right; top: flowLabel.bottom; topMargin: 4 }
-                height: 24
+                id: flowGrid
+                anchors {
+                    left: parent.left; right: parent.right
+                    top: flowLabel.bottom; topMargin: 5
+                }
+                readonly property real cellW: parent.width / 4
+                readonly property real rowH: 28
+                readonly property real rowGap: 6
+                readonly property int rows: Math.ceil(Math.max(1, Weather.flow.length) / 4)
+                height: rows * (rowH + rowGap) - rowGap
 
                 Repeater {
                     model: Weather.flow
@@ -257,10 +278,10 @@ QuadCell {
                         required property var modelData
                         required property int index
 
-                        readonly property real slotW: parent.width / Math.max(1, Weather.flow.length)
-                        width: slotW
-                        height: parent.height
-                        x: index * slotW
+                        width: flowGrid.cellW
+                        height: flowGrid.rowH
+                        x: (index % 4) * flowGrid.cellW
+                        y: Math.floor(index / 4) * (flowGrid.rowH + flowGrid.rowGap)
 
                         Text {
                             anchors { horizontalCenter: parent.horizontalCenter; top: parent.top }
@@ -269,9 +290,9 @@ QuadCell {
                             font { family: Tokyo.fontFamily; pixelSize: 9 }
                         }
                         Text {
-                            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 10 }
+                            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 12 }
                             text: Math.round(modelData.temp) + "°"
-                            color: root.trendColor(index)
+                            color: Tokyo.trayGlyph
                             font { family: Tokyo.fontFamily; pixelSize: 11; bold: true }
                         }
                     }
