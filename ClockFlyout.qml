@@ -1,13 +1,13 @@
-// ClockFlyout.qml — left-clicking the clock pill opens this: a 1x3 row of
+// ClockFlyout.qml — left-clicking the clock pill opens this: a 1x4 row of
 // cards holding everything the bar used to spread over four separate pills.
 //
-//   +-------------------+-------------------+-------------------+
-//   | NOW PLAYING       | TIMERS            | CLOCK             |
-//   | record + controls | full timer panel  | TIME   local +    |
-//   |                   |                   |        other zones |
-//   |                   |                   | DATE   full date  |
-//   |                   |                   | UPTIME since boot |
-//   +-------------------+-------------------+-------------------+
+//   +-------------------+-------------------+-------------------+-------------------+
+//   | NOW PLAYING       | TIMERS            | CLOCK             | WEATHER           |
+//   | record + controls | full timer panel  | TIME   local +    | place, current    |
+//   |                   |                   |        other zones | reading, figures, |
+//   |                   |                   | DATE   full date  | and the flow      |
+//   |                   |                   | UPTIME since boot |                   |
+//   +-------------------+-------------------+-------------------+-------------------+
 //
 // This started as a 2x2 grid of four cells. Four cells meant four titles, four
 // rules and four sets of insets to keep in step, and the bar's centre spent the
@@ -17,6 +17,9 @@
 // half of the panel without widening the flyout at all. Now playing joined as
 // a third card on the left — the same edge the bar's media strip grows from —
 // keeping the panel one row and the clock card the thing that sizes it.
+// Weather then joined as a fourth on the right, matching the temperature's
+// place in the bar's pill (right of the clock), and the panel grew one cell of
+// width without gaining any height.
 //
 // One instance per bar window (created in Bar.qml), so it always opens on the
 // monitor you clicked. `grabFocus` dismisses it on any outside click.
@@ -88,13 +91,14 @@ PopupWindow {
     readonly property real pad: 8
     readonly property real cellGap: 8
     readonly property real cellW: 214
-    // Three cards in one row now: NOW PLAYING | TIMERS | CLOCK. The media
-    // card joined them on the left rather than starting a second row, because
-    // a second row would add a whole cell of height to a panel that is already
-    // as tall as the clock card's three stacked blocks — and the clock card is
-    // what sets the height. One row keeps `cellH` the single thing that sizes
-    // the panel.
-    readonly property real panelW: pad * 2 + cellW * 3 + cellGap * 2
+    // Four cards in one row now: NOW PLAYING | TIMERS | CLOCK | WEATHER. The
+    // media card joined them on the left rather than starting a second row,
+    // because a second row would add a whole cell of height to a panel that is
+    // already as tall as the clock card's three stacked blocks — and the clock
+    // card is what sets the height. Weather joined on the right, matching the
+    // temperature's place in the bar's pill. One row keeps `cellH` the single
+    // thing that sizes the panel.
+    readonly property real panelW: pad * 2 + cellW * 4 + cellGap * 3
     /// One row of two, so the panel is only as tall as its content. Nothing sets
     /// this number: it is *measured* off the clock card's three stacked blocks
     /// (see `clockTail`), because the block heights are font metrics and the
@@ -474,7 +478,7 @@ PopupWindow {
                     left: parent.left; right: parent.right; top: parent.top
                     leftMargin: root.pad; rightMargin: root.pad; topMargin: root.pad
                 }
-                columns: 3
+                columns: 4
                 columnSpacing: root.cellGap
                 // ================= 1. now playing =================
                 // Leftmost, matching the bar: the pill's media strip grows from
@@ -860,6 +864,16 @@ PopupWindow {
                     // again (see TimerCreator.qml) — and this stack is exactly the
                     // shape of thing that ends up a block too short.
                     readonly property real clockTail: uptimeBlock.y + uptimeBlock.tail
+                }
+
+                // ================= 4. weather =================
+                // Rightmost, matching the bar: the temperature pill sits right
+                // of the clock face, so the card that tells the story sits on
+                // the matching edge of the panel. The accent and all four
+                // blocks are the card's own — this file only has to place it.
+                WeatherCard {
+                    Layout.preferredWidth: root.cellW
+                    Layout.preferredHeight: root.cellH
                 }
             }
         }

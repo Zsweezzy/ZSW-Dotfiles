@@ -1,11 +1,13 @@
 // Clock.qml — the bar's centre pill: the clock face with the now-playing
-// controls fused into its left edge while something is playing.
+// controls fused into its left edge while something is playing, and the
+// weather temperature fused into its right edge.
 //
-// One pill, not two. When a player is active, a stationary square of the art
-// with pause/play and skip on either side (`MediaPill`) leads the clock face,
-// and an equal-width mirror behind it keeps the face dead centre no matter how
-// wide the strip is. When nothing plays, the strip collapses to nothing and
-// the pill is exactly the clock it always was.
+// One pill, not three. When a player is active, a stationary square of the art
+// with pause/play and skip on either side (`MediaPill`) leads the clock face;
+// the temperature (`WeatherPill`) always trails it. Each sits outside the face
+// with an equal-width mirror on the far side, so the face stays dead centre
+// whether the strip is playing or collapsed and whether the reading is "–°"
+// or "24°".
 //
 // Left-clicking it opens ClockFlyout, a popup that is anchored to the bar
 // rather than to this widget — it opens centred at the top of the screen and
@@ -52,6 +54,15 @@ Module {
         anchors.centerIn: parent
         spacing: 14   // +4 via the mirror too, so the face stays centred
 
+        // Mirror the weather pill's width so the face stays dead centre as the
+        // reading grows from "–°" to "24°": the pill always sits right of the
+        // face, so its balance always sits here, at the far left.
+        Item {
+            id: weatherBal
+            width: weatherPill.width
+            height: 1
+        }
+
         // pause, stationary art square, skip — the moment's essential controls.
         // The story (title, seek, shuffle, volume) is the flyout card's.
         MediaPill {
@@ -72,6 +83,13 @@ Module {
             // hearing the pointer for as long as it is really there.
             hovered: root.hovered
             now: root.now
+        }
+
+        // The temperature, right of the face: no chrome of its own, just the
+        // reading in the bar's accent. The full story is the flyout card's.
+        WeatherPill {
+            id: weatherPill
+            height: Tokyo.pillHeight
         }
 
         // Mirror the strip's width so the Row (and the face inside it) stays
