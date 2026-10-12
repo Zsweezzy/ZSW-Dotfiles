@@ -4,10 +4,12 @@
 //
 // One pill, not three. When a player is active, a stationary square of the art
 // with pause/play and skip on either side (`MediaPill`) leads the clock face;
-// the temperature (`WeatherPill`) always trails it. Each sits outside the face
-// with an equal-width mirror on the far side, so the face stays dead centre
-// whether the strip is playing or collapsed and whether the reading is "–°"
-// or "24°".
+// the temperature (`WeatherPill`) always trails it. The strip's mirror sits
+// between the face and the temperature, so the face's offset from the pill's
+// centre is the same in every state — idle it reads `[face][24°]`, playing
+// `[controls][face][24°]`, and the clock never jumps when one becomes the
+// other. The temperature is not mirrored: it is a permanent fragment, and
+// balancing it would only fatten the pill.
 //
 // Left-clicking it opens ClockFlyout, a popup that is anchored to the bar
 // rather than to this widget — it opens centred at the top of the screen and
@@ -52,16 +54,7 @@ Module {
     Row {
         id: row
         anchors.centerIn: parent
-        spacing: 14   // +4 via the mirror too, so the face stays centred
-
-        // Mirror the weather pill's width so the face stays dead centre as the
-        // reading grows from "–°" to "24°": the pill always sits right of the
-        // face, so its balance always sits here, at the far left.
-        Item {
-            id: weatherBal
-            width: weatherPill.width
-            height: 1
-        }
+        spacing: 14
 
         // pause, stationary art square, skip — the moment's essential controls.
         // The story (title, seek, shuffle, volume) is the flyout card's.
@@ -85,21 +78,24 @@ Module {
             now: root.now
         }
 
-        // The temperature, right of the face: no chrome of its own, just the
-        // reading in the bar's accent. The full story is the flyout card's.
-        WeatherPill {
-            id: weatherPill
-            height: Tokyo.pillHeight
-        }
-
-        // Mirror the strip's width so the Row (and the face inside it) stays
-        // centred when the strip appears; hidden with the strip, so idle has
-        // zero padding to either side.
+        // Mirror the strip's width so the scene never jumps when the strip
+        // appears: hidden with the strip, idle has zero padding at the right.
+        // It sits between the face and the temperature, so the temperature is
+        // at the pill's end in both states and the face's offset is constant.
         Item {
             id: mirror
             width: strip.width
             height: 1
             visible: strip.visible
+        }
+
+        // The temperature, right of the face: no chrome of its own, just the
+        // reading. The full story is the flyout card's. The face's digits sit
+        // above its box centre (see ClockFace.timeCenterOffset), so borrow
+        // that offset or the reading sags under the numerals.
+        WeatherPill {
+            id: weatherPill
+            anchors.verticalCenterOffset: face.timeCenterOffset
         }
     }
 
