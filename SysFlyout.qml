@@ -35,7 +35,9 @@ PopupWindow {
 
     /// ---------- processes ----------
     /// Which column the PROCESSES list is ordered by, "cpu" or "mem".
-    property string sortKey: "cpu"
+    /// RAM first by default: the flyout's job is memory trouble, and CPU
+    /// hogs are usually obvious from the dials above.
+    property string sortKey: "mem"
     /// The pid whose row is waiting for the second click, 0 for none. On the
     /// ROOT, not on the row: `procs` is reassigned every second and a Repeater
     /// rebuilds all its delegates on write, so a delegate holding the armed pid

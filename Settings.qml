@@ -432,24 +432,21 @@ Module {
 
     // ---------- live speedtest ----------
     /// The peak the line can currently reach, {"down":…,"up":…} in Mbit/s.
-    /// `testing` is true only from shell start until the first run lands.
-    /// After that a refetch keeps the last result on screen, so the row
-    /// says it is measuring exactly once per boot and never blanks.
-    property var speed: ({ down: 0, up: 0, testing: true })
-    /// True while the flyout is open. The test runs either way; this only
-    /// picks the cadence — fast while someone is watching, a slow
-    /// background rhythm when the panel is shut.
-    property bool speedLive: false
+    /// `testing` is true only while a run is in flight; it is never true of
+    /// the idle state. The last result stays on screen after a run, so the
+    /// row never blanks when a refetch fails or a test has not run yet.
+    property var speed: ({ down: 0, up: 0, testing: false })
 
+    // Started by hand only: the test spends ~20s of this machine's bandwidth,
+    // so a background rhythm is a hidden cost on every boot and every 10
+    // minutes after. Poll starts once at load and again on the interval, so a
+    // Poll with its command armed would measure itself; instead the command
+    // stays empty until `startSpeedtest()` arms it for the flyout's button.
+    // The transient-parse helper is the same try/catch the old cadence used.
     Poll {
         id: speedPoll
-        // Always on: Poll runs its command once at component load and then
-        // on the interval, so a boot gets its first test for free. The
-        // speedLive flag changes how often, never whether.
-        command: [Tokyo.scriptDir + "/speedtest.sh"]
-        // The script caps both transfers at 10s, so a run (~20s worst case)
-        // always lands inside the fast interval and two tests never overlap.
-        interval: root.speedLive ? 30000 : 600000
+        command: []
+        active: false
         onResult: out => {
             try {
                 const o = JSON.parse(out)
@@ -466,14 +463,15 @@ Module {
         }
     }
 
-    /// Open/close hook from the flyout. Opening kicks a run straight away so
-    /// the numbers are never older than the panel, and closing drops back to
-    /// the background cadence. The last result stays on screen either way --
-    /// `testing` was spent on the boot run and is never set again.
-    function setSpeedLive(on) {
-        if (root.speedLive === on) return
-        root.speedLive = on
-        if (on) speedPoll.refresh()
+    /// The flyout's START SPEEDTEST button. One run, now; the result lands in
+    /// `speed` when it finishes. The command is armed here because armed at
+    /// load the Poll would auto-run once for free — the very thing "only when
+    /// I press the button" is meant to stop.
+    function startSpeedtest() {
+        if (root.speed.testing) return
+        root.speed = Object.assign({}, root.speed, { testing: true })
+        speedPoll.command = [Tokyo.scriptDir + "/speedtest.sh"]
+        speedPoll.refresh()
     }
 
     // ---------- HDR (the M28U on DP-1) ----------

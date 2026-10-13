@@ -145,10 +145,6 @@ PopupWindow {
     // the time we hear about it. So there is nothing to animate — just drop `t`
     // so the next open starts from the top rather than mid-reveal.
     onVisibleChanged: {
-        // The speedtest runs either way; this only picks its cadence. Open
-        // kicks a fresh run so the row is current with the panel, close
-        // hands the pill back its slow background rhythm.
-        if (root.pill !== null) root.pill.setSpeedLive(visible)
         if (visible) return
         openAnim.stop()
         closeAnim.stop()
@@ -770,15 +766,13 @@ PopupWindow {
             }
 
             // ================= SPEEDTEST =================
-            // The peak this line can currently reach, re-tested on a timer.
-            // The pill always runs the test; this panel only sets the
-            // cadence (onVisibleChanged) — fast while it is open, a slow
-            // background rhythm when it is not — so opening always finds a
-            // fresh run and a shut panel still keeps results coming.
-            //
-            // Two figures in one card rather than a gauge: down and up are
-            // read against each other, and a ring per direction would double
-            // the row to say half of what one line says.
+            // The peak this line can currently reach — tested only when
+            // asked. The pill does not run the test on a timer any more; the
+            // START SPEEDTEST button is the only thing that spends this
+            // machine's bandwidth on a measurement. The last result stays in
+            // the row until the next run: down and up are read against each
+            // other, and a ring per direction would double the row to say
+            // half of what one line says.
             Item {  id: bandSpeed
                 width: parent.width
                 height: 26
@@ -824,6 +818,13 @@ PopupWindow {
                         text: root.speedUpText
                         color: Tokyo.purple
                         font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
+                    }
+                    PillButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "START"
+                        accent: Tokyo.cyan
+                        enabled: root.pill !== null && !root.pill.speed.testing
+                        onClicked: if (root.pill !== null) root.pill.startSpeedtest()
                     }
                 }
             }
