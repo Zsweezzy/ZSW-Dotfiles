@@ -17,13 +17,15 @@ Rectangle {
 
     /// brief flash on hover-out is not wanted; hover just brightens
     property bool hovered: false
+    /// down press reads stronger than hover, per KDE quick-settings tiles
+    property bool pressed: false
 
     signal clicked()
 
     implicitHeight: 22
     implicitWidth: label.implicitWidth + 20
     radius: 6
-    color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, root.hovered ? 0.30 : 0.16)
+    color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, root.pressed ? 0.42 : root.hovered ? 0.30 : 0.16)
     opacity: root.enabled ? 1 : 0.4
     Behavior on color {
         ColorAnimation { duration: 120; easing.type: Easing.OutQuad }
@@ -52,11 +54,14 @@ Rectangle {
     }
 
     MouseArea {
+        id: mouse
         anchors.fill: parent
         hoverEnabled: true
         enabled: root.enabled
         onEntered: root.hovered = true
         onExited: root.hovered = false
+        // true while any button is down, so one binding covers both releases
+        onPressedChanged: root.pressed = mouse.pressed
         onClicked: root.clicked()
     }
 }

@@ -316,6 +316,7 @@ PopupWindow {
             anchors.fill: parent
             radius: 8
             color: tl.expanded ? Qt.rgba(tl.accent.r, tl.accent.g, tl.accent.b, 0.22)
+                   : hover.pressed ? Qt.rgba(tl.accent.r, tl.accent.g, tl.accent.b, 0.34)
                    : hover.containsMouse ? Tokyo.pane
                    : Qt.rgba(tl.accent.r, tl.accent.g, tl.accent.b, 0.10)
             border.color: tl.expanded ? tl.accent : Tokyo.bgHighlight
@@ -430,7 +431,7 @@ PopupWindow {
             anchors.fill: parent
             anchors.rightMargin: -4
             radius: 6
-            color: hover.containsMouse ? Tokyo.pane : "transparent"
+            color: hover.pressed ? Tokyo.bgHighlight : hover.containsMouse ? Tokyo.pane : "transparent"
             Behavior on color { ColorAnimation { duration: 100 } }
         }
         Text {
