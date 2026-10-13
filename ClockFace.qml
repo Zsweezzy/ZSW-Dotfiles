@@ -1,6 +1,6 @@
-// ClockFace.qml — the clock pill's contents, with no chrome: `HH:mm:ss` over
-// `Sat 27 Sep`, at rest, on hover and while the popup is open. One look, and it
-// does not move.
+// ClockFace.qml — the clock pill's contents, with no chrome: `HH:mm:ss`,
+// at rest, on hover and while the popup is open. One look, and it does not
+// move.
 //
 // It is a separate file because the pill's contents are one measurement and the
 // pill's width is cut from it (see `contentW`): the font, the metrics and the
@@ -31,65 +31,31 @@ Item {
     /// width and its text is what reads as a doubled clock.
     ///
     /// `timeWorst` is the widest the time can get, so the width is a constant.
-    /// The date needs no such sample: all 2604 possible `ddd dd MMM` strings
-    /// measure exactly 56px, because the format's variable parts are letters and
-    /// a fixed-shape two-digit day. Re-measure `timeWorst` if the time's format
-    /// or the font ever changes.
+    /// Re-measure it if the time's format or the font ever changes.
     readonly property real contentW: timeWorst.width
 
-    // The two readings, 15 + 10 = 25 px of text in a 26 px pill. Heights are
-    // declared rather than left to the fonts' line boxes (18 + 12) because the
-    // sum of the line boxes is taller than the pill, and a Column that overflows
-    // its pill cuts the time's descenders into the date.
-    Item {
-        id: readings
+    // The time, vertically and horizontally centred in the pill. The height is
+    // declared rather than left to the font's line box, so the numerals sit in
+    // the middle of the pill and not at its top.
+    Text {
+        id: time
         anchors.centerIn: parent
-        width: root.contentW
-        height: 25
-
-        Text {
-            id: time
-            x: 0; y: 0
-            width: parent.width
-            height: 15
-            verticalAlignment: Text.AlignVCenter
-            horizontalAlignment: Text.AlignHCenter
-            text: Qt.formatDateTime(root.now, "HH:mm:ss")
-            // Cyan on hover, like every other label in the bar, and on the same
-            // 120ms the popup's own hover runs at. The date does not follow it: a
-            // 9 px line changing shade under a 13 px one that is reads as a bug,
-            // and the pair's whole job is that the lower line stays the quieter
-            // of the two.
-            color: root.hovered ? Tokyo.cyan : Tokyo.fg
-            font {
-                family: Tokyo.fontFamily
-                pixelSize: 13
-                bold: true
-                letterSpacing: 0.2
-            }
-            Behavior on color {
-                ColorAnimation { duration: 120; easing.type: Easing.OutQuad }
-            }
+        width: parent.width
+        height: 15
+        verticalAlignment: Text.AlignVCenter
+        horizontalAlignment: Text.AlignHCenter
+        text: Qt.formatDateTime(root.now, "HH:mm:ss")
+        // Cyan on hover, like every other label in the bar, and on the same
+        // 120ms the popup's own hover runs at.
+        color: root.hovered ? Tokyo.cyan : Tokyo.fg
+        font {
+            family: Tokyo.fontFamily
+            pixelSize: 13
+            bold: true
+            letterSpacing: 0.2
         }
-
-        Text {
-            id: date
-            x: 0; y: 15
-            width: parent.width
-            height: 10
-            verticalAlignment: Text.AlignVCenter
-            // Centred, and the reason is `contentW`: the box is as wide as the
-            // widest time there is, and the readings fill it. The date is 9px
-            // against the time's 13px bold, so left-aligned it sat ~4px left of
-            // centre — measurably off, and only against the time above it.
-            horizontalAlignment: Text.AlignHCenter
-            text: Qt.formatDateTime(root.now, "ddd dd MMM")
-            color: Tokyo.trayGlyph
-            font {
-                family: Tokyo.fontFamily
-                pixelSize: 9
-                letterSpacing: 0.2
-            }
+        Behavior on color {
+            ColorAnimation { duration: 120; easing.type: Easing.OutQuad }
         }
     }
 

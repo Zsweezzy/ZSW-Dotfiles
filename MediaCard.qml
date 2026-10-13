@@ -9,6 +9,9 @@
 // and the bar pill can never disagree about the track. Idle is a state, not an
 // absence: the card stays put and says "Nothing playing", so the flyout's shape
 // does not jump the moment a song ends.
+//
+// Grayscale on purpose, like the weather card: the shell's remaining colour
+// belongs to the CLOCK and TIMERS cards, and this one is the quiet neighbour.
 import QtQuick
 import QtQuick.Controls.Basic as Controls
 import QtQuick.Layouts
@@ -17,22 +20,15 @@ QuadCell {
     id: root
 
     title: "NOW PLAYING"
-    accent: Tokyo.green
+    accent: Tokyo.fg
 
     // The source is read off the MPRIS bus identity, so it is the only honest
     // answer to "is this Spotify or a YouTube tab?". Shown as the card's tag,
-    // and coloured the way the source's own brand would be — which is also what
-    // makes "why is the shuffle button dead?" answer itself.
-    readonly property color sourceColor:
-        Media.source === "spotify" ? Tokyo.green
-        : Media.source === "youtube" ? Tokyo.red
-        : Media.source === "browser" ? Tokyo.orange
-        : Tokyo.dim
-
+    // quiet: it names the source, it does not brand it.
     headerExtra: Text {
         Layout.alignment: Qt.AlignVCenter
         text: Media.sourceLabel
-        color: root.sourceColor
+        color: Tokyo.dim
         font { family: Tokyo.fontFamily; pixelSize: 10; bold: true; letterSpacing: 1.5 }
     }
 
@@ -47,7 +43,7 @@ QuadCell {
     // `leftPadding` are, exactly as that file reads it.
     component MediaSlider: Controls.Slider {
         id: sl
-        property color accent: Tokyo.green
+        property color accent: Tokyo.fg
         height: 22
         from: 0
         to: 1
@@ -70,7 +66,7 @@ QuadCell {
             width: 12
             height: 12
             radius: 6
-            color: sl.pressed ? Tokyo.fg : Tokyo.pink
+            color: sl.pressed ? Tokyo.fg : Tokyo.dim
             border.color: Tokyo.bgDark
             border.width: 1
         }
@@ -111,7 +107,7 @@ QuadCell {
                     width: 100
                     height: 100
                     artSource: Media.artSource
-                    labelColor: Tokyo.green
+                    labelColor: Tokyo.fg
                     spinning: Media.isPlaying
                 }
             }
@@ -149,7 +145,7 @@ QuadCell {
             MediaSlider {
                 id: seek
                 width: parent.width
-                accent: Tokyo.green
+                accent: Tokyo.fg
                 // A deck that cannot seek, or does not report a length, gets a
                 // dead bar rather than one that pretends to move.
                 enabled: Media.canSeek && Media.positionSupported && Media.length > 0
@@ -182,32 +178,32 @@ QuadCell {
 
                 PillButton {
                     glyph: "\uF048"          // back
-                    accent: Tokyo.blue
+                    accent: Tokyo.fg
                     enabled: Media.canPrevious
                     onClicked: Media.previous()
                 }
                 PillButton {
                     glyph: Media.isPlaying ? "\uF04C" : "\uF04B"   // pause / play
-                    accent: Tokyo.green
+                    accent: Tokyo.fg
                     enabled: Media.canToggle
                     onClicked: Media.togglePlaying()
                 }
                 PillButton {
                     glyph: "\uF051"          // forward
-                    accent: Tokyo.blue
+                    accent: Tokyo.fg
                     enabled: Media.canNext
                     onClicked: Media.next()
                 }
                 PillButton {
                     glyph: "\uF074"          // shuffle
-                    accent: Media.shuffled ? Tokyo.green : Tokyo.dim
+                    accent: Media.shuffled ? Tokyo.fg : Tokyo.dim
                     enabled: Media.shuffleAvailable
                     onClicked: Media.toggleShuffle()
                 }
                 PillButton {
                     // repeat, with a "1" for the single-track state
                     glyph: Media.loopTrack ? "\uF01E1" : "\uF01E"
-                    accent: Media.looping ? Tokyo.green : Tokyo.dim
+                    accent: Media.looping ? Tokyo.fg : Tokyo.dim
                     enabled: Media.loopSupported
                     onClicked: Media.cycleLoop()
                 }
@@ -231,7 +227,7 @@ QuadCell {
                         right: parent.right
                         verticalCenter: parent.verticalCenter
                     }
-                    accent: Tokyo.magenta
+                    accent: Tokyo.fg
                     enabled: Media.volumeSupported
                     to: 1
                     value: Media.volume
