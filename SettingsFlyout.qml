@@ -805,6 +805,7 @@ PopupWindow {
                     }
                     spacing: 12
                     Text {
+                        anchors.verticalCenter: parent.verticalCenter
                         width: implicitWidth
                         elide: Text.ElideRight
                         text: root.speedDownText
@@ -812,6 +813,7 @@ PopupWindow {
                         font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
                     }
                     Text {
+                        anchors.verticalCenter: parent.verticalCenter
                         visible: root.speedUpText !== ""
                         width: implicitWidth
                         elide: Text.ElideRight

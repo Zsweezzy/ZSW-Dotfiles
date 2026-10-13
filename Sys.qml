@@ -182,31 +182,31 @@ Module {
     Poll {
         id: gpuPoll
         command: [Tokyo.scriptDir + "/gpu.sh"]
-        interval: 1000
+        interval: 1500
         onResult: output => root.applyGpu(output)
     }
     Poll {
         id: cpuPoll
         command: [Tokyo.scriptDir + "/cpu.sh"]
-        interval: 1000
+        interval: 1500
         onResult: output => root.applyCpu(output)
     }
     Poll {
         id: memPoll
         command: [Tokyo.scriptDir + "/mem.sh"]
-        interval: 1000
+        interval: 1500
         onResult: output => root.applyMem(output)
     }
     Poll {
         id: diskPoll
         command: [Tokyo.scriptDir + "/disk.sh"]
-        interval: 1000
+        interval: 1500
         onResult: output => root.applyDisk(output)
     }
     Poll {
         id: procsPoll
         command: [Tokyo.scriptDir + "/procs.sh"]
-        interval: 1000
+        interval: 1500
         onResult: output => root.applyProcs(output)
     }
 }
