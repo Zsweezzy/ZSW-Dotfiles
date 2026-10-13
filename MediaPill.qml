@@ -1,10 +1,9 @@
-// MediaPill.qml — the "now playing" fragment fused into the bar's centre pill.
+// MediaPill.qml — the "now playing" fragment in the bar's centre pill.
 //
-// No chrome of its own: Clock.qml is the Module, and its Row centre-installs
-// this strip so an equal-width mirror behind the clock face keeps the face
-// dead centre no matter how wide the strip is (the pill grows and the clock
-// does not move). Idle — no player with a title — the strip collapses to
-// nothing and the pill is exactly the plain clock it always was.
+// No chrome of its own: Clock.qml is the Module, and it centre-installs this
+// strip inside the left of three equal-width boxes, so the pill keeps one
+// width whether the strip is there or not. Idle — no player with a title —
+// the strip collapses to nothing and its box stays empty behind it.
 //
 // The bar has room for the moment's essential two: pause/play on the left,
 // skip on the right, around a stationary square of the art. The controls are

@@ -1,20 +1,28 @@
-// WeatherPill.qml — the temperature fragment fused into the bar's centre pill.
+// WeatherPill.qml — the temperature fragment in the bar's centre pill.
 //
-// No chrome of its own: Clock.qml is the Module, and its Row installs this
-// right of the clock face. The pill is a Text box centred on its row; the
-// face's digits sit a few px above the row's centre (they are the top line of
-// a two-line block), so Clock.qml passes the face's `timeCenterOffset` as this
-// pill's vertical offset — the reading lines up with the numerals, not with
-// the pill's middle. Temperature only, no place name: the location, pressure
-// and forecast are the flyout card's. Gray, like the reading it is: a number
-// on the clock, not a brand.
+// No chrome of its own: Clock.qml is the Module, and its right-hand box of
+// three equal-width boxes centre-installs this. The pill is plain text,
+// horizontally centred on a fixed `contentW` box, so it is dead centre of its
+// box whether the reading is "–°" or "24°". Temperature only, no place name:
+// the location, pressure and forecast are the flyout card's. Gray, like the
+// reading it is: a number on the clock, not a brand.
 import QtQuick
 
 Text {
     id: root
 
-    anchors.verticalCenter: parent.verticalCenter
+    /// The widest reading the pill can draw — `88°`, measured, so Clock's box
+    /// widths never depend on the current text or change when the fetch lands.
+    readonly property real contentW: pillWorst.width
+
+    width: contentW
+    horizontalAlignment: Text.AlignHCenter
+
     text: Weather.has ? Math.round(Weather.temp) + "°" : "–°"
     color: Weather.has ? Tokyo.fg : Tokyo.dim
     font { family: Tokyo.fontFamily; pixelSize: 13; bold: true }
+
+    // Follows ClockFace: a `Text` nested in an Item reports its width only
+    // after layout, so the worst case is measured, not read off the live text.
+    TextMetrics { id: pillWorst; font: root.font; text: "88°" }
 }

@@ -37,12 +37,6 @@ Item {
     /// or the font ever changes.
     readonly property real contentW: timeWorst.width
 
-    // The time line's optical centre sits (25 − 15) / 2 px above the face's
-    // centre: the readings block is 25 px tall, the time line its top 15 px.
-    // Anything that must read against the digits — the weather pill — borrows
-    // this so it aligns with the numerals, not with the pill's vertical middle.
-    readonly property real timeCenterOffset: -(25 - 15) / 2
-
     // The two readings, 15 + 10 = 25 px of text in a 26 px pill. Heights are
     // declared rather than left to the fonts' line boxes (18 + 12) because the
     // sum of the line boxes is taller than the pill, and a Column that overflows

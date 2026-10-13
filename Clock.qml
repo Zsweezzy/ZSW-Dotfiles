@@ -1,15 +1,12 @@
-// Clock.qml — the bar's centre pill: the clock face with the now-playing
-// controls fused into its left edge while something is playing, and the
-// weather temperature fused into its right edge.
+// Clock.qml — the bar's centre pill: three virtual boxes of one width, the
+// clock dead centre. The now-playing controls live in the left box, the clock
+// face in the middle, the weather temperature in the right.
 //
-// One pill, not three. When a player is active, a stationary square of the art
-// with pause/play and skip on either side (`MediaPill`) leads the clock face;
-// the temperature (`WeatherPill`) always trails it. The strip's mirror sits
-// between the face and the temperature, so the face's offset from the pill's
-// centre is the same in every state — idle it reads `[face][24°]`, playing
-// `[controls][face][24°]`, and the clock never jumps when one becomes the
-// other. The temperature is not mirrored: it is a permanent fragment, and
-// balancing it would only fatten the pill.
+// The boxes are always present and always the same width — each is the widest
+// of the three contents — and what belongs to a box is centred inside it. The
+// pill therefore never resizes and nothing ever moves: a player appearing
+// fills the left box, the reading settling fills the right one, and the clock
+// stays exactly where it was. One pill, three rooms.
 //
 // Left-clicking it opens ClockFlyout, a popup that is anchored to the bar
 // rather than to this widget — it opens centred at the top of the screen and
@@ -56,46 +53,62 @@ Module {
         anchors.centerIn: parent
         spacing: 14
 
-        // pause, stationary art square, skip — the moment's essential controls.
-        // The story (title, seek, shuffle, volume) is the flyout card's.
-        MediaPill {
-            id: strip
-            width: implicitWidth
-            height: Tokyo.pillHeight
-        }
+        // Three virtual boxes of one width, all present in every state: the
+        // strip appears and disappears inside the left box, the reading inside
+        // the right one, and the pill never changes size. Each box is the
+        // widest of the three contents, so the clock sits exactly dead centre.
+        readonly property real cellW: Math.max(
+            strip.implicitWidth, face.contentW, weatherPill.contentW)
 
-        ClockFace {
-            id: face
-            // The face's own metrics, not the live text: sized off `contentW`,
-            // so the pill never resizes on the second. See ClockFace.qml.
-            width: face.contentW
-            height: Tokyo.pillHeight
-            // `hovered`, not `lit`: nothing borrows this pill's hover state any
-            // more. The flyout is a separate surface on the far side of the
-            // screen, so it never covers the pill and the bar's MouseArea keeps
-            // hearing the pointer for as long as it is really there.
-            hovered: root.hovered
-            now: root.now
-        }
-
-        // Mirror the strip's width so the scene never jumps when the strip
-        // appears: hidden with the strip, idle has zero padding at the right.
-        // It sits between the face and the temperature, so the temperature is
-        // at the pill's end in both states and the face's offset is constant.
+        // ---- left: the media strip ----
         Item {
-            id: mirror
-            width: strip.width
-            height: 1
-            visible: strip.visible
+            width: row.cellW
+            height: Tokyo.pillHeight
+
+            // pause, stationary art square, skip — the moment's essential
+            // controls. The story (title, seek, shuffle, volume) is the flyout
+            // card's.
+            MediaPill {
+                id: strip
+                width: implicitWidth
+                anchors.centerIn: parent
+            }
         }
 
-        // The temperature, right of the face: no chrome of its own, just the
-        // reading. The full story is the flyout card's. The face's digits sit
-        // above its box centre (see ClockFace.timeCenterOffset), so borrow
-        // that offset or the reading sags under the numerals.
-        WeatherPill {
-            id: weatherPill
-            anchors.verticalCenterOffset: face.timeCenterOffset
+        // ---- middle: the clock ----
+        Item {
+            width: row.cellW
+            height: Tokyo.pillHeight
+
+            ClockFace {
+                id: face
+                anchors.centerIn: parent
+                // The face's own metrics, not the live text: sized off
+                // `contentW`, so the pill never resizes on the second. See
+                // ClockFace.qml.
+                width: face.contentW
+                height: Tokyo.pillHeight
+                // `hovered`, not `lit`: nothing borrows this pill's hover
+                // state any more. The flyout is a separate surface on the far
+                // side of the screen, so it never covers the pill and the
+                // bar's MouseArea keeps hearing the pointer for as long as it
+                // is really there.
+                hovered: root.hovered
+                now: root.now
+            }
+        }
+
+        // ---- right: the weather ----
+        Item {
+            width: row.cellW
+            height: Tokyo.pillHeight
+
+            // Temperature only, no place name: the full story is the flyout
+            // card's. Centred in its box, like everything else in the row.
+            WeatherPill {
+                id: weatherPill
+                anchors.centerIn: parent
+            }
         }
     }
 
