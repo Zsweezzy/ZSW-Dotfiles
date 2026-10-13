@@ -11,18 +11,18 @@ import QtQuick
 Text {
     id: root
 
-    /// The widest reading the pill can draw — `88°`, measured, so Clock's box
+    /// The widest reading the pill can draw — `88°C`, measured, so Clock's box
     /// widths never depend on the current text or change when the fetch lands.
     readonly property real contentW: pillWorst.width
 
     width: contentW
     horizontalAlignment: Text.AlignHCenter
 
-    text: Weather.has ? Math.round(Weather.temp) + "°" : "–°"
+    text: Weather.has ? Math.round(Weather.temp) + Weather.tempUnit : "–°"
     color: Weather.has ? Tokyo.fg : Tokyo.dim
     font { family: Tokyo.fontFamily; pixelSize: 13; bold: true }
 
     // Follows ClockFace: a `Text` nested in an Item reports its width only
     // after layout, so the worst case is measured, not read off the live text.
-    TextMetrics { id: pillWorst; font: root.font; text: "88°" }
+    TextMetrics { id: pillWorst; font: root.font; text: "88°C" }
 }
