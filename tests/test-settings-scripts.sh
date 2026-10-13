@@ -166,6 +166,46 @@ bash scripts/bt-dev.sh connect 2>/dev/null && bad "bt-dev.sh: accepted a missing
 bash scripts/wifi-connect.sh join 2>/dev/null && bad "wifi-connect.sh: accepted a missing ssid" \
     || ok "wifi-connect.sh: rejects a missing ssid"
 
+# The JSON contract is the deliverable: the flyout's result poll reads exactly
+# one line, so a stub nmcli drives both the verdict text and the exit status
+# that used to get swallowed by a report that always returned 0.
+t=$(mktemp -d)
+cat > "$t/nmcli" <<'SH'
+#!/bin/bash
+# a join that simply succeeds
+exit 0
+SH
+chmod +x "$t/nmcli"
+out=$(PATH="$t:$PATH" bash scripts/wifi-connect.sh join TestNet psk 2>/dev/null)
+rc=$?
+lines=$(printf '%s' "$out" | grep -c '')
+if [ "$rc" -eq 0 ] && [ "$lines" -eq 1 ] \
+        && printf '%s' "$out" | python3 -c '
+import json, sys
+assert json.load(sys.stdin) == {"ok": True}
+' 2>/dev/null; then
+    ok "wifi-connect.sh: ok join exits 0 and prints one line {\"ok\":true}"
+else
+    bad "wifi-connect.sh: ok join exited $rc, $lines lines: $out"
+fi
+cat > "$t/nmcli" <<'SH'
+#!/bin/bash
+echo "Error: bad secrets" >&2
+exit 7
+SH
+out=$(PATH="$t:$PATH" bash scripts/wifi-connect.sh join TestNet psk 2>/dev/null)
+rc=$?
+printf '%s' "$out" | python3 -c '
+import json, sys
+o = json.load(sys.stdin)
+assert o["ok"] is False, o
+assert "bad secrets" in o["err"], o
+' 2>/dev/null && ok "wifi-connect.sh: failing join prints one line with ok:false and the error" \
+    || bad "wifi-connect.sh: failing join stdout was not the error line: $out"
+[ "$rc" -eq 7 ] && ok "wifi-connect.sh: failing join exits with nmcli's status (7)" \
+    || bad "wifi-connect.sh: failing join exited $rc, want 7"
+rm -rf "$t"
+
 # notify-log.sh is the notification centre's history, so its whole contract is
 # that a body with quotes, backslashes, tabs and non-ASCII in it survives a
 # round trip through a line of JSON. Bodies are arbitrary application text; if

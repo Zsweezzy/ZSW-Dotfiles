@@ -22,6 +22,7 @@ active=$(nmcli -t -f ACTIVE,SSID dev wifi list --rescan no 2>/dev/null \
 nets=$(nmcli -t -f SSID,SIGNAL,SECURITY dev wifi list ifname "$iface" --rescan yes 2>/dev/null \
     | awk -F: '
         $1 == "" { next }                       # hidden ssid: nothing to join by name
+        $2 !~ /^[0-9]+$/ || $2 + 0 > 100 { next }   # malformed signal: drop the row
         { if (!($1 in best) || $2 + 0 > best[$1] + 0) { best[$1] = $2; sec[$1] = $3 } }
         END { for (s in best) printf "%s\t%s\t%s\n", s, best[s], sec[s] }' \
     | sort -t: -k2 -rn)
@@ -44,6 +45,8 @@ is_known() {
 out=""
 while IFS=$'\t' read -r ssid signal security; do
     [ -z "$ssid" ] && continue
+    case "$signal" in ''|*[!0-9]*) continue ;; esac
+    [ "$signal" -gt 100 ] && continue
     [ -n "$out" ] && out="$out,"
     out="$out{\"ssid\":\"$(jesc "$ssid")\",\"signal\":$signal,\"secure\":$([ -n "$security" ] && echo true || echo false),\"active\":$([ "$ssid" = "$active" ] && echo true || echo false),\"known\":$(is_known "$ssid" && echo true || echo false)}"
 done <<< "$nets"

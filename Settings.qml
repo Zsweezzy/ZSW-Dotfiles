@@ -531,30 +531,38 @@ Module {
     }
 
     function joinWifi(ssid, password) {
+        // A stale confirm timer from a previous failure would blank the
+        // "Joining…" notice mid-flight, and join can hold 20s.
+        root.confirm.stop()
         root.notice = "Joining " + ssid + "…"
         root.noticeError = false
         wifiActPoll.command = [Tokyo.scriptDir + "/wifi-connect.sh",
                                "join", ssid].concat(password ? [password] : [])
         wifiActPoll.refresh()
+        wifiGuard.start()
     }
 
     function leaveWifi(ssid) {
+        root.confirm.stop()
         root.notice = "Leaving…"
         root.noticeError = false
         wifiActPoll.command = [Tokyo.scriptDir + "/wifi-connect.sh",
                                "leave", ssid]
         wifiActPoll.refresh()
+        wifiGuard.start()
     }
 
     function forgetWifi(ssid) {
         // Same wait-free arm as the other two: nmcli delete returns in a
         // moment, and the result poll's refreshAll drops the row anyway
         // because the network is no longer `known`.
+        root.confirm.stop()
         root.notice = "Forgetting…"
         root.noticeError = false
         wifiActPoll.command = [Tokyo.scriptDir + "/wifi-connect.sh",
                                "forget", ssid]
         wifiActPoll.refresh()
+        wifiGuard.start()
     }
 
     function scanBluetooth() {
@@ -647,6 +655,19 @@ Module {
             root.noticeError = true
             root.btBusy = ""
             root.confirm.start()
+        }
+    }
+
+    // If the wifi action process dies without printing its verdict, the
+    // armed poll never fires onResult and "Joining…" would stick forever —
+    // the old confirm-based flow capped every notice at 4s. Clear an
+    // in-progress (non-error) notice after 30s and re-read the world.
+    Timer {
+        id: wifiGuard
+        interval: 30000
+        onTriggered: if (root.notice !== "" && !root.noticeError) {
+            root.notice = ""
+            root.refreshAll()
         }
     }
 

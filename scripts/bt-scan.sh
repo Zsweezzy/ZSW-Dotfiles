@@ -27,9 +27,9 @@ while read -r mac; do
     info=$(bluetoothctl info "$mac" 2>/dev/null)
     paired=false
     [ "$(printf '%s' "$info" | awk -F': ' '/Paired:/{print $2}')" = "yes" ] && paired=true
-    name=$(printf '%s' "$info" | awk -F': ' '/Alias:|Name:/{print $2; exit}')
+    name=$(printf '%s' "$info" | sed -n 's/^\(Alias\|Name\): //p' | head -1)
     [ -z "$name" ] && name=$mac
-    icon=$(printf '%s' "$info" | awk -F': ' '/Icon:/{print $2}')
+    icon=$(printf '%s' "$info" | sed -n 's/^Icon: //p' | head -1)
     [ -n "$devs" ] && devs="$devs,"
     devs="$devs{\"mac\":\"$(jesc "$mac")\",\"name\":\"$(jesc "$name")\",\"paired\":$paired,\"icon\":\"$(jesc "$icon")\"}"
 done <<< "$macs"

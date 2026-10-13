@@ -27,9 +27,9 @@ while read -r word mac _; do
     [ "$word" = "Device" ] || continue
     [ -z "$mac" ] && continue
     info=$(bluetoothctl info "$mac" 2>/dev/null)
-    name=$(printf '%s' "$info" | awk -F': ' '/Alias:|Name:/{print $2; exit}')
+    name=$(printf '%s' "$info" | sed -n 's/^\(Alias\|Name\): //p' | head -1)
     [ -z "$name" ] && name=$mac
-    icon=$(printf '%s' "$info" | awk -F': ' '/Icon:/{print $2}')
+    icon=$(printf '%s' "$info" | sed -n 's/^Icon: //p' | head -1)
     conn=false
     [ "$(printf '%s' "$info" | awk -F': ' '/Connected:/{print $2}')" = "yes" ] && conn=true
     add_dev "$mac" "$conn"

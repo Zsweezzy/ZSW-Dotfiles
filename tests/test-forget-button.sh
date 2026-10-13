@@ -368,6 +368,19 @@ new_rows = rows([
     '            glyph: "2 \uf023"',
     '            status: "42%"',
     '        }',
+    '        // The third real wifi shape and the one that may forget: known &&',
+    '        // !active, so forgetable: true. Same signal glyph layout as the',
+    '        // rows above, but hovered, and the × now replaces the CONNECTED',
+    '        // word in the right-hand slot.',
+    '        DeviceRow {',
+    '            id: wifiSaved',
+    '            width: 200; height: 26',
+    '            name: "Work-Net"',
+    '            glyph: "3"',
+    '            status: "CONNECTED"',
+    '            forgetable: true',
+    '            hovered: true',
+    '        }',
     '        // a discovered-only bluetooth row',
     '        DeviceRow {',
     '            id: unpaired',
@@ -387,6 +400,7 @@ new_prints = "\n".join([
     '            print(measure(pairedOn, "pairedOn"))',
     '            print(measure(wifiRow, "wifiRow"))',
     '            print(measure(wifiLock, "wifiLock"))',
+    '            print(measure(wifiSaved, "wifiSaved"))',
     '            print(measure(unpaired, "unpaired"))',
     '            print(measure(scanning, "scanning"))',
 ])
@@ -467,6 +481,19 @@ need(p["nameW"] == m["pairedOff"]["nameW"],
 # the × outranks the whole-row click area, so the toggle cannot also fire
 need(p["hitOwner"] == "forget",
      "the × owns the click in the right-hand slot (toggle cannot eat it)")
+
+# 1b. the SAVED wifi shape (known && !active) — the row the opt-in was shipped
+# for. Same glyph-driven layout as the connected rows, but forgetable, and the
+# × has to replace the wifi status word the same way it does on bluetooth.
+w = m["wifiSaved"]
+need(w["forgetVisible"] == "true" and w["forgetW"] >= 12,
+     "hovering a SAVED wifi row shows the × (%s x %s)"
+     % (w["forgetW"], w["forgetH"]))
+need(w["wordVisible"] == "false",
+     "the × replaces the SAVED wifi row's CONNECTED word, it does not sit "
+     "beside it")
+need(w["hitOwner"] == "forget",
+     "the × owns the right-hand slot on the SAVED wifi row too")
 
 # 2. every other shape is untouched. The × keeps its 20x20 geometry when
 # hidden — that width IS the click target, so collapsing it to 0 would be the
