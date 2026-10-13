@@ -627,36 +627,37 @@ PopupWindow {
                 spacing: 8
                 opacity: root.stagger(0, root.staggerSpan)
                 transform: Translate { y: (1 - bandPowerRow.opacity) * 5 }
-                // Layout: 1/3 shutdown, 1/3 reboot, 1/6 logout, 1/6 sleep (locations kept)
+                // Power grid aligned to tiles: shutdown/reboot each = tileW, logout/sleep split third
                 PillButton {
-                    width: (parent.width - 24) * (1/3)
+                    width: root.tileW
                     text: "SHUTDOWN"
                     glyph: ""
                     accent: Tokyo.red
                     onClicked: Quickshell.execDetached(["systemctl", "poweroff"])
                 }
                 PillButton {
-                    width: (parent.width - 24) * (1/3)
+                    width: root.tileW
                     text: "REBOOT"
                     glyph: ""
                     accent: Tokyo.magenta
                     onClicked: Quickshell.execDetached(["systemctl", "reboot"])
                 }
                 PillButton {
-                    width: (parent.width - 24) * (1/6)
+                    width: (root.tileW - 4) / 2
                     text: "LOGOUT"
                     glyph: "\uf08b"
                     accent: Tokyo.blue
                     onClicked: Quickshell.execDetached(["hyprctl", "dispatch", "exit"])
                 }
                 PillButton {
-                    width: (parent.width - 24) * (1/6)
+                    width: (root.tileW - 4) / 2
                     text: "SLEEP"
                     glyph: ""
                     accent: Tokyo.yellow
                     onClicked: Quickshell.execDetached(["systemctl", "suspend"])
                 }
             }
+
             // ================= the tiles =================
             Row {  id: bandTiles
                 width: parent.width
