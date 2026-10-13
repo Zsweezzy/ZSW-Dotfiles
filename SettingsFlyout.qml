@@ -627,43 +627,34 @@ PopupWindow {
                 spacing: 8
                 opacity: root.stagger(0, root.staggerSpan)
                 transform: Translate { y: (1 - bandPowerRow.opacity) * 5 }
-                // Four equal buttons filling the three-tile width: shutdown,
-                // reboot, sleep and log out. Each is (parent.width - 24) / 4,
-                // so the four cells plus their three 8px gaps sum exactly to
-                // the 3-tile content width the tiles row uses below.
+                // Layout: 1/3 shutdown, 1/3 reboot, 1/6 logout, 1/6 sleep (locations kept)
                 PillButton {
-                    width: (parent.width - 24) / 4
+                    width: (parent.width - 24) * (1/3)
                     text: "SHUTDOWN"
                     glyph: ""
                     accent: Tokyo.red
                     onClicked: Quickshell.execDetached(["systemctl", "poweroff"])
                 }
                 PillButton {
-                    width: (parent.width - 24) / 4
+                    width: (parent.width - 24) * (1/3)
                     text: "REBOOT"
                     glyph: ""
                     accent: Tokyo.magenta
                     onClicked: Quickshell.execDetached(["systemctl", "reboot"])
                 }
                 PillButton {
-                    width: (parent.width - 24) / 4
-                    text: "SLEEP"
-                    glyph: ""
-                    accent: Tokyo.yellow
-                    onClicked: Quickshell.execDetached(["systemctl", "suspend"])
-                }
-                // Log out rather than power down: `hyprctl dispatch exit`
-                // ends the session and leaves the machine at the login
-                // screen, which is the one thing this row could not do. The
-                // sign-out glyph \uf08b, not the power glyph the other
-                // three wear — three identical buttons in one row is how a
-                // logout becomes an accidental shutdown.
-                PillButton {
-                    width: (parent.width - 24) / 4
+                    width: (parent.width - 24) * (1/6)
                     text: "LOGOUT"
                     glyph: "\uf08b"
                     accent: Tokyo.blue
                     onClicked: Quickshell.execDetached(["hyprctl", "dispatch", "exit"])
+                }
+                PillButton {
+                    width: (parent.width - 24) * (1/6)
+                    text: "SLEEP"
+                    glyph: ""
+                    accent: Tokyo.yellow
+                    onClicked: Quickshell.execDetached(["systemctl", "suspend"])
                 }
             }
             // ================= the tiles =================
