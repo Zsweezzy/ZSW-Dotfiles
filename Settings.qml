@@ -386,48 +386,7 @@ Module {
         ethPoll.refresh()
         wifiListPoll.refresh()
         btPoll.refresh()
-        lsPoll.refresh()
         hdrPoll.refresh()
-    }
-
-    // ---------- airdrop (LocalSend) ----------
-    readonly property string airdropCmd: Tokyo.scriptDir + "/localsend.sh"
-    property var airdrop: ({ running: false })
-
-    Poll {
-        id: lsPoll
-        command: [root.airdropCmd]
-        // Faster than the other polls: this one tracks something the tile was
-        // just clicked for, so the light has to follow the click rather than
-        // arrive up to a poll later.
-        interval: 4000
-        onResult: out => {
-            try {
-                root.airdrop = { running: JSON.parse(out).running === true }
-            } catch (e) {
-                // No state to report: leave the last one alone.
-            }
-        }
-    }
-
-    /// One command for launch and for raise — LocalSend is single-instance, so
-    /// starting it while it is up brings its window forward instead of opening a
-    /// second copy.
-    function openLocalSend() {
-        root.run(root.airdropCmd, ["start"])
-        // Optimistic, like the SSID button: the window takes a moment to come
-        // up and the light must not lag the pointer.
-        root.airdrop = Object.assign({}, root.airdrop, { running: true })
-    }
-
-    function setLocalSend(on) {
-        if (on) {
-            root.openLocalSend()
-            return
-        }
-        root.run(root.airdropCmd, ["stop"])
-        root.airdrop = Object.assign({}, root.airdrop, { running: false })
-        settle.start()
     }
 
     // ---------- live speedtest ----------

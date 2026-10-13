@@ -14,9 +14,6 @@
 //               flyout's whole block lives — SSID, IP, netmask, DNS, MAC, and
 //               the live up/down/ping — for whichever link is up.
 //   BLUETOOTH   switch, the paired devices, and a scan button for new ones.
-//   AIRDROP     LocalSend. The tile is the whole feature: press it and the
-//               window opens, or comes forward if it is already open, and the
-//               switch is just on/off for the app itself.
 //   HDR         the M28U (DP-1) between HDR and SDR. Runtime-only, and the
 //               tile has no panel — pressing it flips the monitor.
 //   POWER       sleep, reboot, shutdown.
@@ -47,8 +44,8 @@ PopupWindow {
     readonly property int tileW: 148
     readonly property int tileH: 56
 
-    // Four tiles and their three gaps: 592 + 24, plus the padding either side.
-    implicitWidth: root.tileW * 4 + root.padH * 2 + 24
+    // Three tiles and their two gaps: 444 + 16, plus the padding either side.
+    implicitWidth: root.tileW * 3 + root.padH * 2 + 16
     implicitHeight: box.height + root.gap
 
     // ---------------- the reveal ----------------
@@ -189,8 +186,6 @@ PopupWindow {
     /// monitor has a reading, the plain wifi glyph until it does.
     readonly property string wifiGlyph: root.pill === null
         ? "\uf1eb" : root.pill.wifiGlyph
-    readonly property var airdrop: root.pill === null
-        ? { running: false } : root.pill.airdrop
 
     /// The networks to draw: the ones this machine has used, plus anything
     /// joined right now. `showAll` adds the rest of the scan. Sorted by signal
@@ -631,25 +626,26 @@ PopupWindow {
                 spacing: 8
                 opacity: root.stagger(0, root.staggerSpan)
                 transform: Translate { y: (1 - bandPowerRow.opacity) * 5 }
-                // One tile-width cell per action, aligned with the four tiles
-                // below: shutdown, reboot, sleep and log out each get a full
-                // cell (root.tileW). The row sums to content.width exactly.
+                // Four equal buttons filling the three-tile width: shutdown,
+                // reboot, sleep and log out. Each is (parent.width - 24) / 4,
+                // so the four cells plus their three 8px gaps sum exactly to
+                // the 3-tile content width the tiles row uses below.
                 PillButton {
-                    width: root.tileW
+                    width: (parent.width - 24) / 4
                     text: "SHUTDOWN"
                     glyph: ""
                     accent: Tokyo.red
                     onClicked: Quickshell.execDetached(["systemctl", "poweroff"])
                 }
                 PillButton {
-                    width: root.tileW
+                    width: (parent.width - 24) / 4
                     text: "REBOOT"
                     glyph: ""
                     accent: Tokyo.magenta
                     onClicked: Quickshell.execDetached(["systemctl", "reboot"])
                 }
                 PillButton {
-                    width: root.tileW
+                    width: (parent.width - 24) / 4
                     text: "SLEEP"
                     glyph: ""
                     accent: Tokyo.yellow
@@ -662,7 +658,7 @@ PopupWindow {
                 // three wear — three identical buttons in one row is how a
                 // logout becomes an accidental shutdown.
                 PillButton {
-                    width: root.tileW
+                    width: (parent.width - 24) / 4
                     text: "LOGOUT"
                     glyph: "\uf08b"
                     accent: Tokyo.blue
@@ -719,28 +715,6 @@ PopupWindow {
                     onSwitched: {
                         if (root.pill !== null)
                             root.pill.setBtRadio(!root.bt.powered)
-                    }
-                }
-
-                // Airdrop is LocalSend. No detail panel under it: the tile body
-                // is the whole feature — it opens (or raises) the window, which
-                // is where you send anything. A panel here would be one more
-                // click in front of the app for no extra power.
-                Tile {
-                    id: lsTile
-                    width: root.tileW
-                    height: root.tileH
-                    glyph: ""
-                    label: "Airdrop"
-                    accent: Tokyo.green
-                    lit: root.airdrop.running
-                    sub: root.airdrop.running ? "Running" : "Off"
-                    onToggled: {
-                        if (root.pill !== null) root.pill.openLocalSend()
-                    }
-                    onSwitched: {
-                        if (root.pill !== null)
-                            root.pill.setLocalSend(!root.airdrop.running)
                     }
                 }
 
