@@ -891,9 +891,19 @@ PopupWindow {
                                   : modelData.known
                                       ? "SAVED " + modelData.signal + "%"
                                       : modelData.signal + "%"
+                            // The same × the bluetooth rows carry, for a saved
+                            // network you are NOT on: KDE's "forget" drops the
+                            // saved profile. The active row is excluded — you
+                            // cannot forget the network you are connected
+                            // through, and the rest of the row still connects.
+                            forgetable: modelData.known && !modelData.active
+                            onForgotten: {
+                                if (root.pill !== null)
+                                    root.pill.forgetWifi(modelData.ssid)
+                            }
                             onClicked: {
                                 if (modelData.active) {
-                                    if (root.pill !== null) root.pill.leaveWifi()
+                                    if (root.pill !== null) root.pill.leaveWifi(modelData.ssid)
                                 } else if (modelData.secure && !modelData.known) {
                                     // Only a network this machine has no profile
                                     // for gets a password field. Asking for one
@@ -952,6 +962,22 @@ PopupWindow {
                                         color: Tokyo.fg
                                         echoMode: TextInput.Password
                                         clip: true
+                                        // KDE's password dialog hands typing to the
+                                        // field and submits on Enter — same JOIN
+                                        // action, no pointer involved.
+                                        focus: visible
+                                        Keys.onReturnPressed: {
+                                            root.entering = ""
+                                            if (root.pill !== null)
+                                                root.pill.joinWifi(modelData.ssid,
+                                                                   passField.text)
+                                        }
+                                        Keys.onEnterPressed: {
+                                            root.entering = ""
+                                            if (root.pill !== null)
+                                                root.pill.joinWifi(modelData.ssid,
+                                                                   passField.text)
+                                        }
                                         Keys.onEscapePressed: { root.entering = "" }
                                     }
                                 }
@@ -1161,7 +1187,10 @@ PopupWindow {
                 width: parent.width
                 visible: root.notice !== ""
                 text: root.notice
-                color: Tokyo.yellow
+                // A failure the result poll reported reads as one: red for
+                // "could not", yellow for the ordinary in-progress lines.
+                color: root.pill !== null && root.pill.noticeError
+                       ? Tokyo.red : Tokyo.yellow
                 font { family: Tokyo.fontFamily; pixelSize: 10 }
             }
         }

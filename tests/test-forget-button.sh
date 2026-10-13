@@ -136,8 +136,13 @@ need(re.search(r"(?m)^\s*visible:.*forgetShown", word) is not None,
      "the status word hides while the × is shown (one slot, one piece of state)")
 
 # the call sites
-need("forgetable" not in wifi and "forgotten" not in wifi,
-     "wifi rows are untouched: no forget affordance")
+# The wifi call site is deliberately opt-in the same way bluetooth is, but only
+# for a saved network the user is NOT on — the connected network cannot forget
+# itself (it is the link you are browsing through).
+need("forgetable: modelData.known && !modelData.active" in wifi,
+     "wifi rows opt in to forget — known, not-connected networks only")
+need("onForgotten:" in wifi and "forgetWifi(modelData.ssid)" in wifi,
+     "the wifi × calls forgetWifi for that network's own ssid")
 need("forgetable" not in scan and "forgotten" not in scan,
      "the scan button is untouched: no forget affordance")
 need("forgetable: modelData.paired" in bt,

@@ -279,6 +279,9 @@ Module {
     /// so the row settles on the state the click asked for, not a guess.
     property bool btBusyTarget: false
     property string notice: ""
+    /// true while `notice` is a failure the user must see as one (the flyout
+    /// colors error notices Tokyo.red, everything else Tokyo.yellow)
+    property bool noticeError: false
 
     /// Paired devices and the scan results are one list between them; a paired
     /// device is just one that is already known. Rebuilt whenever either
@@ -433,6 +436,17 @@ Module {
         speedPoll.refresh()
     }
 
+    // ---------- wifi action results ----------
+    // WiFi actions are polls, not execDetached, because the user must SEE the
+    // result: nmcli answers in seconds and "Joining…" for 4 seconds is all the
+    // old detached run could show. Same arm-on-demand pattern as speedPoll.
+    Poll {
+        id: wifiActPoll
+        command: []
+        active: false
+        onResult: out => root.settleWifiAct(out)
+    }
+
     // ---------- HDR (the M28U on DP-1) ----------
     /// Runtime-only, and read back rather than assumed: hdr.sh's `on`/`off`
     /// each append a Hyprland monitor rule with no way to remove one, so the
@@ -448,9 +462,10 @@ Module {
     }
 
     // ---------- actions ----------
-    // Actions (join/pair) are execDetached rather than polls: they can block
-    // for seconds waiting on a phone, and a Poll would hold its process open
-    // that whole time.
+    // The detached actions (bt pair/forget) can block for seconds waiting on a
+    // phone, and a Poll would hold its process open that whole time. The wifi
+    // join/leave/forget results are read by wifiActPoll instead (above), because
+    // nmcli answers in seconds and the flyout must show the verdict.
     function run(script, args) {
         Quickshell.execDetached([script].concat(args || []))
     }
@@ -490,26 +505,71 @@ Module {
         settle.start()
     }
 
-    function joinWifi(ssid, password) {
-        root.notice = "Joining " + ssid + "…"
-        root.run(Tokyo.scriptDir + "/wifi-connect.sh",
-                 password ? ["join", ssid, password] : ["join", ssid])
-        confirm.start()
+    /// The verdict of a wifi action, read from wifi-connect.sh's one JSON
+    /// line. `ok:true` clears the notice and re-reads the world; `ok:false`
+    /// shows the short reason in red for the same 4s a success would have
+    /// shown "Joining…" — a failed join must read as a failure, not silence.
+    function settleWifiAct(out) {
+        try {
+            const o = JSON.parse(out)
+            if (o.ok === true) {
+                root.notice = ""
+                root.noticeError = false
+                root.refreshAll()
+            } else {
+                root.notice = String(o.err || "Failed").slice(0, 120)
+                root.noticeError = true
+                root.refreshAll()
+                root.confirm.start()
+            }
+        } catch (e) {
+            // Not our line (or a partial read): drop the notice, re-read.
+            root.notice = ""
+            root.noticeError = false
+            root.refreshAll()
+        }
     }
 
-    function leaveWifi() {
+    function joinWifi(ssid, password) {
+        root.notice = "Joining " + ssid + "…"
+        root.noticeError = false
+        wifiActPoll.command = [Tokyo.scriptDir + "/wifi-connect.sh",
+                               "join", ssid].concat(password ? [password] : [])
+        wifiActPoll.refresh()
+    }
+
+    function leaveWifi(ssid) {
         root.notice = "Leaving…"
-        root.run(Tokyo.scriptDir + "/wifi-connect.sh", ["leave"])
-        confirm.start()
+        root.noticeError = false
+        wifiActPoll.command = [Tokyo.scriptDir + "/wifi-connect.sh",
+                               "leave", ssid]
+        wifiActPoll.refresh()
+    }
+
+    function forgetWifi(ssid) {
+        // Same wait-free arm as the other two: nmcli delete returns in a
+        // moment, and the result poll's refreshAll drops the row anyway
+        // because the network is no longer `known`.
+        root.notice = "Forgetting…"
+        root.noticeError = false
+        wifiActPoll.command = [Tokyo.scriptDir + "/wifi-connect.sh",
+                               "forget", ssid]
+        wifiActPoll.refresh()
     }
 
     function scanBluetooth() {
         root.scanning = true
         root.notice = "Scanning…"
+        // A new, ordinary (non-error) notice: drop any leftover failure tint.
+        root.noticeError = false
         btScanPoll.refresh()
     }
 
     function toggleDevice(mac, paired, connected) {
+        // A busy row must not start a second command: bt-dev.sh can hold the
+        // device for ~40s, and a second click would stack a second script on
+        // the same bluez object. KDE blocks double-actions the same way.
+        if (root.btBusy !== "") return
         root.notice = ""
         // Busy from before the script is even spawned: bt-dev.sh pair blocks for
         // up to 25s waiting on the phone, and a row that only spins once the
@@ -534,6 +594,8 @@ Module {
         // sits there for 4s looking broken. This matches what joinWifi,
         // leaveWifi and scanBluetooth already do.
         root.notice = "Forgetting…"
+        // A new, ordinary (non-error) notice: drop any leftover failure tint.
+        root.noticeError = false
         // No busy spinner here, unlike toggleDevice: a forget is immediate, and
         // the row is about to leave the list anyway — spinning would only claim
         // the row is doing something when what it is doing is disappearing.
@@ -567,11 +629,25 @@ Module {
         onTriggered: btPoll.refresh()
     }
     // Backstop for a pair that simply fails: the state never changes, so the
-    // settle-on-result above never fires and the row would spin forever.
+    // settle-on-result above never fires and the row would spin forever. Say
+    // which device failed rather than going silent — a spinner that just stops
+    // reads as "still working", not "gave up".
+    function btBusyName() {
+        for (let i = 0; i < root.btList.length; i++)
+            if (root.btList[i].mac === root.btBusy) return root.btList[i].name
+        for (let i = 0; i < root.found.length; i++)
+            if (root.found[i].mac === root.btBusy) return root.found[i].name
+        return root.btBusy
+    }
     Timer {
         id: btGuard
         interval: 45000
-        onTriggered: if (root.btBusy !== "") { root.btBusy = ""; root.notice = "" }
+        onTriggered: if (root.btBusy !== "") {
+            root.notice = "Couldn't connect to " + root.btBusyName()
+            root.noticeError = true
+            root.btBusy = ""
+            root.confirm.start()
+        }
     }
 
     /// The pill is the three glyphs and nothing else: no link name, no SSID, no
