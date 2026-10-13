@@ -25,7 +25,7 @@ Singleton {
     id: root
 
     // ---------- the config ----------
-    property string weatherLocation: "Berlin, Germany"
+    property string weatherLocation: "Breckerfeld, Germany"
     property string weatherUnits: "auto"
 
     // ---------- current reading ----------
