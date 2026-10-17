@@ -1,0 +1,134 @@
+{
+    "plugins": {
+        "OpenRGB Effects Plugin": {
+            "Effects": [
+                {
+                    "AllowOnlyFirst": false,
+                    "AutoStart": true,
+                    "Brightness": 100,
+                    "ControllerZones": [
+                        {
+                            "description": "Corsair DRAM RGB Device",
+                            "is_segment": false,
+                            "location": "I2C: SMBus PIIX4 adapter port 0 at 0b00 (/dev/i2c-18), address 0x19",
+                            "name": "Corsair Vengeance RGB DDR5",
+                            "reverse": false,
+                            "segment_idx": -1,
+                            "self_brightness": 100,
+                            "serial": "",
+                            "vendor": "Corsair",
+                            "version": "1.2.9",
+                            "zone_idx": 0
+                        },
+                        {
+                            "description": "Corsair DRAM RGB Device",
+                            "is_segment": false,
+                            "location": "I2C: SMBus PIIX4 adapter port 0 at 0b00 (/dev/i2c-18), address 0x1B",
+                            "name": "Corsair Vengeance RGB DDR5",
+                            "reverse": false,
+                            "segment_idx": -1,
+                            "self_brightness": 100,
+                            "serial": "",
+                            "vendor": "Corsair",
+                            "version": "1.2.9",
+                            "zone_idx": 0
+                        },
+                        {
+                            "description": "ENE SMBus Device",
+                            "is_segment": false,
+                            "location": "I2C: AMDGPU DM i2c OEM bus (/dev/i2c-7), address 0x67",
+                            "name": "ASUS TUF Radeon RX 7900 XTX Gaming OC",
+                            "reverse": false,
+                            "segment_idx": -1,
+                            "self_brightness": 100,
+                            "serial": "",
+                            "vendor": "ASUS",
+                            "version": "AUMA0-E6K5-0107",
+                            "zone_idx": 0
+                        },
+                        {
+                            "description": "MSI Mystic Light Device (185-byte)",
+                            "is_segment": false,
+                            "location": "HID: /dev/hidraw7",
+                            "name": "MSI B650 GAMING PLUS WIFI (MS-7E26)",
+                            "reverse": false,
+                            "segment_idx": -1,
+                            "self_brightness": 100,
+                            "serial": "7E2623032403",
+                            "vendor": "MSI",
+                            "version": "AP/LD 0.3 / 1.5",
+                            "zone_idx": 0
+                        },
+                        {
+                            "description": "MSI Mystic Light Device (185-byte)",
+                            "is_segment": false,
+                            "location": "HID: /dev/hidraw7",
+                            "name": "MSI B650 GAMING PLUS WIFI (MS-7E26)",
+                            "reverse": false,
+                            "segment_idx": -1,
+                            "self_brightness": 100,
+                            "serial": "7E2623032403",
+                            "vendor": "MSI",
+                            "version": "AP/LD 0.3 / 1.5",
+                            "zone_idx": 1
+                        },
+                        {
+                            "description": "MSI Mystic Light Device (185-byte)",
+                            "is_segment": false,
+                            "location": "HID: /dev/hidraw7",
+                            "name": "MSI B650 GAMING PLUS WIFI (MS-7E26)",
+                            "reverse": false,
+                            "segment_idx": -1,
+                            "self_brightness": 100,
+                            "serial": "7E2623032403",
+                            "vendor": "MSI",
+                            "version": "AP/LD 0.3 / 1.5",
+                            "zone_idx": 2
+                        },
+                        {
+                            "description": "MSI Mystic Light Device (185-byte)",
+                            "is_segment": false,
+                            "location": "HID: /dev/hidraw7",
+                            "name": "MSI B650 GAMING PLUS WIFI (MS-7E26)",
+                            "reverse": false,
+                            "segment_idx": -1,
+                            "self_brightness": 100,
+                            "serial": "7E2623032403",
+                            "vendor": "MSI",
+                            "version": "AP/LD 0.3 / 1.5",
+                            "zone_idx": 3
+                        },
+                        {
+                            "description": "HyperX Microphone Device",
+                            "is_segment": false,
+                            "location": "1-5.4.1:1.0",
+                            "name": "HyperX Quadcast S",
+                            "reverse": false,
+                            "segment_idx": -1,
+                            "self_brightness": 100,
+                            "serial": "Љ",
+                            "vendor": "HyperX",
+                            "version": "",
+                            "zone_idx": 0
+                        }
+                    ],
+                    "CustomName": "",
+                    "EffectClassName": "GradientWave",
+                    "FPS": 60,
+                    "RandomColors": false,
+                    "Slider2Val": 1,
+                    "Speed": 10,
+                    "Temperature": 0,
+                    "Tint": 0,
+                    "UserColors": [
+                        16777215,
+                        16777215
+                    ]
+                }
+            ],
+            "version": 2
+        }
+    },
+    "profile_name": "White",
+    "profile_version": 6
+}

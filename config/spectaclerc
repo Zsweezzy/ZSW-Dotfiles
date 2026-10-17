@@ -1,0 +1,12 @@
+[Annotations]
+annotationToolType=3
+
+[GuiConfig]
+quitAfterSaveCopyExport=true
+
+[ImageSave]
+lastImageSaveLocation=file:///tmp/opencode/aurorae/screen_revert.png
+translatedScreenshotsFolder=Screenshots
+
+[VideoSave]
+translatedScreencastsFolder=Screencasts

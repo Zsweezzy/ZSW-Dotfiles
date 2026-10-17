@@ -1,0 +1,33 @@
+{
+  "schema_version": 8,
+  "settings": {
+    "allow_multiple_playbacks": false,
+    "auto_gain": true,
+    "auto_gain_apply_to": "both",
+    "auto_gain_attack_ms": 6,
+    "auto_gain_lookahead_ms": 30,
+    "auto_gain_mode": "dynamic",
+    "auto_gain_release_ms": 150,
+    "auto_gain_target_lufs": -14.0,
+    "close_to_tray": true,
+    "default_source_mode": "default",
+    "excluded_apps": [],
+    "group_mode": "same",
+    "list_style": "compact",
+    "local_mute": false,
+    "local_volume": 58,
+    "loudness_boost": false,
+    "loudness_boost_db": 0.0,
+    "mic_latency_profile": "balanced",
+    "mic_passthrough": true,
+    "mic_source": null,
+    "mic_volume": 69,
+    "mpris_enabled": false,
+    "multi_sound_hotkeys": false,
+    "play_mode": "default",
+    "skip_delete_confirm": false,
+    "tab_hotkeys": false,
+    "theme": "dark",
+    "tray_enabled": true
+  }
+}

@@ -1,0 +1,19 @@
+[
+  {
+    "manifest_url": "https://v3-cinemeta.strem.io/manifest.json",
+    "name": "Cinemeta",
+    "version": "3.0.14",
+    "description": "Official Catalog and Metadata",
+    "enabled": true,
+    "provides_catalog": true,
+    "provides_meta": true,
+    "provides_stream": false,
+    "id_prefixes": [
+      "tt"
+    ],
+    "types": [
+      "movie",
+      "series"
+    ]
+  }
+]

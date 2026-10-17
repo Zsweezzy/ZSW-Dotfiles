@@ -1,0 +1,78 @@
+# Neru configuration — Hints mode only.
+#
+# Deliberately NOT a copy of configs/default-config.toml. That file lists five
+# `Primary+Shift+…` launcher bindings, and on Linux those are exactly the
+# chords that collide with copy/paste (Ctrl+Shift+C / Ctrl+Shift+V). Neru
+# clears its own Linux defaults at startup for that reason; writing them here
+# explicitly would put them back.
+#
+# Full reference: https://github.com/y3owk1n/neru/blob/main/docs/CONFIGURATION.md
+
+[hotkeys]
+# One global hotkey. `Primary` is Cmd on macOS, Ctrl on Linux/Windows, so this
+# is Ctrl+Shift+Space here. It reaches Neru through the evdev keyboard proxy,
+# which is working on this host — see note 1 at the bottom.
+"Primary+Shift+Space" = "hints"
+
+[hints]
+enabled = true
+# Element detection source. "axtree" reads the accessibility tree via AT-SPI.
+# "vision" runs on-device OCR over a screen capture. "contour" is a pure-Go edge
+# pass needing no OCR. Coverage varies per app; see the note at the bottom.
+strategy = "axtree"
+capture_scope = "window"                    # "window" = focused window, "screen" = whole display
+hint_characters = "asdfghjkl"
+# include_menubar_hints / include_dock_hints / ignore_clickable_check /
+# visible_check_enabled are all macOS-only and are deliberately not set here;
+# `neru config validate` flags any of them as inert on Linux.
+
+# The other pointer modes are switched off. The one effect `enabled = false`
+# is documented to have is removing the mode's default launcher hotkey, so
+# these stay out of the way. Note it does NOT refuse CLI entry: `neru grid`
+# still runs a grid on demand. It also has no effect on hotkeys here at all,
+# since Neru ships no default global hotkeys on Linux (see the header) — these
+# blocks are a statement of intent more than a lock.
+[grid]
+enabled = false
+
+[recursive_grid]
+enabled = false
+
+[bisect]
+enabled = false
+
+[monitor_select]
+enabled = false
+
+# NOTE: there is no `[scroll]` section here on purpose. Scroll mode is the one
+# mode with no `enabled` option in Neru's schema — it can only be tuned, never
+# switched off. It has no global hotkey, so it stays reachable only by typing
+# `neru scroll` by hand.
+
+# ---------------------------------------------------------------------------
+# Setup notes
+#
+# 1. Wayland keyboard capture is working on this host WITHOUT `input` group
+#    membership. The upstream docs call for `sudo usermod -aG input "$USER"`,
+#    but that is not needed here: systemd-logind's `uaccess` tag already grants
+#    this user rw on both /dev/input/event* and /dev/uinput, because it owns
+#    the active seat0 session. Confirm with:
+#
+#      getfacl /dev/uinput /dev/input/event3 | grep maxii
+#      udevadm info -q property -n /dev/uinput | grep TAGS   # expect :uaccess:
+#
+#    Verified at startup: "Evdev keyboard proxy running {devices: 3}" and
+#    "Wayland evdev global hotkey listener active". If that ever regresses
+#    after a change to seats or logind, fall back to the upstream command.
+#
+# 2. Chromium and Electron apps expose a nearly empty accessibility tree unless
+#    started with --force-renderer-accessibility. Where a tree is too thin for
+#    an app, override just that app rather than the global strategy:
+#
+#      [[hints.app_configs]]
+#      bundle_id = "firefox"                # Linux: WM_CLASS or Wayland app_id
+#      hotkeys = { "Return" = "action left_click" }
+#
+#    `neru roles` prints the full role vocabulary, and `neru config set
+#    hints.strategy contour` switches strategy at runtime if axtree comes up
+#    short somewhere.

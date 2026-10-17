@@ -1,0 +1,15 @@
+[Libinput][12815][20570][Glorious GMMK V2 96 ISO Mouse]
+PointerAcceleration=-0.400
+PointerAccelerationProfile=1
+
+[Libinput][7793][8449][NZXT, Inc. NZXT Lift Elite Dongle]
+PointerAcceleration=-0.400
+PointerAccelerationProfile=1
+
+[Libinput][7793][8489][NZXT, Inc. NZXT Lift Elite]
+PointerAcceleration=-0.400
+PointerAccelerationProfile=1
+
+[Mouse]
+cursorSize=22
+cursorTheme=Bibata-Modern-Classic
