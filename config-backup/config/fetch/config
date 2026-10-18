@@ -1,0 +1,63 @@
+# Match the field order and grouping from ~/.config/fastfetch/config.jsonc
+
+# System
+os
+kernel
+packages
+---
+
+# Desktop
+displaymanager
+wm
+theme
+icons
+cursor
+terminal
+font
+---
+
+# Hardware
+cpu
+gpu
+memory
+display
+disk
+disk=/home/maxii/games
+uptime
+---
+
+# Appearance
+colors
+
+# Tokyo Night-style blue labels; the local Fetch build renders each ---
+# group marker as --------.
+label_color=blue
+separator=-
+box=0
+
+# Logo shading. ascii = one sample per cell, so every edge snaps to the
+# character grid and the whole thing is punctuation, no half-cell quadrant
+# glyphs. That is the original look, and the weight comes from denser
+# characters rather than from solid blocks.
+# "blocks" (2x2 sub-cell) is the alternative: it rounds the silhouette, but the
+# dim tiers land on quadrant glyphs and read as shadow bands.
+shading_mode=ascii
+
+# Chunky ASCII ramp. Heavier and denser than the built-in ".,-~:;=!*#$@".
+# The light tiers are deliberately dropped rather than gamma-lifted -- no "."
+# "," ":" ";" "=" or "+" anywhere, so "*" is the floor and every dim face still
+# renders as solid weight. "%" buys a 4th tier: "*#@" and "#%@" both go flat
+# and lose the 3D modelling. Still no straight blocks.
+shading=*#%@
+
+# Antialiasing is off. It shades through the colour channel (luminance scaled
+# into the hue) and fades partial cells toward bg=, which is the soft shadowing
+# you did not want. To get it back: antialias=1 plus bg=<your terminal
+# background>, e.g. #222436 from ~/.config/kitty/tokyonight-moon.conf.
+antialias=0
+
+# Logo height in rows. 0 (unset) auto-fits to the info lines and leaves blank
+# rows under the logo. Do not use size= to compensate: anything above 1
+# fragments the logo into speckle because the point cloud no longer fits the
+# sub-cell grid. height= is the only knob that scales cleanly.
+height=24

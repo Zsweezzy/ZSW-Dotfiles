@@ -1,0 +1,8 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cortexkit/magic-context/master/assets/magic-context.schema.json",
+  "historian": {
+    "opencode": {
+      "model": "ollama/qwen3-coder:30b"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+[Unit]
+Description=MSI Mystic Light RGB Keyboard Lighting Controller
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/maxii/.local/bin/msi-rgb --apply-default
+RemainAfterExit=true
+
+[Install]
+WantedBy=default.target

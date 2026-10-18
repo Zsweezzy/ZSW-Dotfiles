@@ -1,0 +1,42 @@
+theme = "tokyonight-moon"
+
+[apps.btop]
+files = [
+    "~/.config/btop/btop.conf",
+    "~/.config/btop/themes/tokyo-night-moon.theme",
+]
+
+[apps.hypr]
+theme = "tokyonight-moon"
+files = ["~/.config/hypr/hyprland.lua"]
+reload = "pgrep -x Hyprland >/dev/null && hyprctl reload || true"
+
+[apps.kitty]
+files = ["~/.config/kitty/tokyonight-moon.conf"]
+reload = "pkill -SIGUSR1 -x kitty || true"
+
+[apps.niri]
+files = ["~/.config/niri/config.kdl"]
+
+[apps.qt]
+files = ["~/.config/Trolltech.conf"]
+
+[apps.quickshell]
+files = ["~/.config/quickshell/tokyonight/Tokyo.qml"]
+
+[apps.rofi]
+files = [
+    "~/.config/rofi/config.rasi",
+    "~/.local/share/rofi/themes/tokyonight-moon.rasi",
+]
+
+[apps.starship]
+files = ["~/.config/starship.toml"]
+
+[apps.swaync]
+files = ["~/.config/swaync/style.css"]
+reload = "pgrep -x swaync >/dev/null && swaync-client -rs || true"
+
+[apps.waybar]
+files = ["~/.config/waybar/style.css"]
+reload = "pkill -SIGUSR2 -x waybar || true"

@@ -1,0 +1,15 @@
+[Desktop Entry]
+Actions=RunInTerminal;
+Categories=RemoteAccess;Network;
+Comment=A self-hosted game stream server
+Exec=/usr/bin/env systemctl start --user apollo
+Icon=apollo
+Keywords=gamestream;stream;moonlight;remote play;
+Name=Apollo
+Type=Application
+
+[Desktop Action RunInTerminal]
+Exec=apollo
+Icon=application-x-executable
+Name=Run in Terminal
+Terminal=true
