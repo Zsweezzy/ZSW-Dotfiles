@@ -65,6 +65,17 @@ One-off tweaks live in `tweaks/<name>/`, each documented in
 - Nothing sensitive is tracked here; KDE session/activity/wallet state is
   deliberately excluded from the sync pairs.
 
+## Merged repositories
+
+Formerly separate repos, merged with their full git history intact
+(each source `main` is a second parent of its import commit):
+
+| Folder | Source repo | Contents |
+|---|---|---|
+| `config-backup/` | Zsweezzy/config-backup | Full `config/`, `home/`, `nix/` backup mirror + `backup.sh` |
+| `tokyonight-moon-dotfiles/` | Zsweezzy/tokyonight-moon-dotfiles | Live hyprland/quickshell/rofi mirrors for the tokyonight-moon theme |
+| `system/` | Zsweezzy/system | System tuning docs (numbered `*.md`) + `scripts/` |
+
 ## For AI agents and contributors
 
 - Config files keep their comments exactly as the app expects them — a `#`
