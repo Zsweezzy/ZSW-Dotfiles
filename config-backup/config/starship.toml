@@ -73,8 +73,8 @@ index_modified = ''
 index_typechanged = ''
 
 [nodejs]
-symbol = ''
-format = '[ $symbol$version ]($style)'
+symbol = ''
+format = '[ $symbol 7.2.10-1-cachyos ]($style)'
 style = 'bg:#444a73 fg:#c8d3f5'
 
 [time]
