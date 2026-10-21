@@ -2,7 +2,7 @@
 WantedBy=graphical-session.target
 
 [Service]
-ExecStart=/nix/store/fw0x68x7ag2vgicgzzqifl7p7ha274n1-wl-clipboard-2.3.0/bin/wl-paste --type image --watch /nix/store/znkldx6kxz7ffah1g1lf7r08pq66gdf9-cliphist-0.7.0/bin/cliphist store
+ExecStart=/usr/bin/wl-paste --type image --watch /usr/bin/cliphist store
 PassEnvironment=WAYLAND_DISPLAY
 PassEnvironment=XDG_RUNTIME_DIR
 Restart=always

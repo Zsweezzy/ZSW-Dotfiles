@@ -42,6 +42,8 @@ EXCL+=(
   --exclude '/watch_later/'   # mpv resume state
   --exclude '/Users/'         # spotify account state
   --exclude '*.lock'
+  --exclude 'Singleton*'      # Chromium/Electron runtime locks — dangle once the
+                              #   app exits, which aborts rsync's copy-links pass
   --exclude '*.sqlite3'
   --exclude '*.bak*'          # stale pre-edit copies; git history covers this
 )
@@ -58,8 +60,13 @@ rsync -a --copy-links --delete --ignore-missing-args \
   "$HOME/.gtkrc-2.0" "$HOME/.gitconfig" "$HOME/.win11.draft.txt" \
   home/
 
-rsync -a --copy-links --delete --exclude '/.git/' --exclude '/result' \
-  "$HOME/nix/" nix/
+# ~/nix was moved out of $HOME; keep the last copy instead of --delete-ing it.
+if [[ -d "$HOME/nix" ]]; then
+  rsync -a --copy-links --delete --exclude '/.git/' --exclude '/result' \
+    "$HOME/nix/" nix/
+else
+  echo "skip: ~/nix (no longer exists; repo copy kept as-is)"
+fi
 
 git add -A
 

@@ -33,24 +33,6 @@ Variants {
         exclusiveZone: Tokyo.barHeight
         color: "transparent"
 
-        // ---------- top-edge hover → moonsettings flyout ----------
-        // The monitor's top border is a hot zone: hovering the first 4px of the
-        // bar opens the moonsettings flyout, a layer-surface panel that slides
-        // down from above. The pills sit at y 6..32 (pillMarginV 4 + barShiftV 2
-        // on a 34px bar), so the strip is clear of every pill and takes no hover
-        // the bar wanted. It is a HoverHandler, not a MouseArea: hover only, so
-        // a click in the band still falls through. `execDetached` never blocks
-        // the shell, and `win.screen.name` targets the screen this bar is on.
-        Item {
-            id: topEdgeTrigger
-            anchors { top: parent.top; left: parent.left; right: parent.right }
-            height: 4
-            HoverHandler {
-                onHoveredChanged: if (hovered)
-                    Quickshell.execDetached(["moonsettings", "flyout", win.screen.name])
-            }
-        }
-
         // ---------- bar chrome ----------
         // No background: the bar strip is fully transparent so the wallpaper
         // shows through between the floating pills. The old underlay (rounded

@@ -39,10 +39,7 @@ set --export PATH $BUN_INSTALL/bin $PATH
 # GitHub MCP server auth for opencode's remote MCP entry.
 # Derived from the authenticated gh CLI so the token is never hardcoded.
 set -gx GITHUB_PERSONAL_ACCESS_TOKEN (gh auth token 2>/dev/null)
-. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-if test -f /home/maxii/.nix-profile/etc/profile.d/hm-session-vars.sh
-    fenv source /home/maxii/.nix-profile/etc/profile.d/hm-session-vars.sh 2>/dev/null
-end
+# Nix removed 2026-10-20: nix-daemon.sh + hm-session-vars.sh sourced here before.
 
 
 

@@ -1,14 +1,14 @@
 [credential "https://gist.github.com"]
-	helper = "!/nix/store/x6kcq7g4cwysbwjiyz152rbl6fv7l55w-gh-2.102.0/bin/.gh-wrapped auth git-credential"
+	helper = "!/usr/bin/gh auth git-credential"
 
 [credential "https://github.com"]
-	helper = "!/nix/store/x6kcq7g4cwysbwjiyz152rbl6fv7l55w-gh-2.102.0/bin/.gh-wrapped auth git-credential"
+	helper = "!/usr/bin/gh auth git-credential"
 
 [gpg]
 	format = "openpgp"
 
 [gpg "openpgp"]
-	program = "/nix/store/8gm9aq3sspqmvvh7c0x7djcivj2x7yvn-gnupg-2.4.9/bin/gpg"
+	program = "/usr/bin/gpg"
 
 [init]
 	defaultBranch = "main"

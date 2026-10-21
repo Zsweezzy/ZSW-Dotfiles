@@ -16,5 +16,4 @@ case ":$PATH:" in
   *) export PATH="$PATH":'/home/maxii/.photon/bin' ;;
 esac
 # <<< Photon CLI <<<
-. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-. /home/maxii/.nix-profile/etc/profile.d/hm-session-vars.sh
+# Nix removed 2026-10-20: nix-daemon.sh + hm-session-vars.sh sourced here before.

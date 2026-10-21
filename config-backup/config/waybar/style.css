@@ -1,7 +1,7 @@
 /* Waybar — Tokyo Night Moon theme
  * Palette: https://github.com/folke/tokyonight.nvim (moon variant)
  *   bg_dark       #16161e
- *   bg            #26a269
+ *   bg            #1e2030
  *   bg_highlight  #2f334d
  *   fg            #c8d3f5
  *   blue          #82aaff
@@ -21,7 +21,7 @@
 }
 
 window#waybar {
-    background-color: rgba(30, 32, 48, 0.9);      /* bg #26a269 */
+    background-color: rgba(30, 32, 48, 0.9);      /* bg #1e2030 */
     color: #c8d3f5;                                /* fg */
     border-radius: 0 0 10px 10px;
     border-bottom: 2px solid rgb(47, 51, 77);      /* bg_highlight */
@@ -38,7 +38,7 @@ window#waybar.empty #window {
 }
 
 #workspaces button {
-    background-color: rgba(30, 32, 48, 0.9);       /* bg_highlight */
+    background-color: rgba(47, 51, 77, 0.9);       /* bg_highlight */
     color: #c8d3f5;
     border-radius: 8px;
     padding: 0 10px;
@@ -47,18 +47,18 @@ window#waybar.empty #window {
 }
 
 #workspaces button:hover {
-    background-color: rgb(30, 32, 48);             /* bg_highlight solid */
+    background-color: rgb(47, 51, 77);             /* bg_highlight solid */
     color: #86e1fc;                                /* cyan */
 }
 
 #workspaces button.active {
-    background-color: rgba(30, 32, 48, 0.2);    /* blue tint */
+    background-color: rgba(130, 170, 255, 0.2);    /* blue tint */
     color: #82aaff;                                /* blue */
     border-bottom: 2px solid #82aaff;
 }
 
 #taskbar button {
-    background-color: rgba(30, 32, 48, 0.9);       /* bg_highlight */
+    background-color: rgba(47, 51, 77, 0.9);       /* bg_highlight */
     color: #c8d3f5;
     border-radius: 8px;
     padding: 0 8px;
@@ -67,12 +67,12 @@ window#waybar.empty #window {
 }
 
 #taskbar button:hover {
-    background-color: rgb(30, 32, 48);             /* bg_highlight solid */
+    background-color: rgb(47, 51, 77);             /* bg_highlight solid */
     color: #86e1fc;                                /* cyan */
 }
 
 #taskbar button.active {
-    background-color: rgba(30, 32, 48, 0.2);    /* blue tint */
+    background-color: rgba(130, 170, 255, 0.2);    /* blue tint */
     color: #82aaff;                                /* blue */
     border-bottom: 2px solid #82aaff;
 }
@@ -89,7 +89,7 @@ window#waybar.empty #window {
 #custom-openapps,
 #custom-uptime,
 #memory {
-    background-color: rgba(30, 32, 48, 0.9);       /* bg_highlight */
+    background-color: rgba(47, 51, 77, 0.9);       /* bg_highlight */
     border-radius: 8px;
     padding: 0 12px;
     margin: 4px 3px;
@@ -116,7 +116,7 @@ window#waybar.empty #window {
 }
 
 tooltip {
-    background-color: #1e2030;                     /* bg_dark */
+    background-color: #16161e;                     /* bg_dark */
     border: 1px solid #2f334d;
     border-radius: 8px;
     color: #c8d3f5;

@@ -7226,3 +7226,14 @@ read if you used those and something break with a version upgrade you're on your
 @define-color shade_color rgba(233, 233, 237, 0.12);
 @define-color scrollbar_outline_color rgba(233, 233, 237, 0.12);
 @import 'colors.css';
+/* hymission overview search pill — matches quickshell Tokyo Night (Tokyo.qml) */
+window.hymission-search .searchbar {
+  background-color: rgba(47, 51, 77, 0.9);
+  background-image: none;
+  color: #c8d3f5;
+  border: 1px solid #454c65;
+  border-radius: 20px;
+  font-family: "JetBrains Mono Nerd Font";
+  font-size: 13px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}

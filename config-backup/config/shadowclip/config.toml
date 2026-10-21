@@ -40,12 +40,16 @@ sound = true
 sound_file = ""
 
 [theme]
-panel = "#0d0e13f0"
-border = "#ffffff18"
-hilite = "#ffffff10"
-text = "#e8ebf2"
-dim = "#7c8394"
-live = "#ff4a4a"
-armed = "#56e096"
-idle = "#767e8f"
-sunken = "#07080b"
+panel = "#1e2030e6"
+border = "#485172"
+hilite = "#82aaff33"
+text = "#c8d3f5"
+dim = "#7983a4"
+live = "#f7768e"
+armed = "#9ece6a"
+idle = "#565f89"
+sunken = "#16161e"
+
+[ui]
+start_hidden = true
+tui = true

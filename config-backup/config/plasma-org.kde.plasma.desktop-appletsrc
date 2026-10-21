@@ -70,7 +70,7 @@ launchers=applications:org.kde.dolphin.desktop,applications:firefox.desktop,appl
 activityId=
 formfactor=0
 immutability=1
-lastScreen=-1
+lastScreen=0
 location=0
 plugin=org.kde.plasma.systemtray
 popupHeight=432
@@ -118,18 +118,18 @@ plugin=org.kde.kscreen
 
 [Containments][227][Applets][230][Applets][240]
 immutability=1
-plugin=org.kde.plasma.keyboardlayout
+plugin=org.kde.plasma.dwellclicker
 
 [Containments][227][Applets][230][Applets][241]
 immutability=1
-plugin=org.kde.plasma.networkmanagement
+plugin=org.kde.plasma.keyboardlayout
 
 [Containments][227][Applets][230][Applets][241][Configuration][General]
 currentDetailsTab=details
 
 [Containments][227][Applets][230][Applets][242]
 immutability=1
-plugin=org.kde.plasma.volume
+plugin=org.kde.plasma.networkmanagement
 
 [Containments][227][Applets][230][Applets][242][Configuration][General]
 migrated=true
@@ -155,9 +155,9 @@ DialogHeight=630
 DialogWidth=810
 
 [Containments][227][Applets][230][General]
-extraItems=org.kde.plasma.cameraindicator,org.kde.plasma.devicenotifier,org.kde.plasma.manage-inputmethod,org.kde.plasma.networkmanagement,org.kde.plasma.notifications,org.kde.plasma.volume,org.kde.plasma.bluetooth,org.kde.plasma.brightness,org.kde.kscreen,org.kde.kdeconnect,org.kde.plasma.keyboardlayout,org.kde.plasma.keyboardindicator,org.kde.plasma.clipboard,org.kde.plasma.mediacontroller,org.kde.plasma.weather,org.kde.plasma.battery
+extraItems=org.kde.plasma.cameraindicator,org.kde.plasma.devicenotifier,org.kde.plasma.manage-inputmethod,org.kde.plasma.networkmanagement,org.kde.plasma.notifications,org.kde.plasma.volume,org.kde.plasma.bluetooth,org.kde.plasma.brightness,org.kde.kscreen,org.kde.kdeconnect,org.kde.plasma.keyboardlayout,org.kde.plasma.keyboardindicator,org.kde.plasma.clipboard,org.kde.plasma.mediacontroller,org.kde.plasma.weather,org.kde.plasma.battery,org.kde.plasma.dwellclicker
 hiddenItems=kded6,shelly.shellyorg.Notifications,com.valvesoftware.Steam,org.kde.plasma.brightness,org.kde.kscreen,org.kde.kdeconnect,org.kde.plasma.keyboardlayout,org.kde.plasma.keyboardindicator,org.kde.plasma.clipboard,org.kde.plasma.mediacontroller,org.kde.plasma.weather,1,CoolerControl,steam,openrgb,tray-icon tray app opendeck,60817419,tray-id,org.kde.plasma.battery,Easy Effects
-knownItems=org.kde.kscreen,org.kde.plasma.battery,org.kde.plasma.brightness,org.kde.plasma.cameraindicator,org.kde.plasma.clipboard,org.kde.plasma.devicenotifier,org.kde.plasma.keyboardlayout,org.kde.plasma.manage-inputmethod,org.kde.plasma.mediacontroller,org.kde.plasma.networkmanagement,org.kde.plasma.notifications,org.kde.plasma.volume,org.kde.kdeconnect,org.kde.plasma.bluetooth,org.kde.plasma.keyboardindicator,org.kde.plasma.weather
+knownItems=org.kde.kscreen,org.kde.plasma.battery,org.kde.plasma.brightness,org.kde.plasma.cameraindicator,org.kde.plasma.clipboard,org.kde.plasma.devicenotifier,org.kde.plasma.keyboardlayout,org.kde.plasma.manage-inputmethod,org.kde.plasma.mediacontroller,org.kde.plasma.networkmanagement,org.kde.plasma.notifications,org.kde.plasma.volume,org.kde.kdeconnect,org.kde.plasma.bluetooth,org.kde.plasma.keyboardindicator,org.kde.plasma.weather,org.kde.plasma.dwellclicker
 
 [Containments][227][Applets][246]
 immutability=1
@@ -228,8 +228,8 @@ immutability=1
 plugin=org.kde.plasma.icontasks
 
 [Containments][23][Applets][26][Configuration][General]
-groupingAppIdBlacklist=mpv.desktop,steam.desktop,samrewritten.desktop,kitty.desktop,firefox.desktop
-groupingLauncherUrlBlacklist=applications:mpv.desktop,applications:kitty.desktop,applications:firefox.desktop,applications:samrewritten.desktop,applications:steam.desktop
+groupingAppIdBlacklist=kitty.desktop,mpv.desktop,steam.desktop,samrewritten.desktop,firefox.desktop
+groupingLauncherUrlBlacklist=applications:steam.desktop,applications:samrewritten.desktop,applications:mpv.desktop,applications:firefox.desktop,applications:kitty.desktop
 launchers=applications:org.kde.dolphin.desktop,applications:firefox.desktop,applications:steam.desktop,applications:spotify.desktop
 
 [Containments][23][Applets][28]
@@ -242,6 +242,10 @@ plugin=org.kde.plasma.systemtray
 popupHeight=432
 popupWidth=440
 wallpaperplugin=org.kde.image
+
+[Containments][23][Applets][28][Applets][250]
+immutability=1
+plugin=org.kde.plasma.dwellclicker
 
 [Containments][23][Applets][28][Applets][29]
 immutability=1
@@ -322,9 +326,9 @@ DialogHeight=630
 DialogWidth=810
 
 [Containments][23][Applets][28][General]
-extraItems=org.kde.plasma.cameraindicator,org.kde.plasma.devicenotifier,org.kde.plasma.manage-inputmethod,org.kde.plasma.networkmanagement,org.kde.plasma.notifications,org.kde.plasma.volume,org.kde.plasma.bluetooth,org.kde.plasma.brightness,org.kde.kscreen,org.kde.kdeconnect,org.kde.plasma.keyboardlayout,org.kde.plasma.keyboardindicator,org.kde.plasma.clipboard,org.kde.plasma.mediacontroller,org.kde.plasma.weather,org.kde.plasma.battery
+extraItems=org.kde.plasma.cameraindicator,org.kde.plasma.devicenotifier,org.kde.plasma.manage-inputmethod,org.kde.plasma.networkmanagement,org.kde.plasma.notifications,org.kde.plasma.volume,org.kde.plasma.bluetooth,org.kde.plasma.brightness,org.kde.kscreen,org.kde.kdeconnect,org.kde.plasma.keyboardlayout,org.kde.plasma.keyboardindicator,org.kde.plasma.clipboard,org.kde.plasma.mediacontroller,org.kde.plasma.weather,org.kde.plasma.battery,org.kde.plasma.dwellclicker
 hiddenItems=kded6,shelly.shellyorg.Notifications,com.valvesoftware.Steam,org.kde.plasma.brightness,org.kde.kscreen,org.kde.kdeconnect,org.kde.plasma.keyboardlayout,org.kde.plasma.keyboardindicator,org.kde.plasma.clipboard,org.kde.plasma.mediacontroller,org.kde.plasma.weather,1,CoolerControl,steam,openrgb,tray-icon tray app opendeck,60817419,tray-id,org.kde.plasma.battery,Easy Effects
-knownItems=org.kde.kscreen,org.kde.plasma.battery,org.kde.plasma.brightness,org.kde.plasma.cameraindicator,org.kde.plasma.clipboard,org.kde.plasma.devicenotifier,org.kde.plasma.keyboardlayout,org.kde.plasma.manage-inputmethod,org.kde.plasma.mediacontroller,org.kde.plasma.networkmanagement,org.kde.plasma.notifications,org.kde.plasma.volume,org.kde.kdeconnect,org.kde.plasma.bluetooth,org.kde.plasma.keyboardindicator,org.kde.plasma.weather
+knownItems=org.kde.kscreen,org.kde.plasma.battery,org.kde.plasma.brightness,org.kde.plasma.cameraindicator,org.kde.plasma.clipboard,org.kde.plasma.devicenotifier,org.kde.plasma.keyboardlayout,org.kde.plasma.manage-inputmethod,org.kde.plasma.mediacontroller,org.kde.plasma.networkmanagement,org.kde.plasma.notifications,org.kde.plasma.volume,org.kde.kdeconnect,org.kde.plasma.bluetooth,org.kde.plasma.keyboardindicator,org.kde.plasma.weather,org.kde.plasma.dwellclicker
 
 [Containments][23][Applets][38]
 immutability=1
@@ -408,7 +412,7 @@ launchers=applications:org.kde.dolphin.desktop,applications:firefox.desktop,appl
 activityId=
 formfactor=0
 immutability=1
-lastScreen=-1
+lastScreen=0
 location=0
 plugin=org.kde.plasma.systemtray
 popupHeight=432
@@ -456,18 +460,18 @@ plugin=org.kde.kscreen
 
 [Containments][251][Applets][254][Applets][264]
 immutability=1
-plugin=org.kde.plasma.keyboardlayout
+plugin=org.kde.plasma.dwellclicker
 
 [Containments][251][Applets][254][Applets][265]
 immutability=1
-plugin=org.kde.plasma.networkmanagement
+plugin=org.kde.plasma.keyboardlayout
 
 [Containments][251][Applets][254][Applets][265][Configuration][General]
 currentDetailsTab=details
 
 [Containments][251][Applets][254][Applets][266]
 immutability=1
-plugin=org.kde.plasma.volume
+plugin=org.kde.plasma.networkmanagement
 
 [Containments][251][Applets][254][Applets][266][Configuration][General]
 migrated=true
@@ -493,9 +497,9 @@ DialogHeight=630
 DialogWidth=810
 
 [Containments][251][Applets][254][General]
-extraItems=org.kde.plasma.cameraindicator,org.kde.plasma.devicenotifier,org.kde.plasma.manage-inputmethod,org.kde.plasma.networkmanagement,org.kde.plasma.notifications,org.kde.plasma.volume,org.kde.plasma.bluetooth,org.kde.plasma.brightness,org.kde.kscreen,org.kde.kdeconnect,org.kde.plasma.keyboardlayout,org.kde.plasma.keyboardindicator,org.kde.plasma.clipboard,org.kde.plasma.mediacontroller,org.kde.plasma.weather,org.kde.plasma.battery
+extraItems=org.kde.plasma.cameraindicator,org.kde.plasma.devicenotifier,org.kde.plasma.manage-inputmethod,org.kde.plasma.networkmanagement,org.kde.plasma.notifications,org.kde.plasma.volume,org.kde.plasma.bluetooth,org.kde.plasma.brightness,org.kde.kscreen,org.kde.kdeconnect,org.kde.plasma.keyboardlayout,org.kde.plasma.keyboardindicator,org.kde.plasma.clipboard,org.kde.plasma.mediacontroller,org.kde.plasma.weather,org.kde.plasma.battery,org.kde.plasma.dwellclicker
 hiddenItems=kded6,shelly.shellyorg.Notifications,com.valvesoftware.Steam,org.kde.plasma.brightness,org.kde.kscreen,org.kde.kdeconnect,org.kde.plasma.keyboardlayout,org.kde.plasma.keyboardindicator,org.kde.plasma.clipboard,org.kde.plasma.mediacontroller,org.kde.plasma.weather,1,CoolerControl,steam,openrgb,tray-icon tray app opendeck,60817419,tray-id,org.kde.plasma.battery,Easy Effects
-knownItems=org.kde.kscreen,org.kde.plasma.battery,org.kde.plasma.brightness,org.kde.plasma.cameraindicator,org.kde.plasma.clipboard,org.kde.plasma.devicenotifier,org.kde.plasma.keyboardlayout,org.kde.plasma.manage-inputmethod,org.kde.plasma.mediacontroller,org.kde.plasma.networkmanagement,org.kde.plasma.notifications,org.kde.plasma.volume,org.kde.kdeconnect,org.kde.plasma.bluetooth,org.kde.plasma.keyboardindicator,org.kde.plasma.weather
+knownItems=org.kde.kscreen,org.kde.plasma.battery,org.kde.plasma.brightness,org.kde.plasma.cameraindicator,org.kde.plasma.clipboard,org.kde.plasma.devicenotifier,org.kde.plasma.keyboardlayout,org.kde.plasma.manage-inputmethod,org.kde.plasma.mediacontroller,org.kde.plasma.networkmanagement,org.kde.plasma.notifications,org.kde.plasma.volume,org.kde.kdeconnect,org.kde.plasma.bluetooth,org.kde.plasma.keyboardindicator,org.kde.plasma.weather,org.kde.plasma.dwellclicker
 
 [Containments][251][Applets][270]
 immutability=1
@@ -609,7 +613,7 @@ DialogWidth=810
 [Containments][43][General]
 changedPositions={"desktop:/NEWEST":["1920x1080","2","3"],"desktop:/OOHH":["1920x1080","2","2"],"desktop:/hey.txt":["1920x1080","0","1"]}
 lastResolution=1920x1080
-positions={"1920x1080":["1","17","desktop:/OOHH","2","2","desktop:/todo.txt~","0","9","desktop:/SRDR30001.bak","0","5","desktop:/SRDR30015.bak","0","7","desktop:/aaaaaaaaaaa","0","0","desktop:/RDRSE Backups","0","1","desktop:/kündigung.txt","0","2","desktop:/SRDR30000.bak","0","3","desktop:/hey.txt","0","1","desktop:/SRDR30015","0","6","desktop:/SRDR30001","0","4","desktop:/SRDR30001.bak.part","0","9","desktop:/SRDR30015.bak.part","0","9","desktop:/calculator.py","0","9","desktop:/NEWEST","2","3","desktop:/todo.txt","0","8"]}
+positions={"1920x1080":["1","17","desktop:/SRDR30015","0","6","desktop:/SRDR30001.bak","0","5","desktop:/NEWEST","2","3","desktop:/todo.txt~","0","9","desktop:/kündigung.txt","0","2","desktop:/todo.txt","0","8","desktop:/SRDR30000.bak","0","3","desktop:/bookmarks.html","0","2","desktop:/To-Dos.txt","0","0","desktop:/SRDR30001","0","4","desktop:/calculator.py","0","9","desktop:/OOHH","2","2","desktop:/hey.txt","0","1","desktop:/aaaaaaaaaaa","0","0","desktop:/SRDR30015.bak.part","0","9","desktop:/SRDR30015.bak","0","7","desktop:/sprechtext.md","0","1","desktop:/RDRSE Backups","0","1","desktop:/SRDR30001.bak.part","0","9"]}
 sortMode=-1
 
 [Containments][43][Wallpaper][com.t145.matrixrain][General]
@@ -678,5 +682,5 @@ panelWidgets=[{"id":178,"name":"luisbocanegra.panel.colorizer","title":"Panel co
 presetAutoloading={"enabled":true,"filterByScreen":true,"fullscreenWindow":"/home/maxii/.config/panel-colorizer/presets/Main Blur","maximized":"/home/maxii/.config/panel-colorizer/presets/Main Blur","touchingWindow":"/home/maxii/.config/panel-colorizer/presets/Main Setup","activeWindow":"/home/maxii/.config/panel-colorizer/presets/Main Setup","visibleWindows":"/home/maxii/.config/panel-colorizer/presets/Main Setup","floating":"/home/maxii/.config/panel-colorizer/presets/Main Setup","normal":"/home/maxii/.config/panel-colorizer/presets/Main Setup"}
 
 [ScreenMapping]
-itemsOnDisabledScreens=0,027b836a-4528-4df3-9c0f-c75f899a8d7a,7,desktop:/aaaaaaaaaaa,desktop:/SRDR30001,desktop:/SRDR30000.bak,desktop:/hey.txt,desktop:/SRDR30015,desktop:/SRDR30015.bak,desktop:/SRDR30001.bak
-screenMapping=desktop:/SRDR30015,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30001.bak,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30015.bak,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30001,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/aaaaaaaaaaa,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30000.bak,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/hey.txt,0,027b836a-4528-4df3-9c0f-c75f899a8d7a
+itemsOnDisabledScreens=0,027b836a-4528-4df3-9c0f-c75f899a8d7a,10,desktop:/SRDR30000.bak,desktop:/aaaaaaaaaaa,desktop:/To-Dos.txt,desktop:/SRDR30015,desktop:/bookmarks.html,desktop:/sprechtext.md,desktop:/SRDR30001.bak,desktop:/SRDR30001,desktop:/SRDR30015.bak,desktop:/hey.txt
+screenMapping=desktop:/hey.txt,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30001,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30001.bak,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/sprechtext.md,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/To-Dos.txt,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/bookmarks.html,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30015,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30000.bak,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/aaaaaaaaaaa,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30015.bak,0,027b836a-4528-4df3-9c0f-c75f899a8d7a
