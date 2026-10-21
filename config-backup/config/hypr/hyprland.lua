@@ -26,7 +26,6 @@ hl.monitor({
 --------------------------
 local terminal = "kitty"
 local fileManager = "dolphin"
-local HYPR_SCRATCH = "/home/maxii/.local/bin/hypr-scratch"
 local mainMod = "SUPER"
 local function describedBind(key, dispatcher, description, options)
 	options = options or {}
@@ -134,7 +133,6 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("quickshell -c tokyonight")
 	hl.exec_cmd("systemctl --user start hyprpolkitagent")
 	hl.exec_cmd("/home/maxii/.local/bin/hypr-shortcut-launcher --background")
-	hl.exec_cmd(HYPR_SCRATCH .. " --background")
 	hl.exec_cmd("/home/maxii/.local/bin/neru launch")
 	hl.exec_cmd("hyprpm reload")
 	hl.exec_cmd("mkdir -p \"${XDG_RUNTIME_DIR:-$HOME/.cache}\"; flock -n \"${XDG_RUNTIME_DIR:-$HOME/.cache}/hypr-session-autosave.lock\" /home/maxii/.local/bin/hypr-session autosave-loop")
@@ -159,7 +157,6 @@ describedBind(
 	hl.dsp.exec_cmd("rofi -monitor DP-1 -show drun"),
 	"Open application launcher"
 )
-describedBind(mainMod .. " + N", hl.dsp.exec_cmd(HYPR_SCRATCH), "Toggle scratchpad notepad")
 describedBind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager), "Open file manager")
 describedBind(mainMod .. " + W", hl.dsp.exec_cmd("firefox"), "Open Firefox")
 describedBind(mainMod .. " + T", hl.dsp.exec_cmd("steam"), "Open Steam")
@@ -337,18 +334,6 @@ describedBind(
 	"Free the mouse cursor from a window that captured it",
 	{ allow_input_capture = true }
 )
-describedBind(
-	"mouse:272",
-	hl.dsp.exec_cmd(HYPR_SCRATCH .. " --outside-click"),
-	"Dismiss scratchpad notepad on outside click (LMB)",
-	{ non_consuming = true }
-)
-describedBind(
-	"mouse:273",
-	hl.dsp.exec_cmd(HYPR_SCRATCH .. " --outside-click"),
-	"Dismiss scratchpad notepad on outside click (RMB)",
-	{ non_consuming = true }
-)
 
 -------------------------------
 ---- WINDOWS AND WORKSPACES ----
@@ -369,19 +354,6 @@ hl.window_rule({
 		pin = false,
 	},
 	no_focus = true,
-})
-hl.window_rule({
-	name = "hypr-scratch-overlay",
-	match = { class = ".*HyprScratch.*" },
-	float = true,
-	center = true,
-	pin = true,
-	border_size = 0,
-	no_shadow = true,
-	no_anim = true,
-	no_blur = false,
-	rounding = 10,
-	suppress_event = "maximize fullscreen",
 })
 hl.window_rule({
 	name = "move-hyprland-run",

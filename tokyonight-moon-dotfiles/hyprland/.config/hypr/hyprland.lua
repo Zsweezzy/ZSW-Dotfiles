@@ -57,15 +57,10 @@ local fileManager = "dolphin"
 -- rofi-toggle.sh, which also explains why the toggle lives in a script rather
 -- than being a second bare `menu` exec.
 local menu = "/home/maxii/.config/hypr/scripts/rofi-toggle.sh"
--- The scratchpad notepad. One variable for all three uses below -- autostart, the
--- toggle bind, and the click-away binds -- so a move or a reinstall cannot leave
--- one of them pointing at a path that no longer exists. An absolute path rather
--- than a bare `hypr-scratch` on purpose: binds run with a minimal environment and
--- PATH is not guaranteed to include ~/.local/bin.
-local HYPR_SCRATCH = "/home/maxii/.local/bin/hypr-scratch"
 
 -------------------
 ---- AUTOSTART ----
+
 -------------------
 
 -- See https://wiki.hypr.land/Configuring/Basics/Autostart/
@@ -82,14 +77,12 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("systemctl --user start apollo")
 	-- Warm the shortcuts/apps launcher so Super+K only has to reveal it.
 	hl.exec_cmd("/home/maxii/.local/bin/hypr-shortcut-launcher --background")
-	-- Warm the scratchpad notepad so Super+N only has to reveal it.
-	hl.exec_cmd(HYPR_SCRATCH .. " --background")
 	-- Clipboard history daemon (cliphist): watch text + image selections and store them
 	hl.exec_cmd("wl-paste --type text --watch cliphist store")
 	hl.exec_cmd("wl-paste --type image --watch cliphist store")
 	-- Neru: keyboard-driven hints (Ctrl+Shift+Space). Absolute path because
 	-- autostart runs with a minimal environment and ~/.local/bin is not
-	-- guaranteed to be on PATH, the same reason HYPR_SCRATCH is absolute.
+	-- guaranteed to be on PATH.
 	hl.exec_cmd("/home/maxii/.local/bin/neru launch")
 	hl.exec_cmd("/usr/bin/opendeck --hide") -- OpenDeck stream controllers; start to tray, no UI on launch
 	-- ponytail: workaround, Hyprland 0.56.2 executes this config file twice at
@@ -201,8 +194,8 @@ hl.config({
 			passes = 1,
 			vibrancy = 0.1696,
 			-- Blur regardless of a surface's own alpha. This is already the
-			-- default; stated explicitly because hypr-scratch is deliberately
-			-- translucent and depends on blur for its frosted look.
+			-- default; stated explicitly for the translucent surfaces that
+			-- depend on blur for their frosted look.
 			ignore_opacity = true,
 		},
 	},
@@ -414,8 +407,6 @@ describedBind(
 	hl.dsp.exec_cmd("/home/maxii/.local/bin/hypr-shortcut-launcher"),
 	"Open shortcuts and apps launcher"
 )
--- SUPER + N = floating iced scratchpad notepad (toggle)
-describedBind(mainMod .. " + N", hl.dsp.exec_cmd(HYPR_SCRATCH), "Toggle scratchpad notepad")
 -- SUPER + C = force-close the focused app (SIGKILL, no "you sure?" prompt).
 -- hl.dsp.window.kill() kills the process instead of sending a graceful close
 -- request, so apps can't show save/close confirmations.
@@ -619,40 +610,6 @@ describedBind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }), "Fo
 describedBind(mainMod .. " + mouse:272", hl.dsp.window.drag(), "Drag focused window", { mouse = true })
 describedBind(mainMod .. " + mouse:273", hl.dsp.window.resize(), "Resize focused window", { mouse = true })
 
--- Click outside the scratchpad notepad to save and hide it. It has to be asked
--- of the compositor rather than done in the app: GTK4 removed the client-side
--- pointer grab API, so a window that is not grabbing never hears about clicks
--- outside itself, and the notepad cannot grab without losing focus-away
--- dismissal.
---
--- This must not kill anything -- the notepad has unsaved text and is expected to
--- still be there for the next hotkey -- so it tells the running instance to save
--- and hide, over the notepad's own socket.
--- `non_consuming`: the click has to reach the window underneath, so that
--- focusing something else and dismissing the notepad are one gesture rather
--- than two.
---
--- `--outside-click` is a mode of the notepad's own binary rather than a script,
--- so there is nothing to keep in sync and nothing to install but the binary. It
--- does not touch the socket unless the click landed outside, and does nothing at
--- all if the notepad is not running, so it is safe to leave bound to bare clicks.
---
--- A third and fourth bind on these two buttons, which Hyprland allows; the
--- mouse:272/273 drag and resize binds above are on a modifier and do not
--- collide.
-describedBind(
-	"mouse:272",
-	hl.dsp.exec_cmd(HYPR_SCRATCH .. " --outside-click"),
-	"Dismiss scratchpad notepad on outside click (LMB)",
-	{ non_consuming = true }
-)
-describedBind(
-	"mouse:273",
-	hl.dsp.exec_cmd(HYPR_SCRATCH .. " --outside-click"),
-	"Dismiss scratchpad notepad on outside click (RMB)",
-	{ non_consuming = true }
-)
-
 -- Laptop multimedia keys for volume and LCD brightness
 describedBind(
 	"XF86AudioRaiseVolume",
@@ -737,66 +694,6 @@ hl.window_rule({
 -- })
 -- overlayLayerRule:set_enabled(false)
 
--- Iced glass and overlay behaviour for the scratchpad notepad. The panel is
--- only 0.72 opaque in GTK, so blur plus the global vibrancy setting is what
--- produces the frost. `no_blur = false` means "do blur this window"; size,
--- passes and vibrancy come from the global decoration.blur block and are
--- shared with every other window, so this rule can only ask for blur on or
--- off, not tune it.
---
--- The notepad is a normal toplevel, not a layer surface. That is deliberate: a
--- layer surface that holds the keyboard traps the session -- Hyprland will not
--- move focus off it, so clicking away does nothing and the notepad can only be
--- dismissed by its own hotkey. As a real window it gets honest focus
--- semantics, so it closes when you click away or focus something else.
---
--- That means the overlay look is the compositor's job. GTK4 removed the client
--- side window hints (keep-above, skip-taskbar, type), so without this rule the
--- notepad would open tiled and snapped into the layout. `pin` keeps it above
--- everything; `float` keeps it out of the layout; `center` puts it in the
--- middle of the monitor it opens on, which the app then corrects to the main
--- display. `no_focus` is deliberately NOT set: the notepad has to take the
--- keyboard when it opens.
---
--- The class is the GTK application ID, verbatim: GTK4 puts it on the toplevel
--- as the Wayland app id and Hyprland reports that as the class. It is not
--- `hypr-scratch` as it was when the notepad was a layer surface with an
--- explicit namespace.
---
--- The `.*` on both sides is not decoration. Hyprland matches a window rule
--- against the *whole* class rather than a substring of it, so a bare
--- "HyprScratch" matches nothing at all and the notepad quietly opens tiled and
--- unfocused.
---
--- Every key below is checked against Hyprland's own list of window-rule effect
--- keys (src/desktop/rule/windowRule/WindowRuleEffectContainer.cpp). Two keys
--- that used to be here are not on it, and both were silently doing nothing:
---
---   no_border  There is no such effect. The list has `border_size`, which is
---              the real spelling; see below.
---   suppress_event as a table  This one takes a *space-separated string*,
---              not a list. A table is the kind of thing `luac -p` happily
---              accepts and Hyprland then ignores, which is why it survived.
---
--- `rounding = 10` is `decoration.rounding` restated. The notepad's corners are
--- actually painted by the app's own CSS, not by this -- with `rounding = 0`
--- here the compositor leaves the surface square and the arc is still there --
--- but setting both to the same number means the two layers cannot disagree
--- about how round the window is, whichever one ends up painting.
-hl.window_rule({
-	name = "hypr-scratch-overlay",
-	match = { class = ".*HyprScratch.*" },
-	float = true,
-	center = true,
-	pin = true,
-	border_size = 0,
-	no_shadow = true,
-	no_anim = true,
-	no_blur = false,
-	rounding = 10,
-	suppress_event = "maximize fullscreen",
-})
-
 -- Hyprland-run windowrule
 hl.window_rule({
 	name = "move-hyprland-run",
@@ -837,8 +734,7 @@ hl.window_rule({
 -- binding nor the json printer complains; `configerrors` is the only report.
 --
 -- That spelling is workspace-rule-specific: on `hl.window_rule` `no_border` is
--- an unknown field and `border_size` is the equivalent — see the
--- `hypr-scratch-overlay` comment above.
+-- an unknown field and `border_size` is the equivalent.
 hl.workspace_rule({
 	workspace = "10",
 	no_border = true,

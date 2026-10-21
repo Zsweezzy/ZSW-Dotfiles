@@ -3,9 +3,9 @@
 The Hyprland compositor config for this machine, written for Hyprland 0.56.2 in
 the hyprlang Lua syntax (`hl.monitor({...})`, `hl.bind(...)`) rather than the old
 `key = value` line format, and coloured for Tokyo Night Moon. It covers three
-monitors, a set of `SUPER`-prefixed bindings, gaps and rounded borders, a
-scratchpad notepad, and animation and misc settings. The wallpaper config for
-`hyprpaper` is included alongside it.
+monitors, a set of `SUPER`-prefixed bindings, gaps and rounded borders, and
+animation and misc settings. The wallpaper config for `hyprpaper` is included
+alongside it.
 
 ## Files and where they go
 
