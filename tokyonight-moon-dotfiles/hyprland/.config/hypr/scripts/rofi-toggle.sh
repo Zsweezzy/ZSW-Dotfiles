@@ -11,10 +11,9 @@
 # the toggle cannot depend on how that tokenizing behaves. If the launcher ever
 # needs different flags, edit ROFI_CMD below (and nothing else).
 #
-# Closes with pkill -x rofi, the same way rofi-outside-click.sh does, so the
-# ways of dismissing the launcher cannot disagree about what "rofi is open"
-# means. Escape and the outside-click bind still work; this only adds a third
-# way in, plus it stops a second rofi being stacked on the first.
+# Closes with pkill -x rofi so every way of dismissing the launcher agrees about
+# what "rofi is open" means. Escape still works; this only adds a second way in,
+# plus it stops a second rofi being stacked on the first.
 
 set -u
 

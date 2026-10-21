@@ -15,7 +15,6 @@ scratchpad notepad, and animation and misc settings. The wallpaper config for
 | `hyprland/.config/hypr/hyprpaper.conf` | `~/.config/hypr/hyprpaper.conf` |
 | `hyprland/.config/hypr/scripts/duplicate-window.sh` | `~/.config/hypr/scripts/duplicate-window.sh` |
 | `hyprland/.config/hypr/scripts/move-fullscreen.sh` | `~/.config/hypr/scripts/move-fullscreen.sh` |
-| `hyprland/.config/hypr/scripts/rofi-outside-click.sh` | `~/.config/hypr/scripts/rofi-outside-click.sh` |
 | `hyprland/.config/hypr/scripts/rofi-toggle.sh` | `~/.config/hypr/scripts/rofi-toggle.sh` |
 
 `hyprland.lua` refers to the scripts by absolute path, so keep the folder at
@@ -37,7 +36,6 @@ cp hyprland/.config/hypr/hyprland.lua      ~/.config/hypr/hyprland.lua
 cp hyprland/.config/hypr/hyprpaper.conf    ~/.config/hypr/hyprpaper.conf
 cp hyprland/.config/hypr/scripts/duplicate-window.sh     ~/.config/hypr/scripts/duplicate-window.sh
 cp hyprland/.config/hypr/scripts/move-fullscreen.sh      ~/.config/hypr/scripts/move-fullscreen.sh
-cp hyprland/.config/hypr/scripts/rofi-outside-click.sh   ~/.config/hypr/scripts/rofi-outside-click.sh
 cp hyprland/.config/hypr/scripts/rofi-toggle.sh          ~/.config/hypr/scripts/rofi-toggle.sh
 chmod +x ~/.config/hypr/scripts/*.sh
 ```
@@ -54,8 +52,8 @@ honest test.
 ## The rofi launcher lives partly here
 
 The rofi app launcher is split across both folders in this repo. Its theme and
-config are in [`rofi/`](../rofi/README.md); the two things that make it reachable
-are here, in the hyprland folder.
+config are in [`rofi/`](../rofi/README.md); the keybind that makes it reachable
+is here, in the hyprland folder.
 
 `scripts/rofi-toggle.sh` is the wrapper that opens the launcher and closes it
 again if it is already open. The bare `SUPER` bind in `hyprland.lua` runs it, so
@@ -65,17 +63,9 @@ exec dispatcher does not reliably keep a multi-word argument intact on its way
 to the script — with the flags appended unquoted, the script was reached with
 only `rofi` and rofi reported "rofi is unsure what to show".
 
-`scripts/rofi-outside-click.sh`, plus its two binds on bare LMB and RMB
-(`mouse:272` and `mouse:273`, both `non_consuming`), implement
-click-outside-to-dismiss. This exists because rofi's own `click-to-exit` does
-not work under the Wayland backend: rofi only creates its own small layer
-surface, so clicks outside it never reach it and can never be seen by rofi. The
-script asks the compositor where the click landed and kills rofi only if it was
-outside the rofi window rect; clicks inside pass through untouched.
-
 Installing only this folder gives you a launcher you cannot open, and installing
-only the rofi folder gives you a launcher with no way to dismiss it by clicking
-away. Install both.
+only the rofi folder gives you a launcher with no keybind to open it. Install
+both.
 
 ## Dependencies
 

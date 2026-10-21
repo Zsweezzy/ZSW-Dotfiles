@@ -619,33 +619,18 @@ describedBind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }), "Fo
 describedBind(mainMod .. " + mouse:272", hl.dsp.window.drag(), "Drag focused window", { mouse = true })
 describedBind(mainMod .. " + mouse:273", hl.dsp.window.resize(), "Resize focused window", { mouse = true })
 
--- Click outside rofi to close it (rofi's own -click-to-exit is broken on Wayland:
--- rofi only creates its own layer surface, so outside clicks never reach it)
-describedBind(
-	"mouse:272",
-	hl.dsp.exec_cmd("/home/maxii/.config/hypr/scripts/rofi-outside-click.sh"),
-	"Close rofi on outside click (LMB)",
-	{ non_consuming = true }
-)
-describedBind(
-	"mouse:273",
-	hl.dsp.exec_cmd("/home/maxii/.config/hypr/scripts/rofi-outside-click.sh"),
-	"Close rofi on outside click (RMB)",
-	{ non_consuming = true }
-)
-
--- Click outside the scratchpad notepad to save and hide it. Same reason as the
--- rofi binds above, and for the same reason it has to be asked of the
--- compositor rather than done in the app: GTK4 removed the client-side pointer
--- grab API, so a window that is not grabbing never hears about clicks outside
--- itself, and the notepad cannot grab without losing focus-away dismissal.
+-- Click outside the scratchpad notepad to save and hide it. It has to be asked
+-- of the compositor rather than done in the app: GTK4 removed the client-side
+-- pointer grab API, so a window that is not grabbing never hears about clicks
+-- outside itself, and the notepad cannot grab without losing focus-away
+-- dismissal.
 --
--- Unlike the rofi script this must not kill anything -- the notepad has unsaved
--- text and is expected to still be there for the next hotkey -- so it tells the
--- running instance to save and hide, over the notepad's own socket.
--- `non_consuming` for the same reason as rofi: the click has to reach the window
--- underneath, so that focusing something else and dismissing the notepad are one
--- gesture rather than two.
+-- This must not kill anything -- the notepad has unsaved text and is expected to
+-- still be there for the next hotkey -- so it tells the running instance to save
+-- and hide, over the notepad's own socket.
+-- `non_consuming`: the click has to reach the window underneath, so that
+-- focusing something else and dismissing the notepad are one gesture rather
+-- than two.
 --
 -- `--outside-click` is a mode of the notepad's own binary rather than a script,
 -- so there is nothing to keep in sync and nothing to install but the binary. It
