@@ -12,12 +12,12 @@
 # cliphist preview says "binary data" (cliphist's marker for a non-text entry)
 # get one, so text rows are unchanged.
 #
-# The script owns the rofi command line for the same reason rofi-toggle.sh does:
+# The script owns the rofi command line for the same reason the launcher bind does:
 # Hyprland's exec does not keep a multi-word argument intact.
 
 set -u
 
-MONITOR="DP-1"          # main centre monitor, matching rofi-toggle.sh
+MONITOR="DP-1"          # main centre monitor, matching the launcher bind
 THUMB_PX=48             # thumbnail / row icon size; raise for bigger previews
 THUMB_DIR="${XDG_RUNTIME_DIR:-/tmp}/cliphist-thumbs"   # per boot; ids survive reboots, thumbs need not
 # shortcut: cache key is the cliphist id (never reused while the db lives), so a
