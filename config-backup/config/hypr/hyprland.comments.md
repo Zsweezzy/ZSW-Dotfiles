@@ -175,15 +175,22 @@ nothing under it was active config. The entries below stay as reference.)
 
 -- was 20: same as gaps_in, windows sit close to monitor edges
 
-> **L177** before `			active_border = { colors = { "rgba(82aaffee)", "rgba(ff9e64ee)" }, angle = 45 },`
+> **L177** on `			active_border = "rgba(82aaffdd)",`
 
-			-- Tokyo Night Moon palette, same 45° colorflow gradient:
-			--   blue   #82aaff  (moon blue)   -> replaces #33ccff
-			--   orange #ff9e64  (moon orange) -> replaces #9ece6a green
+-- Tokyo Night Moon blue #82aaff. Was a blue->orange 45deg colorflow gradient;
+-- the gradient read as an old-rice accent next to the island bar, and a solid
+-- accent is what the island uses for the active workspace and the volume fill.
 
 > **L178** on `			inactive_border = "rgba(2f334daa)",`
 
 -- moon bg_highlight #2f334d
+
+> **L178** on `		rounding = 12,`
+
+-- was 10: the island capsule and its panel use 22, windows 12 keeps the same
+-- rounded family without turning every window into a lozenge.
+-- `rounding_power = 3` next to it makes the corners squircle instead of a
+-- circular arc; Hyprland's default is 2.
 
 > **L202** on `			color = 0xee16161e,`
 
@@ -206,8 +213,9 @@ nothing under it was active config. The entries below stay as reference.)
 -- `style = "loop"` is what makes it rotate forever -- `once` (the default) only
 -- animates on a focus change.
 --
--- Only gradients have an angle to rotate, so this applies to active_border
--- (a blue->orange 45deg gradient) and leaves the solid inactive_border alone.
+-- Only gradients have an angle to rotate. active_border is a solid colour now
+-- (2026-10-21), so this leaf has nothing to animate even if it were enabled;
+-- it is kept disabled for the same frame-cost reason below.
 -- `speed` is the DURATION in deciseconds, not a rate: 1 = 100ms per turn.
 -- So 2 = 200ms/turn (5 turns a second), 40 = 4s/turn. Bigger = slower,
 -- same as every other animation leaf.
@@ -215,7 +223,7 @@ nothing under it was active config. The entries below stay as reference.)
 -- Disabled 2026-10-14 (system perf pass).  `style = "loop"` made Hyprland render
 -- a new frame on EVERY vblank of the fastest attached panel -- DP-2's 240 Hz --
 -- permanently, even with nothing moving on screen.  That is a continuous GPU
--- wakeup.  The border is now a static gradient.
+-- wakeup.  The border is a static solid colour.
 -- Middle ground if the spin is missed: style = "once" (rotates only on a focus
 -- change; zero cost at rest).  Full `loop` is the only option that costs frames
 -- while idle, so do not put it back without a reason.

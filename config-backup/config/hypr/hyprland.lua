@@ -58,13 +58,14 @@ hl.config({
 		gaps_out = 6,
 		border_size = 2,
 		col = {
-			active_border = { colors = { "rgba(82aaffee)", "rgba(ff9e64ee)" }, angle = 45 },
+			active_border = "rgba(82aaffdd)",
 			inactive_border = "rgba(2f334daa)",
 		},
 		layout = "dwindle",
 	},
 	decoration = {
-		rounding = 10,
+		rounding = 12,
+		rounding_power = 3,
 		shadow = {
 			enabled = true,
 			range = 12,
@@ -80,6 +81,9 @@ hl.config({
 		force_default_wallpaper = 0,
 		disable_hyprland_logo = true,
 		disable_splash_rendering = true,
+		-- 40 pings = 60 s before the "not responding" dialog, instead of 5 (7.5 s).
+		-- A single slow GPU/disk frame under a running game used to trip it.
+		anr_missed_pings = 40,
 	},
 })
 hl.curve("easeOutQuint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
