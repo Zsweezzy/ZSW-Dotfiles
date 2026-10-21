@@ -503,11 +503,7 @@ nothing under it was active config. The entries below stay as reference.)
 
 > **L771** before `describedBind(`
 
--- Laptop multimedia keys for volume and LCD brightness
-
-> **L809** before `describedBind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), "Play next media track", { locked = true })`
-
--- Requires playerctl
+-- Laptop LCD brightness keys
 
 ## WINDOWS AND WORKSPACES
 

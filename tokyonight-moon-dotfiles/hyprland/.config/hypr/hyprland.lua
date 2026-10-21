@@ -610,31 +610,7 @@ describedBind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }), "Fo
 describedBind(mainMod .. " + mouse:272", hl.dsp.window.drag(), "Drag focused window", { mouse = true })
 describedBind(mainMod .. " + mouse:273", hl.dsp.window.resize(), "Resize focused window", { mouse = true })
 
--- Laptop multimedia keys for volume and LCD brightness
-describedBind(
-	"XF86AudioRaiseVolume",
-	hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"),
-	"Raise volume",
-	{ locked = true, repeating = true }
-)
-describedBind(
-	"XF86AudioLowerVolume",
-	hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),
-	"Lower volume",
-	{ locked = true, repeating = true }
-)
-describedBind(
-	"XF86AudioMute",
-	hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),
-	"Mute audio",
-	{ locked = true, repeating = true }
-)
-describedBind(
-	"XF86AudioMicMute",
-	hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),
-	"Mute microphone",
-	{ locked = true, repeating = true }
-)
+-- Laptop LCD brightness keys
 describedBind(
 	"XF86MonBrightnessUp",
 	hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),
@@ -647,12 +623,6 @@ describedBind(
 	"Decrease screen brightness",
 	{ locked = true, repeating = true }
 )
-
--- Requires playerctl
-describedBind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), "Play next media track", { locked = true })
-describedBind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), "Play or pause media", { locked = true })
-describedBind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), "Play or pause media", { locked = true })
-describedBind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), "Play previous media track", { locked = true })
 
 --------------------------------
 ---- WINDOWS AND WORKSPACES ----
