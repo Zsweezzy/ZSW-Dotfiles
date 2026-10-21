@@ -181,8 +181,9 @@ hl.config({
 
 		shadow = {
 			enabled = true,
-			range = 4,
+			range = 12,
 			render_power = 3,
+			offset = { 0, 4 },
 			color = 0xee16161e, -- tokyo night moon bg_dark #16161e
 		},
 

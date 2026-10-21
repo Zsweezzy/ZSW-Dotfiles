@@ -66,6 +66,10 @@ hl.config({
 	decoration = {
 		rounding = 10,
 		shadow = {
+			enabled = true,
+			range = 12,
+			render_power = 3,
+			offset = { 0, 4 },
 			color = 0xee16161e,
 		},
 		blur = {
@@ -192,6 +196,16 @@ describedBind(mainMod .. " + Tab", function()
 		hl.plugin.hymission.toggle()
 	end
 end, "Toggle workspace overview")
+describedBind(
+	"ALT + tab",
+	function()
+		if hl.plugin and hl.plugin.hymission then
+			hl.plugin.hymission.toggle()
+		end
+	end,
+	"Toggle workspace overview",
+	{ allow_input_capture = true }
+)
 describedBind(mainMod .. " + C", hl.dsp.window.kill(), "Kill focused window")
 describedBind(mainMod .. " + SHIFT + C", hl.dsp.window.close(), "Close focused window")
 describedBind(mainMod .. " + SHIFT + V", hl.dsp.window.float({ action = "toggle" }), "Toggle focused window floating")
@@ -301,7 +315,7 @@ describedBind(
 describedBind(mainMod .. " + mouse:272", hl.dsp.window.drag(), "Drag focused window", { mouse = true })
 describedBind(mainMod .. " + mouse:273", hl.dsp.window.resize(), "Resize focused window", { mouse = true })
 describedBind(
-	"ALT + tab",
+	"ALT + SHIFT + tab",
 	hl.dsp.release_input_capture(),
 	"Free the mouse cursor from a window that captured it",
 	{ allow_input_capture = true }
