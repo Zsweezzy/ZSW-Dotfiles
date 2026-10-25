@@ -20,6 +20,10 @@ check "capsule width comes from the loaded panel" Island.qml \
       'readonly property real panelWidth: panelLoader.item ? panelLoader.item.implicitWidth : 0'
 check "panel is chosen by module, not by name" Island.qml \
       'sourceComponent: root.panelModule ? root.panelModule.panel : null'
+# A 0-height xdg_popup is a Wayland protocol error, and closing nulls the module
+# in the same commit that drops the loader's item.
+check "panel surface never collapses to zero height" Island.qml \
+      'height: Math.max(1, panelLoader.item ? panelLoader.item.implicitHeight : 0)'
 check "clock module declares its panel" Clock.qml 'panel: Component {'
 check "audio module declares its panel" Audio.qml 'panel: Component {'
 check "sys module declares its panel" Sys.qml 'panel: Component {'

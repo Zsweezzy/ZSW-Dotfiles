@@ -229,7 +229,10 @@ Item {
             Keys.onEscapePressed: root.close()
 
             width: root.openWidth
-            height: panelLoader.item ? panelLoader.item.implicitHeight : 0
+            // Never 0: closing nulls panelModule, the loader drops its item and
+            // this binding collapses in the same commit — a 0-height xdg_popup
+            // buffer is a Wayland protocol error and kills the process.
+            height: Math.max(1, panelLoader.item ? panelLoader.item.implicitHeight : 0)
             // No width/height animation here: the popup is its own surface and
             // resizing it mid-map renders a sliver before the compositor
             // catches up. Only the content fades.
