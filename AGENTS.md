@@ -26,11 +26,11 @@ Do not duplicate these here; they live in their own repos or systems:
 
 | Path | Owner |
 |---|---|
-| `~/.config/themes`, `~/.local/bin/theme` | `cachyos-rebuild` |
-| `~/.config/hypr` | `cachyos-rebuild/home` |
+| `~/.config/themes`, `~/.local/bin/theme` | `ZSW-CachyOSRebuild` |
+| `~/.config/hypr` | `ZSW-CachyOSRebuild/home` |
 | `~/.config/quickshell` | `Zsweezzy/ZSW-Quickshell` |
-| `~/.config/opencode` | `Zsweezzy/opencode-backup` |
-| `/etc`, root tweaks, GameMode, sysctls | `Zsweezzy/cachyos-rebuild` |
+| `~/.config/opencode` | `Zsweezzy/ZSW-OpencodeBackup` |
+| `/etc`, root tweaks, GameMode, sysctls | `Zsweezzy/ZSW-CachyOSRebuild` |
 
 ## Rules
 

@@ -56,7 +56,7 @@ inside the folder (`gtk/gtk-3.0`, `gtk/gtk-4.0`), and `spicetify` uses
 `extras/` is the former `tokyonight-moon-dotfiles` repo, kept for reference:
 
 - `hyprland/.config/hypr` — Hyprland config and scripts (live copies are owned
-  by `cachyos-rebuild/home/.config/hypr`)
+  by `ZSW-CachyOSRebuild/home/.config/hypr`)
 - `quickshell/.config/quickshell/tokyonight` — snapshot of the old shell; live
   configs are owned by `ZSW-Quickshell`
 - `rofi/.config/rofi`, `rofi/.local/share/rofi/themes` — launcher config
@@ -83,7 +83,7 @@ re-run `theme set <slug>`.
 ## System tweaks
 
 Root-level tweaks and one-off desktop overrides moved to
-[`Zsweezzy/cachyos-rebuild`](https://github.com/Zsweezzy/cachyos-rebuild)
+[`Zsweezzy/ZSW-CachyOSRebuild`](https://github.com/Zsweezzy/ZSW-CachyOSRebuild)
 (`/etc`, GameMode, sysctls, arch-update desktop entry, `reapply-darkmode`).
 This repo is themes only.
 
@@ -93,7 +93,7 @@ This repo is themes only.
 - Nothing sensitive is tracked here; KDE session/activity/wallet state is
   deliberately excluded from the sync pairs.
 - The former `config-backup/`, `system/`, and `tweaks/` trees were merged from
-  their own repositories and have since been folded into `cachyos-rebuild`.
+  their own repositories and have since been folded into `ZSW-CachyOSRebuild`.
   Their history is still in this repo's merge commits.
 
 ## Related repos
@@ -101,7 +101,7 @@ This repo is themes only.
 | Repo | Contents |
 |---|---|
 | `Zsweezzy/ZSW-Quickshell` | Live Quickshell configs (`Tokyonight lite`, `Tokyonight full`, `theme-picker`) |
-| `Zsweezzy/cachyos-rebuild` | Packages, `/etc`, system tweaks and machine-specific setup |
+| `Zsweezzy/ZSW-CachyOSRebuild` | Packages, `/etc`, system tweaks and machine-specific setup |
 
 ## For AI agents and contributors
 
