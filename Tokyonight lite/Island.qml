@@ -46,6 +46,10 @@ Item {
     /// True while the drawer is sliding back up. The surface stays mapped
     /// until that slide finishes, so closing mirrors opening.
     property bool closing: false
+    /// Flyout to open when the retract ends. Set when a different pill is
+    /// clicked while one is open, so switching is one continuous motion
+    /// (retract, swap at the bottom, open) instead of a snap.
+    property var pendingModule: null
 
     function open(module) {
         closeTimer.stop()
@@ -56,26 +60,49 @@ Item {
     }
 
     function toggle(module) {
-        if (root.closing || !popup.visible) root.open(module)
+        // During a retract the click is the new target: it cancels the close
+        // (or retargets a switch) without ever unmapping the surface.
+        if (root.closing) root.pendingModule = module
+        else if (!popup.visible) root.open(module)
         else if (root.panelModule === module) root.close()
-        else root.panelModule = module
+        else root.switchTo(module)
     }
 
-    function close() {
-        if (!popup.visible || root.closing) return
+    function switchTo(module) {
+        root.pendingModule = module
         root.closing = true
         closeTimer.start()
     }
 
-    // Unmaps only once the reverse slide is done. The compositor's own
-    // outside-click dismissal cannot be delayed, so that close stays instant.
+    function close() {
+        if (!popup.visible) return
+        if (root.closing) {
+            // Escape during a switch closes the old panel instead of opening
+            // the new one at the bottom of the retract.
+            root.pendingModule = null
+            return
+        }
+        root.closing = true
+        closeTimer.start()
+    }
+
+    // Runs once the slide is done. A pending module means a switch: the panel
+    // is swapped while the card is off-screen (so the surface may resize with
+    // nothing visible on it) and the drawer slides back out at the new size.
+    // Otherwise the unmap resets the rest of the state in onVisibleChanged.
+    // The compositor's own outside-click dismissal cannot be delayed, so that
+    // close stays instant.
     Timer {
         id: closeTimer
         interval: Tokyo.flyoutDuration
         onTriggered: {
+            if (root.pendingModule !== null) {
+                root.panelModule = root.pendingModule
+                root.pendingModule = null
+                root.closing = false
+                return
+            }
             popup.visible = false
-            root.panelModule = null
-            root.closing = false
         }
     }
 
@@ -226,8 +253,13 @@ Item {
 
         // An xdg_popup dismisses itself on an outside click, and that write
         // drops the binding on `visible` — so the state has to follow the
-        // window, not the other way round.
-        onVisibleChanged: if (!visible && root.panelModule !== null) root.panelModule = null
+        // window, not the other way round. A mid-switch dismissal lands here
+        // too, which is why the pending module is dropped as well.
+        onVisibleChanged: if (!visible) {
+            root.panelModule = null
+            root.pendingModule = null
+            root.closing = false
+        }
 
         Shortcut {
             sequence: "Escape"

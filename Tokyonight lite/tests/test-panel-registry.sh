@@ -32,6 +32,10 @@ check "flyout slides in as a drawer" Island.qml \
 # after the animation, because an outside click still unmaps it immediately.
 check "close is the reverse slide" Island.qml \
       'property real reveal: popup.visible && !root.closing ? 1 : 0'
+# Clicking another pill while one is open is one motion: retract, swap the
+# panel at the bottom, open the new one. Never a snap or a full unmap.
+check "switching flyouts retracts first" Island.qml \
+      'else root.switchTo(module)'
 check "clock module declares its panel" Clock.qml 'panel: Component {'
 check "audio module declares its panel" Audio.qml 'panel: Component {'
 check "sys module declares its panel" Sys.qml 'panel: Component {'
