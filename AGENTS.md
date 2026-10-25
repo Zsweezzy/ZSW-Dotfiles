@@ -5,6 +5,8 @@ Theme configs for one CachyOS desktop. Read this before touching files.
 ## Layout
 
 - `tokyonight/`, `monochrome/`, `nord/` — one folder per theme.
+- `common/` — components shared by every theme (the Quickshell bar). Mapped by
+  `SHARED_PAIRS` in `components.sh`, not per-theme folders.
 - Inside a theme, component folders map 1:1 to live app directories. The
   mapping is `components.sh`, used by `backup.sh` and `apply.sh`.
 - `tokyonight/extras/` is an archived mirror (Hyprland, rofi, old Quickshell,
@@ -28,7 +30,7 @@ Do not duplicate these here; they live in their own repos or systems:
 |---|---|
 | `~/.config/themes`, `~/.local/bin/theme` | `ZSW-CachyOSRebuild` |
 | `~/.config/hypr` | `ZSW-CachyOSRebuild/home` |
-| `~/.config/quickshell` | `Zsweezzy/ZSW-Quickshell` |
+| `~/.config/quickshell` | this repo (`common/quickshell/ZSW-Quickshell`) |
 | `~/.config/opencode` | `Zsweezzy/ZSW-OpencodeBackup` |
 | `/etc`, root tweaks, GameMode, sysctls | `Zsweezzy/ZSW-CachyOSRebuild` |
 

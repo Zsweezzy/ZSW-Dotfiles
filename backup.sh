@@ -18,17 +18,16 @@ THEME="${1:-tokyonight}"
 # shellcheck source=components.sh
 source "$REPO/components.sh"
 
-for pair in "${PAIRS[@]}"; do
-  src="${pair%%|*}"
-  dst="$THEME/${pair#*|}"
+sync_pair() { # sync_pair <live path> <repo path>
+  local src="$1" dst="$2"
   if [[ ! -e "$src" ]]; then
     echo "skip: $src (doesn't exist)"
-    continue
+    return
   fi
   echo "sync: $src -> $dst"
   if [[ -d "$src" ]]; then
     mkdir -p "$dst"
-    rsync -a --delete "$src/" "$dst/"
+    rsync -a --delete --exclude=.git "$src/" "$dst/"
   elif [[ -f "$src" ]]; then
     mkdir -p "$(dirname "$dst")"
     if [[ -d "$dst" ]]; then
@@ -38,8 +37,15 @@ for pair in "${PAIRS[@]}"; do
     rsync -a "$src" "$dst"
   else
     echo "skip: $src (not a regular file or dir)"
-    continue
   fi
+}
+
+for pair in "${PAIRS[@]}"; do
+  sync_pair "${pair%%|*}" "$THEME/${pair#*|}"
+done
+
+for pair in "${SHARED_PAIRS[@]}"; do
+  sync_pair "${pair%%|*}" "common/${pair#*|}"
 done
 
 git add -A
