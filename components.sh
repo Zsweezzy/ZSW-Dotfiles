@@ -49,3 +49,10 @@ PAIRS=(
   "$HOME/.config/ksplashrc|kde/ksplashrc"
   "$HOME/.config/kcmfonts|kde/kcmfonts"
 )
+
+# Theme-independent components. They live under common/ instead of a theme
+# folder, because every theme runs the same files (only generated palettes
+# differ). backup.sh and apply.sh handle both arrays.
+SHARED_PAIRS=(
+  "$HOME/.config/quickshell/ZSW-Quickshell|quickshell/ZSW-Quickshell"
+)

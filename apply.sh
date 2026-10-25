@@ -16,22 +16,27 @@ if [[ ! -d "$REPO/$THEME" ]]; then
   exit 1
 fi
 
-for pair in "${PAIRS[@]}"; do
-  dst="${pair%%|*}"
-  rel="${pair#*|}"
-  src="$REPO/$THEME/$rel"
-
+apply_pair() { # apply_pair <repo path> <live path>
+  local src="$1" dst="$2"
   if [[ ! -e "$src" ]]; then
     echo "skip: $src (not in this theme)"
-    continue
+    return
   fi
 
   echo "apply: $src -> $dst"
   if [[ -d "$src" ]]; then
     mkdir -p "$dst"
-    rsync -a --delete "$src/" "$dst/"
+    rsync -a --delete --exclude=.git "$src/" "$dst/"
   else
     mkdir -p "$(dirname "$dst")"
     rsync -a "$src" "$dst"
   fi
+}
+
+for pair in "${PAIRS[@]}"; do
+  apply_pair "$REPO/$THEME/${pair#*|}" "${pair%%|*}"
+done
+
+for pair in "${SHARED_PAIRS[@]}"; do
+  apply_pair "$REPO/common/${pair#*|}" "${pair%%|*}"
 done

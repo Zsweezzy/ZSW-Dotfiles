@@ -1,0 +1,27 @@
+import QtQuick
+import Quickshell
+
+// Instantiates each module's flyout offscreen. Panels are only created when
+// opened, so a QML error in one stays invisible until someone clicks it.
+ShellRoot {
+    Clock { id: clock }
+    Audio { id: audio }
+    Sys { id: sys }
+
+    function report(name, comp) {
+        if (comp === null) {
+            print(name + "=NULL")
+            return
+        }
+        const item = comp.createObject(this)
+        print(name + "=" + item.implicitWidth + "x" + item.implicitHeight)
+        item.destroy()
+    }
+
+    Component.onCompleted: {
+        report("clock", clock.panel)
+        report("audio", audio.panel)
+        report("sys", sys.panel)
+        Qt.quit()
+    }
+}
