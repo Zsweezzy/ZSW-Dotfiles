@@ -23,15 +23,17 @@ Item {
     /// True on the monitor the theme picker is on, while it is mapped.
     property bool pickerOpen: false
 
-    /// "" | "clock" | "audio" | "sys"
-    property string panel: ""
+    /// Module whose flyout is open, or null. The module owns the panel
+    /// component and the panel owns its width — see Module.qml and Panel.qml.
+    property var panelModule: null
 
     /// Width of the panel that is open (or would open). The capsule is the
     /// panel's header, so it takes this width while a panel is showing.
-    readonly property real panelWidth: root.panel === "clock" ? 300
-                                     : root.panel === "audio" ? 288
-                                     : root.panel === "sys" ? 320
-                                     : 268
+    readonly property real panelWidth: panelLoader.item ? panelLoader.item.implicitWidth : 0
+    /// The header can never shrink below its own pills, so a future panel
+    /// narrower than the row still leaves capsule and card the same width.
+    readonly property real openWidth: Math.max(root.panelWidth,
+                                               row.implicitWidth + Tokyo.islandPadH * 2)
 
     width: capsule.width
     height: Tokyo.islandHeight
@@ -41,29 +43,21 @@ Item {
     /// Width the capsule is drawing right now.
     readonly property real capsuleWidth: capsule.width
 
-    function toggle(name) {
+    function toggle(module) {
         if (!popup.visible) {
-            root.panel = name
+            root.panelModule = module
             popup.visible = true
             Qt.callLater(() => card.forceActiveFocus())
-        } else if (root.panel === name) {
+        } else if (root.panelModule === module) {
             root.close()
         } else {
-            root.panel = name
+            root.panelModule = module
         }
     }
 
     function close() {
         popup.visible = false
-        root.panel = ""
-    }
-
-    /// Monday-first offset of the 1st of the month, and the month's length.
-    function firstOffset(d) {
-        return (new Date(d.getFullYear(), d.getMonth(), 1).getDay() + 6) % 7
-    }
-    function daysInMonth(d) {
-        return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+        root.panelModule = null
     }
 
     RectangularShadow {
@@ -82,7 +76,7 @@ Item {
         // capsule's square bottom edge instead of poking out under a narrow pill.
         width: root.pickerOpen ? Tokyo.pickerWidth
                                  : root.launcherOpen ? Tokyo.launcherWidth
-                                 : popup.visible ? root.panelWidth
+                                 : popup.visible ? root.openWidth
                                  : row.implicitWidth + Tokyo.islandPadH * 2
         Behavior on width {
             enabled: !popup.visible
@@ -110,7 +104,7 @@ Item {
         RowLayout {
             id: row
             anchors.centerIn: parent
-            spacing: 14
+            spacing: Tokyo.islandGap
 
             Workspaces {
                 screen: root.screen
@@ -123,7 +117,7 @@ Item {
                 hoverStyle: true
                 hPad: 0
                 Layout.alignment: Qt.AlignVCenter
-                onClicked: root.toggle("clock")
+                onClicked: root.toggle(clockPill)
             }
 
             Audio {
@@ -133,7 +127,7 @@ Item {
                 hPad: 0
                 tooltipHost: root.tooltipHost
                 Layout.alignment: Qt.AlignVCenter
-                onClicked: root.toggle("audio")
+                onClicked: root.toggle(audioPill)
             }
 
             Sys {
@@ -143,7 +137,7 @@ Item {
                 hPad: 0
                 tooltipHost: root.tooltipHost
                 Layout.alignment: Qt.AlignVCenter
-                onClicked: root.toggle("sys")
+                onClicked: root.toggle(sysPill)
             }
 
             // Notifications live in swaync, so the bell is a toggle for its
@@ -214,7 +208,7 @@ Item {
         // An xdg_popup dismisses itself on an outside click, and that write
         // drops the binding on `visible` — so the state has to follow the
         // window, not the other way round.
-        onVisibleChanged: if (!visible && root.panel !== "") root.panel = ""
+        onVisibleChanged: if (!visible && root.panelModule !== null) root.panelModule = null
 
         Shortcut {
             sequence: "Escape"
@@ -234,8 +228,8 @@ Item {
             focus: true
             Keys.onEscapePressed: root.close()
 
-            width: root.panelWidth
-            height: body.implicitHeight + 32
+            width: root.openWidth
+            height: panelLoader.item ? panelLoader.item.implicitHeight : 0
             // No width/height animation here: the popup is its own surface and
             // resizing it mid-map renders a sliver before the compositor
             // catches up. Only the content fades.
@@ -247,280 +241,12 @@ Item {
             color: Tokyo.islandFill
             clip: true
 
-            Column {
-                id: body
-                anchors { left: parent.left; right: parent.right; top: parent.top
-                          leftMargin: 16; rightMargin: 16; topMargin: 16 }
-                spacing: 14
+            Loader {
+                id: panelLoader
+                sourceComponent: root.panelModule ? root.panelModule.panel : null
                 opacity: popup.visible ? 1 : 0
                 Behavior on opacity {
                     NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
-                }
-
-                // ---------- clock ----------
-                Column {
-                    width: parent.width
-                    visible: root.panel === "clock"
-                    spacing: 12
-
-                    Text {
-                        text: Qt.formatDateTime(root.now, "HH:mm")
-                        color: Tokyo.fg
-                        font { family: Tokyo.fontFamily; pixelSize: 40; bold: true; letterSpacing: 1 }
-                    }
-                    Text {
-                        text: Qt.formatDateTime(root.now, "dddd, d MMMM yyyy")
-                        color: Tokyo.dim
-                        font { family: Tokyo.fontFamily; pixelSize: 12 }
-                    }
-
-                    Column {
-                        width: parent.width
-                        spacing: 6
-
-                        Text {
-                            text: Qt.formatDateTime(root.now, "MMMM yyyy")
-                            color: Tokyo.fg
-                            font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
-                        }
-
-                        Row {
-                            Repeater {
-                                model: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
-                                delegate: Text {
-                                    required property string modelData
-                                    width: 36
-                                    horizontalAlignment: Text.AlignHCenter
-                                    text: modelData
-                                    color: Tokyo.islandDim
-                                    font { family: Tokyo.fontFamily; pixelSize: 11 }
-                                }
-                            }
-                        }
-
-                        Grid {
-                            width: parent.width
-                            columns: 7
-
-                            Repeater {
-                                model: 42
-
-                                delegate: Item {
-                                    required property int index
-
-                                    readonly property int day: index - root.firstOffset(root.now) + 1
-                                    readonly property bool inMonth: day >= 1 && day <= root.daysInMonth(root.now)
-                                    readonly property bool today: inMonth && day === root.now.getDate()
-
-                                    width: 36
-                                    height: 24
-                                    visible: inMonth
-
-                                    Rectangle {
-                                        anchors.centerIn: parent
-                                        width: 22
-                                        height: 22
-                                        radius: 11
-                                        color: today ? Tokyo.activeTint : "transparent"
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: day
-                                            color: today ? Tokyo.blue : Tokyo.fg
-                                            font {
-                                                family: Tokyo.fontFamily; pixelSize: 11
-                                                bold: today
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // ---------- audio ----------
-                Column {
-                    width: parent.width
-                    visible: root.panel === "audio"
-                    spacing: 12
-
-                    RowLayout {
-                        width: parent.width
-
-                        Text {
-                            text: "Volume"
-                            color: Tokyo.dim
-                            font { family: Tokyo.fontFamily; pixelSize: 12 }
-                        }
-                        Item { Layout.fillWidth: true }
-                        Text {
-                            text: audioPill.muted ? "muted" : audioPill.pct + "%"
-                            color: audioPill.muted ? Tokyo.red : Tokyo.fg
-                            Behavior on color {
-                                ColorAnimation { duration: 150; easing.type: Easing.OutQuad }
-                            }
-                            font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
-                        }
-                    }
-
-                    Item {
-                        id: slider
-                        width: parent.width
-                        height: 20
-
-                        Rectangle {
-                            id: track
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width
-                            height: 4
-                            radius: 2
-                            color: Tokyo.bgHighlight
-                        }
-                        Rectangle {
-                            anchors { left: track.left; verticalCenter: track.verticalCenter }
-                            width: track.width * Math.min(1, audioPill.volume)
-                            height: track.height
-                            radius: 2
-                            color: audioPill.muted ? Tokyo.dim : Tokyo.blue
-                            // Keyboard volume steps jump; this lets the fill
-                            // glide instead of stuttering.
-                            Behavior on width {
-                                NumberAnimation { duration: 90; easing.type: Easing.OutCubic }
-                            }
-                        }
-                        Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            x: Math.max(0, Math.min(slider.width - width,
-                                                     slider.width * audioPill.volume - width / 2))
-                            width: 12
-                            height: 12
-                            radius: 6
-                            color: Tokyo.fg
-                            Behavior on x {
-                                NumberAnimation { duration: 90; easing.type: Easing.OutCubic }
-                            }
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onPressed: m => applyVolume(m.x)
-                            onPositionChanged: m => {
-                                if (pressed) applyVolume(m.x)
-                            }
-                            function applyVolume(x) {
-                                if (!audioPill.sink || !audioPill.sink.audio) return
-                                audioPill.sink.audio.volume =
-                                    Math.max(0, Math.min(1, x / slider.width))
-                            }
-                        }
-                    }
-
-                    RowLayout {
-                        width: parent.width
-                        spacing: 10
-
-                        Rectangle {
-                            width: 34
-                            height: 26
-                            radius: 13
-                            color: audioPill.muted ? Tokyo.activeTint : Tokyo.bgHighlight
-                            Behavior on color {
-                                ColorAnimation { duration: 150; easing.type: Easing.OutQuad }
-                            }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: audioPill.muted ? "\uf026" : "\uf028"
-                                color: audioPill.muted ? Tokyo.red : Tokyo.fg
-                                Behavior on color { ColorAnimation { duration: 150; easing.type: Easing.OutQuad } }
-                                font { family: Tokyo.fontFamily; pixelSize: 14 }
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    if (audioPill.sink && audioPill.sink.audio)
-                                        audioPill.sink.audio.muted = !audioPill.muted
-                                }
-                            }
-                        }
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: audioPill.sink ? audioPill.sink.description : "No output"
-                            color: Tokyo.dim
-                            elide: Text.ElideRight
-                            font { family: Tokyo.fontFamily; pixelSize: 11 }
-                        }
-                    }
-                }
-
-                // ---------- system ----------
-                Column {
-                    width: parent.width
-                    visible: root.panel === "sys"
-                    spacing: 12
-
-                    RowLayout {
-                        width: parent.width
-                        Text {
-                            text: "CPU"
-                            color: Tokyo.dim
-                            font { family: Tokyo.fontFamily; pixelSize: 12 }
-                        }
-                        Item { Layout.fillWidth: true }
-                        Text {
-                            text: Math.round(sysPill.cpuPct) + "%"
-                            color: Tokyo.cyan
-                            font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
-                        }
-                    }
-                    Rectangle {
-                        width: parent.width
-                        height: 4
-                        radius: 2
-                        color: Tokyo.bgHighlight
-                        Rectangle {
-                            width: parent.width * Math.min(1, sysPill.cpuPct / 100)
-                            height: parent.height
-                            radius: 2
-                            color: Tokyo.cyan
-                            Behavior on width {
-                                NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
-                            }
-                        }
-                    }
-
-                    RowLayout {
-                        width: parent.width
-                        Text {
-                            text: "RAM"
-                            color: Tokyo.dim
-                            font { family: Tokyo.fontFamily; pixelSize: 12 }
-                        }
-                        Item { Layout.fillWidth: true }
-                        Text {
-                            text: Math.round(sysPill.ramUsed) + " / " + Math.round(sysPill.ramTotal) + " GB"
-                            color: Tokyo.green
-                            font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
-                        }
-                    }
-                    Rectangle {
-                        width: parent.width
-                        height: 4
-                        radius: 2
-                        color: Tokyo.bgHighlight
-                        Rectangle {
-                            width: parent.width * Math.min(1, sysPill.ramPct / 100)
-                            height: parent.height
-                            radius: 2
-                            color: Tokyo.green
-                            Behavior on width {
-                                NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
-                            }
-                        }
-                    }
                 }
             }
         }

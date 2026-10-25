@@ -46,7 +46,14 @@ Singleton {
     readonly property color islandDim: Qt.rgba(ThemeColors.fg.r, ThemeColors.fg.g, ThemeColors.fg.b, 0.45)
     readonly property real islandHeight: 30
     readonly property real islandPadH: 14
+    /// Gap between the pills inside the capsule.
+    readonly property real islandGap: 14
     readonly property int islandPanelRadius: 22
+    // Flyout card padding and row gap. Panels declare only their own width;
+    // these keep a new panel from inventing another 16/12.
+    readonly property real panelPadH: 16
+    readonly property real panelPadV: 16
+    readonly property real panelGap: 12
     // The launcher card is this wide; the capsule widens to it while the
     // launcher is open so the card's square top corners join the capsule's
     // square bottom edge into one shape.

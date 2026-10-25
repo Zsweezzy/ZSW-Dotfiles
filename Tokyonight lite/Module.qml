@@ -18,6 +18,10 @@ Item {
     /// already is the pill. Hovering still recolours the text.
     property bool flat: false
 
+    /// Flyout this module opens, or null. Island.qml instantiates it and sizes
+    /// the capsule to its implicitWidth, so pill and card share one width.
+    property Component panel: null
+
     property int hPad: Tokyo.pillHPad
 
     property real letterSpacing: 0.2

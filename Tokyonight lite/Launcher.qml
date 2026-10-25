@@ -125,7 +125,7 @@ PanelWindow {
         anchors.topMargin: Tokyo.barHeight
         width: Math.min(Tokyo.launcherWidth, root.capsuleWidth)
         // Unrolls down from the capsule on open and rolls back up on close.
-        height: root.open ? body.implicitHeight + 32 : 0
+        height: root.open ? body.implicitHeight + Tokyo.panelPadV * 2 : 0
         Behavior on height {
             NumberAnimation {
                 duration: root.open ? Tokyo.expandDuration : Tokyo.collapseDuration
@@ -147,7 +147,8 @@ PanelWindow {
         Column {
             id: body
             anchors { left: parent.left; right: parent.right; top: parent.top
-                      leftMargin: 16; rightMargin: 16; topMargin: 16 }
+                      leftMargin: Tokyo.panelPadH; rightMargin: Tokyo.panelPadH
+                      topMargin: Tokyo.panelPadV }
             spacing: 14
             opacity: root.open ? 1 : 0
             Behavior on opacity {

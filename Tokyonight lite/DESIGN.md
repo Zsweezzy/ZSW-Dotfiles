@@ -113,6 +113,34 @@ reader identifies the stat by colour before they read the label.
 | `edgeGap` | 6 | matches Hyprland `gaps_out`, so pills sit as far from the screen edge as windows do |
 | `fontSize` | 13 | base body size |
 | `flyoutWidth` | 1100 | moonsettings' flyout. `Bar.qml`'s top-edge hover strip is this wide and centred, so the pointer is inside the panel the moment it opens |
+| `panelPadH` / `panelPadV` | 16 | every island flyout card; applied by `Panel.qml` |
+| `panelGap` | 12 | row gap inside a flyout |
+| `islandGap` | 14 | gap between the pills inside the capsule |
+
+---
+
+## Adding an island function
+
+The lite island is module-driven. A module that opens a flyout declares the
+component itself:
+
+```qml
+Module {
+    panel: Component { FooPanel { fooModule: root } }
+}
+```
+
+Add the module to `Island.qml`'s row with `onClicked: root.toggle(fooPill)`,
+and make `FooPanel` extend `Panel` and set `implicitWidth`. That width is the
+only width: Island loads the panel with a `Loader` and sizes the capsule to the
+loaded item, so the pill header and the card cannot drift apart. `Panel.qml`
+supplies the shared padding, gap and height. Adding a function means no entry
+in a per-panel width table.
+
+`tests/test-panel-registry.sh` instantiates every panel offscreen and checks
+that width contract, because a panel is otherwise only created on click.
+
+---
 
 ---
 

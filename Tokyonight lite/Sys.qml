@@ -22,6 +22,10 @@ Module {
 
     tooltip: ""
 
+    panel: Component {
+        SysPanel { sysModule: root }
+    }
+
     Poll {
         id: cpuPoll
         command: [Tokyo.scriptDir + "/cpu.sh"]
