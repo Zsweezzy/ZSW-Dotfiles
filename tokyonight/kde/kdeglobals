@@ -48,6 +48,20 @@ ForegroundNormal=200,211,245
 ForegroundPositive=195,232,141
 ForegroundVisited=130,170,255
 
+[Colors:Header]
+BackgroundAlternate=84,92,126
+BackgroundNormal=47,51,77
+DecorationFocus=59,66,97
+DecorationHover=84,92,126
+ForegroundActive=130,170,255
+ForegroundInactive=130,139,184
+ForegroundLink=130,170,255
+ForegroundNegative=255,117,127
+ForegroundNeutral=255,199,119
+ForegroundNormal=200,211,245
+ForegroundPositive=79,214,190
+ForegroundVisited=130,139,184
+
 [Colors:Selection]
 BackgroundAlternate=130,170,255
 BackgroundNormal=84,92,126
@@ -105,7 +119,8 @@ ForegroundPositive=79,214,190
 ForegroundVisited=130,139,184
 
 [General]
-ColorSchemeHash=51d730535134e778fe069690ae4f1f61fb700fdc
+ColorScheme=TokyoNightMoon
+ColorSchemeHash=9df9d53b802e820afa229f58630d994cf5c0c4b8
 PanelOrientation=/path/to/file
 TerminalApplication=kitty
 TerminalService=kitty.desktop
@@ -125,7 +140,7 @@ Theme=YAMIS
 [KDE]
 AnimationDurationFactor=0.25
 LookAndFeelPackage=Monochrome
-contrast=4
+contrast=7
 frameContrast=0.2
 widgetStyle=Breeze
 
@@ -138,7 +153,7 @@ Show Full Path=false
 Show Inline Previews=true
 Show Preview=false
 Show Speedbar=true
-Show hidden files=false
+Show hidden files=true
 Sort by=Name
 Sort directories first=true
 Sort hidden files last=false
@@ -154,10 +169,10 @@ EnableRemoteFolderThumbnail=false
 MaximumRemoteSize=0
 
 [WM]
-activeBackground=34,36,54
-activeBlend=255,255,255
+activeBackground=47,51,77
+activeBlend=47,51,77
 activeFont=JetBrainsMono Nerd Font,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0
 activeForeground=200,211,245
-inactiveBackground=34,36,54
-inactiveBlend=130,139,184
-inactiveForeground=130,139,184
+inactiveBackground=47,51,77
+inactiveBlend=47,51,77
+inactiveForeground=200,211,245
