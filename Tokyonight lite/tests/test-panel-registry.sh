@@ -28,6 +28,10 @@ check "panel surface never collapses to zero height" Island.qml \
 # an already-full-height surface, instead of resizing the surface mid-map.
 check "flyout slides in as a drawer" Island.qml \
       'y: -height * (1 - reveal)'
+# Closing is the same slide reversed: the surface is unmapped by a timer only
+# after the animation, because an outside click still unmaps it immediately.
+check "close is the reverse slide" Island.qml \
+      'property real reveal: popup.visible && !root.closing ? 1 : 0'
 check "clock module declares its panel" Clock.qml 'panel: Component {'
 check "audio module declares its panel" Audio.qml 'panel: Component {'
 check "sys module declares its panel" Sys.qml 'panel: Component {'

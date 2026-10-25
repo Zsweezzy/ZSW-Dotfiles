@@ -43,21 +43,40 @@ Item {
     /// Width the capsule is drawing right now.
     readonly property real capsuleWidth: capsule.width
 
+    /// True while the drawer is sliding back up. The surface stays mapped
+    /// until that slide finishes, so closing mirrors opening.
+    property bool closing: false
+
+    function open(module) {
+        closeTimer.stop()
+        root.closing = false
+        root.panelModule = module
+        popup.visible = true
+        Qt.callLater(() => card.forceActiveFocus())
+    }
+
     function toggle(module) {
-        if (!popup.visible) {
-            root.panelModule = module
-            popup.visible = true
-            Qt.callLater(() => card.forceActiveFocus())
-        } else if (root.panelModule === module) {
-            root.close()
-        } else {
-            root.panelModule = module
-        }
+        if (root.closing || !popup.visible) root.open(module)
+        else if (root.panelModule === module) root.close()
+        else root.panelModule = module
     }
 
     function close() {
-        popup.visible = false
-        root.panelModule = null
+        if (!popup.visible || root.closing) return
+        root.closing = true
+        closeTimer.start()
+    }
+
+    // Unmaps only once the reverse slide is done. The compositor's own
+    // outside-click dismissal cannot be delayed, so that close stays instant.
+    Timer {
+        id: closeTimer
+        interval: Tokyo.flyoutDuration
+        onTriggered: {
+            popup.visible = false
+            root.panelModule = null
+            root.closing = false
+        }
     }
 
     RectangularShadow {
@@ -234,11 +253,11 @@ Item {
             // buffer is a Wayland protocol error and kills the process.
             height: Math.max(1, panelLoader.item ? panelLoader.item.implicitHeight : 0)
             // Drawer: the popup surface is already this tall, so the whole card
-            // slides down from behind the capsule. Animating the surface's own
-            // height instead resizes it mid-map and renders a sliver.
-            // Multiplying by `height` keeps the offset right if the panel's
-            // height lands a frame late.
-            property real reveal: popup.visible ? 1 : 0
+            // slides down from behind the capsule, and back up on close.
+            // Animating the surface's own height instead resizes it mid-map and
+            // renders a sliver. Multiplying by `height` keeps the offset right
+            // if the panel's height lands a frame late.
+            property real reveal: popup.visible && !root.closing ? 1 : 0
             Behavior on reveal {
                 NumberAnimation { duration: Tokyo.flyoutDuration; easing.type: Easing.OutCubic }
             }
@@ -254,10 +273,8 @@ Item {
             Loader {
                 id: panelLoader
                 sourceComponent: root.panelModule ? root.panelModule.panel : null
-                opacity: popup.visible ? 1 : 0
-                Behavior on opacity {
-                    NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
-                }
+                // Rides the slide, so the fade in and out mirror each other.
+                opacity: card.reveal
             }
         }
     }
