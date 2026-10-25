@@ -211,7 +211,7 @@ Item {
                     hPad: 0
                     tooltip: "Notifications"
                     tooltipHost: root.tooltipHost
-                    onClicked: Quickshell.execDetached(["swaync-client", "-t", "-sw"])
+                    onClicked: Quickshell.execDetached(["swaync-client", "-t"])
                 }
 
                 Rectangle {
@@ -242,7 +242,10 @@ Item {
                     property int value: 0
                     // swaync-client prints the count without a newline, and a
                     // line parser only emits complete lines — the echo flushes it.
-                    command: ["sh", "-c", "swaync-client -c -sw; echo"]
+                    // Only ask while swaync runs: swaync-client's D-Bus lookup
+                    // activates the daemon, so an unguarded poll would start it
+                    // two seconds after login and defeat the D-Bus activation.
+                    command: ["sh", "-c", "pgrep -x swaync >/dev/null && swaync-client -c -sw; echo"]
                     interval: 2000
                     onResult: line => {
                         const n = parseInt(String(line).trim())
