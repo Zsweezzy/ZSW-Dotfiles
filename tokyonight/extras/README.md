@@ -21,8 +21,9 @@ omissions: the live `.git`, `.opencode/` (orchestrator notes), `.qmlls.ini`
 (machine-specific, gitignored upstream) and `scripts/audio-popup` (a build
 artifact — build the `audio-popup/` crate instead). The live tree is the one
 quickshell loads; the live tree now lives at
-`~/.config/quickshell/ZSW-Quickshell/Tokyonight lite` and is backed up on its own
-private remote, `Zsweezzy/ZSW-Quickshell`.
+`~/.config/quickshell/ZSW-Quickshell/Tokyonight lite` and is backed up in
+`Zsweezzy/ZSW-Dotfiles` under `common/quickshell/` (the old standalone repo is
+archived).
 
 Note that the live tree's own `AGENTS.md` tells agents not to edit this mirror
 at all. That is a deliberate workflow choice, and resyncing it is a manual
