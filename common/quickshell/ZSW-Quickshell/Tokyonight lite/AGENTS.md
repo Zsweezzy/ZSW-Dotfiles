@@ -4,12 +4,12 @@ The live config. `quickshell -c "ZSW-Quickshell/Tokyonight lite"` loads this dir
 
 ## Edit here. Nowhere else.
 
-An old mirror of this tree still exists at
-`~/projects/ZSW-Dotfiles/tokyonight-moon-dotfiles/quickshell/.config/quickshell/tokyonight/`.
-It is a **read-only snapshot**, stale since 28 Sep. Quickshell never loads it and
-nothing syncs it. Do not edit the mirror.
+An old snapshot of a different shell lives at
+`~/projects/ZSW-Dotfiles/tokyonight/extras/quickshell/`. It is read-only
+reference; Quickshell never loads it and nothing syncs it.
 
-This folder is part of the `ZSW-Quickshell` repo — commit from the repo root.
+This folder is part of the `ZSW-Dotfiles` repo, under `common/quickshell/` —
+commit from `~/projects/ZSW-Dotfiles`.
 
 ## Prove the reload
 
@@ -32,7 +32,7 @@ the file watcher is dead from a bare `touch`.
 ## Other trees
 
 - `~/.config/hypr/` — a separate Hyprland config, and it has **no git**.
-- `~/projects/ZSW-Dotfiles/tokyonight-moon-dotfiles/` — the old mirror. Read-only here.
+- `~/projects/ZSW-Dotfiles/tokyonight/extras/quickshell/` — an old shell snapshot. Read-only here.
 - `../Tokyonight full/` — the other bar variant in this repo.
 
 ## Conventions

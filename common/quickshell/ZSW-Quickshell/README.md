@@ -3,6 +3,9 @@
 Quickshell configs for this desktop. One folder per bar variant; the colour
 theme is chosen by `theme`, not by the folder name.
 
+This tree lives in the `ZSW-Dotfiles` repo at `common/quickshell/ZSW-Quickshell/`
+(the standalone `ZSW-Quickshell` repo is archived).
+
 | Folder | What it is |
 |---|---|
 | `Tokyonight full/` | Full bar: media, weather, notifications, settings flyout, phone audio |

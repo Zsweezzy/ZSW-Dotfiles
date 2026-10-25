@@ -4,7 +4,8 @@ The live config. `quickshell -c "ZSW-Quickshell/Tokyonight full"` loads this dir
 
 ## Edit here. Nowhere else.
 
-This folder is part of the `ZSW-Quickshell` repo — commit from the repo root.
+This folder is part of the `ZSW-Dotfiles` repo, under `common/quickshell/` —
+commit from `~/projects/ZSW-Dotfiles`.
 `../Tokyonight lite/` is the default session bar and a separate config.
 
 ## Prove the reload
