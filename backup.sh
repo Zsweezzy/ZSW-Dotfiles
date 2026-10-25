@@ -3,17 +3,17 @@
 # Every theme lives in its own folder at the repo root, split into named
 # *component* folders (the app/system owning the config). The component
 # folder itself is the app folder, e.g.
-#   ~/.config/kitty/kitty.conf      -> bwzs/kitty/kitty.conf
-#   ~/.local/share/plasma/desktoptheme -> bwzs/plasma/desktoptheme
-#   ~/.local/share/wallpapers       -> bwzs/wallpapers
-# Usage: ./backup.sh [theme]   (defaults to "bwzs"; e.g. ./backup.sh nord)
+#   ~/.config/kitty/kitty.conf      -> tokyonight/kitty/kitty.conf
+#   ~/.local/share/plasma/desktoptheme -> tokyonight/plasma/desktoptheme
+#   ~/.local/share/wallpapers       -> tokyonight/wallpapers
+# Usage: ./backup.sh [theme]   (defaults to "tokyonight"; e.g. ./backup.sh nord)
 # Run me after you tweak a theme; safe to run repeatedly.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO"
 
-THEME="${1:-bwzs}"
+THEME="${1:-tokyonight}"
 
 # shellcheck source=components.sh
 source "$REPO/components.sh"
