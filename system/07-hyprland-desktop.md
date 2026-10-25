@@ -65,7 +65,7 @@ Validation performed:
 
 Active:
 - `hyprpaper` — wallpaper daemon
-- `quickshell -c tokyonight` — status bar (waybar dotfiles backed up at
+- `quickshell -c 'ZSW-Quickshell/Tokyonight lite'` — status bar (waybar dotfiles backed up at
   `gh:Zsweezzy/waybar-dotfiles`)
 - `/home/maxii/.local/bin/hypr-shortcut-launcher --background`
 - scratchpad notepad (`HYPR_SCRATCH ... --background`)

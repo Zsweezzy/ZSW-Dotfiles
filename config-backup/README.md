@@ -68,7 +68,7 @@ databases belong in a browser sync/export, not in git.
 | `~/.config/quickshell` | 10 MB | *included*, despite the size — it is hand-written QML | — |
 
 Themes (`bwzs/`, `tokyonight-moon/`) live in the separate **public**
-`Zsweezzy/dotfiles` repo with the same `backup.sh` pattern. `~/.config/spicetify`
+`Zsweezzy/ZSW-Dotfiles` repo with the same `backup.sh` pattern. `~/.config/spicetify`
 is mirrored in both; harmless overlap.
 
 ## Known gaps
