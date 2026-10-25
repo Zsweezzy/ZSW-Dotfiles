@@ -27,6 +27,8 @@ Singleton {
     // windows, so they share these numbers instead of each inventing one.
     readonly property int expandDuration: 220
     readonly property int collapseDuration: 160
+    /// Island flyout sliding out from under the capsule, one value per open.
+    readonly property int flyoutDuration: 190
 
     readonly property real barHeight: 34
     readonly property real pillHeight: barHeight - 8

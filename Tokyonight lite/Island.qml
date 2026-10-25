@@ -233,9 +233,16 @@ Item {
             // this binding collapses in the same commit — a 0-height xdg_popup
             // buffer is a Wayland protocol error and kills the process.
             height: Math.max(1, panelLoader.item ? panelLoader.item.implicitHeight : 0)
-            // No width/height animation here: the popup is its own surface and
-            // resizing it mid-map renders a sliver before the compositor
-            // catches up. Only the content fades.
+            // Drawer: the popup surface is already this tall, so the whole card
+            // slides down from behind the capsule. Animating the surface's own
+            // height instead resizes it mid-map and renders a sliver.
+            // Multiplying by `height` keeps the offset right if the panel's
+            // height lands a frame late.
+            property real reveal: popup.visible ? 1 : 0
+            Behavior on reveal {
+                NumberAnimation { duration: Tokyo.flyoutDuration; easing.type: Easing.OutCubic }
+            }
+            y: -height * (1 - reveal)
             radius: Tokyo.islandPanelRadius
             // Square at the top: the capsule is the panel's header, is exactly
             // this wide and meets this edge, so the two read as one shape.

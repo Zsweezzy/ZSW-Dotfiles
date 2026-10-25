@@ -24,6 +24,10 @@ check "panel is chosen by module, not by name" Island.qml \
 # in the same commit that drops the loader's item.
 check "panel surface never collapses to zero height" Island.qml \
       'height: Math.max(1, panelLoader.item ? panelLoader.item.implicitHeight : 0)'
+# The flyout is a drawer: the card slides down from behind the capsule inside
+# an already-full-height surface, instead of resizing the surface mid-map.
+check "flyout slides in as a drawer" Island.qml \
+      'y: -height * (1 - reveal)'
 check "clock module declares its panel" Clock.qml 'panel: Component {'
 check "audio module declares its panel" Audio.qml 'panel: Component {'
 check "sys module declares its panel" Sys.qml 'panel: Component {'
