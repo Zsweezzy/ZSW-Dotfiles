@@ -23,7 +23,7 @@ check "panel is chosen by module, not by name" Island.qml \
 # A 0-height xdg_popup is a Wayland protocol error, and closing nulls the module
 # in the same commit that drops the loader's item.
 check "panel surface never collapses to zero height" Island.qml \
-      'height: Math.max(1, panelLoader.item ? panelLoader.item.implicitHeight : 0)'
+      'implicitHeight: Math.max(1, root.surfaceHeight)'
 # The flyout is a drawer: the card slides down from behind the capsule inside
 # an already-full-height surface, instead of resizing the surface mid-map.
 check "flyout slides in as a drawer" Island.qml \
@@ -32,10 +32,13 @@ check "flyout slides in as a drawer" Island.qml \
 # after the animation, because an outside click still unmaps it immediately.
 check "close is the reverse slide" Island.qml \
       'property real reveal: popup.visible && !root.closing ? 1 : 0'
-# Clicking another pill while one is open is one motion: retract, swap the
-# panel at the bottom, open the new one. Never a snap or a full unmap.
-check "switching flyouts retracts first" Island.qml \
-      'else root.switchTo(module)'
+# Clicking another pill while one is open morphs between them: the card
+# animates its size and the contents crossfade, with no retract or unmap.
+check "switching flyouts morphs instead of retracting" Island.qml \
+      'root.outgoingModule = root.panelModule'
+# The surface is fixed during the morph, so it must hold the larger panel.
+check "surface holds both panels while morphing" Island.qml \
+      'readonly property real surfaceWidth: Math.max(root.openWidth,'
 check "clock module declares its panel" Clock.qml 'panel: Component {'
 check "audio module declares its panel" Audio.qml 'panel: Component {'
 check "sys module declares its panel" Sys.qml 'panel: Component {'

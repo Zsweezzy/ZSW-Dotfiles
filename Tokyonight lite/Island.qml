@@ -27,13 +27,21 @@ Item {
     /// component and the panel owns its width — see Module.qml and Panel.qml.
     property var panelModule: null
 
-    /// Width of the panel that is open (or would open). The capsule is the
+    /// Size of the panel that is open (or would open). The capsule is the
     /// panel's header, so it takes this width while a panel is showing.
     readonly property real panelWidth: panelLoader.item ? panelLoader.item.implicitWidth : 0
+    readonly property real panelHeight: panelLoader.item ? panelLoader.item.implicitHeight : 0
     /// The header can never shrink below its own pills, so a future panel
     /// narrower than the row still leaves capsule and card the same width.
     readonly property real openWidth: Math.max(root.panelWidth,
                                                row.implicitWidth + Tokyo.islandPadH * 2)
+
+    /// The surface cannot resize per frame (a mid-animation resize renders a
+    /// sliver), so while two panels are morphing it holds the larger of them.
+    readonly property real surfaceWidth: Math.max(root.openWidth,
+            outgoingLoader.item ? outgoingLoader.item.implicitWidth : 0)
+    readonly property real surfaceHeight: Math.max(root.panelHeight,
+            outgoingLoader.item ? outgoingLoader.item.implicitHeight : 0)
 
     width: capsule.width
     height: Tokyo.islandHeight
@@ -46,10 +54,12 @@ Item {
     /// True while the drawer is sliding back up. The surface stays mapped
     /// until that slide finishes, so closing mirrors opening.
     property bool closing: false
-    /// Flyout to open when the retract ends. Set when a different pill is
-    /// clicked while one is open, so switching is one continuous motion
-    /// (retract, swap at the bottom, open) instead of a snap.
-    property var pendingModule: null
+    /// Flyout being faded out while the card morphs to the next one, or null.
+    /// Non-null == a morph is in flight.
+    property var outgoingModule: null
+    /// 0 at the start of a morph, 1 when it lands. Drives the crossfade.
+    property real morphProgress: 1
+    onMorphProgressChanged: if (morphProgress === 1) root.outgoingModule = null
 
     function open(module) {
         closeTimer.stop()
@@ -60,50 +70,45 @@ Item {
     }
 
     function toggle(module) {
-        // During a retract the click is the new target: it cancels the close
-        // (or retargets a switch) without ever unmapping the surface.
-        if (root.closing) root.pendingModule = module
-        else if (!popup.visible) root.open(module)
+        if (!popup.visible) root.open(module)
         else if (root.panelModule === module) root.close()
         else root.switchTo(module)
     }
 
+    // Same pill row, new panel: the card morphs its width/height and the two
+    // contents crossfade. Nothing retracts and the surface never unmaps.
     function switchTo(module) {
-        root.pendingModule = module
-        root.closing = true
-        closeTimer.start()
+        closeTimer.stop()
+        root.closing = false
+        root.outgoingModule = root.panelModule
+        root.morphProgress = 0
+        root.panelModule = module
+        morphAnim.restart()
     }
 
     function close() {
-        if (!popup.visible) return
-        if (root.closing) {
-            // Escape during a switch closes the old panel instead of opening
-            // the new one at the bottom of the retract.
-            root.pendingModule = null
-            return
-        }
+        if (!popup.visible || root.closing) return
         root.closing = true
         closeTimer.start()
     }
 
-    // Runs once the slide is done. A pending module means a switch: the panel
-    // is swapped while the card is off-screen (so the surface may resize with
-    // nothing visible on it) and the drawer slides back out at the new size.
-    // Otherwise the unmap resets the rest of the state in onVisibleChanged.
-    // The compositor's own outside-click dismissal cannot be delayed, so that
-    // close stays instant.
+    // Unmaps after the reverse slide. The compositor's own outside-click
+    // dismissal cannot be delayed, so that close stays instant.
     Timer {
         id: closeTimer
         interval: Tokyo.flyoutDuration
-        onTriggered: {
-            if (root.pendingModule !== null) {
-                root.panelModule = root.pendingModule
-                root.pendingModule = null
-                root.closing = false
-                return
-            }
-            popup.visible = false
-        }
+        onTriggered: popup.visible = false
+    }
+
+    // Morph driver. Finishing at 1 is also what drops the outgoing panel and
+    // lets the surface shrink to the panel that is now on screen.
+    NumberAnimation {
+        id: morphAnim
+        target: root
+        property: "morphProgress"
+        to: 1
+        duration: Tokyo.flyoutDuration
+        easing.type: Easing.OutCubic
     }
 
     RectangularShadow {
@@ -125,10 +130,14 @@ Item {
                                  : popup.visible ? root.openWidth
                                  : row.implicitWidth + Tokyo.islandPadH * 2
         Behavior on width {
-            enabled: !popup.visible
+            // Animates into a panel morph too, keeping the header exactly as
+            // wide as the card on every frame (same duration and easing).
+            enabled: !popup.visible || root.outgoingModule !== null
             NumberAnimation {
-                duration: (root.launcherOpen || root.pickerOpen)
-                          ? Tokyo.expandDuration : Tokyo.collapseDuration
+                duration: root.outgoingModule !== null
+                          ? Tokyo.flyoutDuration
+                          : (root.launcherOpen || root.pickerOpen)
+                            ? Tokyo.expandDuration : Tokyo.collapseDuration
                 easing.type: Easing.OutCubic
             }
         }
@@ -248,16 +257,16 @@ Item {
         id: popup
         color: "transparent"
         visible: false
-        implicitWidth: card.width
-        implicitHeight: card.height
+        implicitWidth: root.surfaceWidth
+        implicitHeight: Math.max(1, root.surfaceHeight)
 
         // An xdg_popup dismisses itself on an outside click, and that write
         // drops the binding on `visible` — so the state has to follow the
-        // window, not the other way round. A mid-switch dismissal lands here
-        // too, which is why the pending module is dropped as well.
+        // window, not the other way round. A morph that is still running lands
+        // here too, so its outgoing panel is dropped with the rest.
         onVisibleChanged: if (!visible) {
             root.panelModule = null
-            root.pendingModule = null
+            root.outgoingModule = null
             root.closing = false
         }
 
@@ -280,10 +289,24 @@ Item {
             Keys.onEscapePressed: root.close()
 
             width: root.openWidth
+            // Morph only: opening and closing keep their slide and their
+            // instant size, since the surface is not resized per frame.
+            Behavior on width {
+                enabled: root.outgoingModule !== null
+                NumberAnimation { duration: Tokyo.flyoutDuration; easing.type: Easing.OutCubic }
+            }
             // Never 0: closing nulls panelModule, the loader drops its item and
             // this binding collapses in the same commit — a 0-height xdg_popup
             // buffer is a Wayland protocol error and kills the process.
-            height: Math.max(1, panelLoader.item ? panelLoader.item.implicitHeight : 0)
+            height: Math.max(1, root.panelHeight)
+            Behavior on height {
+                enabled: root.outgoingModule !== null
+                NumberAnimation { duration: Tokyo.flyoutDuration; easing.type: Easing.OutCubic }
+            }
+            // The surface holds the larger of the two panels while morphing, so
+            // the card is centred in it rather than left-aligned (the popup is
+            // centred under the capsule).
+            x: (root.surfaceWidth - width) / 2
             // Drawer: the popup surface is already this tall, so the whole card
             // slides down from behind the capsule, and back up on close.
             // Animating the surface's own height instead resizes it mid-map and
@@ -302,11 +325,19 @@ Item {
             color: Tokyo.islandFill
             clip: true
 
+            // Fades out under the incoming panel while the card morphs.
+            Loader {
+                id: outgoingLoader
+                sourceComponent: root.outgoingModule ? root.outgoingModule.panel : null
+                opacity: 1 - root.morphProgress
+            }
+
             Loader {
                 id: panelLoader
                 sourceComponent: root.panelModule ? root.panelModule.panel : null
-                // Rides the slide, so the fade in and out mirror each other.
-                opacity: card.reveal
+                // Rides the slide; during a morph the slide is already at 1 and
+                // the crossfade takes over.
+                opacity: card.reveal * (root.outgoingModule !== null ? root.morphProgress : 1)
             }
         }
     }
