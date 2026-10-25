@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # apply.sh — restore one theme from this repo into $HOME.
 # Reverse of backup.sh: the theme folder is the source, $HOME is the target.
-# Usage: ./apply.sh [theme]   (defaults to "tokyonight-moon")
+# Usage: ./apply.sh [theme]   (defaults to "tokyonight")
 # Run this on a fresh install after cloning the repo.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-THEME="${1:-tokyonight-moon}"
+THEME="${1:-tokyonight}"
 
 # shellcheck source=components.sh
 source "$REPO/components.sh"

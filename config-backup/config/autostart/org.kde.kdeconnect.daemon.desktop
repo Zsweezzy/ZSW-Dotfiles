@@ -1,5 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=KDE Connect
-Exec=/usr/bin/kdeconnectd
-Hidden=true
