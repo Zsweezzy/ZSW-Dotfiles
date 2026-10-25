@@ -1,0 +1,302 @@
+[
+    {
+        "data": [
+            {
+                "abmLevel": 0,
+                "allowDdcCi": true,
+                "allowSdrSoftwareBrightness": false,
+                "autoBrightnessCurve": [
+                    [
+                        0,
+                        1
+                    ]
+                ],
+                "autoRotation": "InTabletMode",
+                "automaticBrightness": false,
+                "brightness": 0.79,
+                "colorPowerTradeoff": "PreferAccuracy",
+                "colorProfileSource": "EDID",
+                "connectorName": "DP-1",
+                "detectedDdcCi": true,
+                "edidHash": "72d342032d64a89b3eabd6f6d17e5d70",
+                "edidIdentifier": "GBT 10240 16843009 18 2023 0",
+                "edrPolicy": "always",
+                "hdrColorProfileSource": "EDID",
+                "hdrIccProfilePath": "",
+                "highDynamicRange": false,
+                "iccProfilePath": "",
+                "maxBitsPerColor": 0,
+                "mode": {
+                    "cvt": {
+                        "clock": 1288580,
+                        "flags": 5,
+                        "hdisplay": 3840,
+                        "hskew": 0,
+                        "hsyncEnd": 3920,
+                        "hsyncStart": 3888,
+                        "htotal": 4020,
+                        "vdisplay": 2160,
+                        "vscan": 0,
+                        "vsyncEnd": 2168,
+                        "vsyncStart": 2163,
+                        "vtotal": 2226
+                    },
+                    "flags": 0
+                },
+                "overscan": 0,
+                "rgbRange": "Full",
+                "scale": 2,
+                "sdrBrightness": 455,
+                "sdrGamutWideness": 0,
+                "sharpness": 0,
+                "transform": "Normal",
+                "uuid": "e7456753-3c37-4c9e-9655-78a09d35bf18",
+                "vrrPolicy": "Never",
+                "wideColorGamut": false
+            },
+            {
+                "abmLevel": 0,
+                "allowDdcCi": true,
+                "allowSdrSoftwareBrightness": false,
+                "autoBrightnessCurve": [
+                    [
+                        0,
+                        1
+                    ]
+                ],
+                "autoRotation": "InTabletMode",
+                "automaticBrightness": false,
+                "brightness": 0.85,
+                "colorPowerTradeoff": "PreferAccuracy",
+                "colorProfileSource": "EDID",
+                "connectorName": "DP-2",
+                "detectedDdcCi": true,
+                "edidHash": "34792cba411da1b553ecf736434abd86",
+                "edidIdentifier": "AOC 45577 2976 33 2023 0",
+                "edrPolicy": "always",
+                "hdrColorProfileSource": "EDID",
+                "hdrIccProfilePath": "",
+                "highDynamicRange": false,
+                "iccProfilePath": "",
+                "mode": {
+                    "flags": 0,
+                    "height": 1080,
+                    "refreshRate": 240002,
+                    "width": 1920
+                },
+                "overscan": 0,
+                "rgbRange": "Full",
+                "scale": 1,
+                "sdrBrightness": 200,
+                "sdrGamutWideness": 0,
+                "sharpness": 0,
+                "transform": "Normal",
+                "uuid": "bd318bfb-da40-4e06-8842-95ac5350ccee",
+                "vrrPolicy": "Never",
+                "wideColorGamut": false
+            },
+            {
+                "abmLevel": 0,
+                "allowDdcCi": true,
+                "allowSdrSoftwareBrightness": false,
+                "autoBrightnessCurve": [
+                    [
+                        0,
+                        1
+                    ]
+                ],
+                "autoRotation": "InTabletMode",
+                "automaticBrightness": false,
+                "brightness": 1,
+                "colorPowerTradeoff": "PreferEfficiency",
+                "colorProfileSource": "sRGB",
+                "connectorName": "HDMI-A-1",
+                "detectedDdcCi": true,
+                "edidHash": "fc82c82201b9e9616e038faf3712cdc2",
+                "edidIdentifier": "VSC 59968 806914184 25 2024 0",
+                "edrPolicy": "always",
+                "hdrColorProfileSource": "EDID",
+                "hdrIccProfilePath": "",
+                "highDynamicRange": false,
+                "iccProfilePath": "",
+                "mode": {
+                    "flags": 0,
+                    "height": 1080,
+                    "refreshRate": 100076,
+                    "width": 1920
+                },
+                "overscan": 0,
+                "rgbRange": "Full",
+                "scale": 1,
+                "sdrBrightness": 200,
+                "sdrGamutWideness": 0,
+                "sharpness": 0,
+                "transform": "Normal",
+                "uuid": "f8ec3954-3fcf-427d-a04e-8393ef577d11",
+                "vrrPolicy": "Never",
+                "wideColorGamut": false
+            }
+        ],
+        "name": "outputs"
+    },
+    {
+        "data": [
+            {
+                "lidClosed": false,
+                "outputs": [
+                    {
+                        "enabled": true,
+                        "outputIndex": 0,
+                        "position": {
+                            "x": 1920,
+                            "y": 0
+                        },
+                        "priority": 1,
+                        "replicationSource": ""
+                    },
+                    {
+                        "enabled": true,
+                        "outputIndex": 1,
+                        "position": {
+                            "x": 3840,
+                            "y": 0
+                        },
+                        "priority": 2,
+                        "replicationSource": ""
+                    },
+                    {
+                        "enabled": true,
+                        "outputIndex": 2,
+                        "position": {
+                            "x": 0,
+                            "y": 0
+                        },
+                        "priority": 3,
+                        "replicationSource": ""
+                    }
+                ]
+            },
+            {
+                "lidClosed": false,
+                "outputs": [
+                    {
+                        "enabled": true,
+                        "outputIndex": 1,
+                        "position": {
+                            "x": 0,
+                            "y": 0
+                        },
+                        "priority": 1,
+                        "replicationSource": ""
+                    },
+                    {
+                        "enabled": true,
+                        "outputIndex": 2,
+                        "position": {
+                            "x": 2195,
+                            "y": 0
+                        },
+                        "priority": 2,
+                        "replicationSource": ""
+                    }
+                ]
+            },
+            {
+                "lidClosed": false,
+                "outputs": [
+                    {
+                        "enabled": true,
+                        "outputIndex": 2,
+                        "position": {
+                            "x": 0,
+                            "y": 0
+                        },
+                        "priority": 1,
+                        "replicationSource": ""
+                    }
+                ]
+            },
+            {
+                "lidClosed": false,
+                "outputs": [
+                    {
+                        "enabled": true,
+                        "outputIndex": 2,
+                        "position": {
+                            "x": 0,
+                            "y": 0
+                        },
+                        "priority": 1,
+                        "replicationSource": ""
+                    },
+                    {
+                        "enabled": true,
+                        "outputIndex": 0,
+                        "position": {
+                            "x": 2195,
+                            "y": 0
+                        },
+                        "priority": 2,
+                        "replicationSource": ""
+                    }
+                ]
+            },
+            {
+                "lidClosed": false,
+                "outputs": [
+                    {
+                        "enabled": true,
+                        "outputIndex": 0,
+                        "position": {
+                            "x": 0,
+                            "y": 0
+                        },
+                        "priority": 1,
+                        "replicationSource": ""
+                    },
+                    {
+                        "enabled": true,
+                        "outputIndex": 1,
+                        "position": {
+                            "x": 2195,
+                            "y": 0
+                        },
+                        "priority": 2,
+                        "replicationSource": ""
+                    }
+                ]
+            },
+            {
+                "lidClosed": false,
+                "outputs": [
+                    {
+                        "enabled": true,
+                        "outputIndex": 1,
+                        "position": {
+                            "x": 0,
+                            "y": 0
+                        },
+                        "priority": 0,
+                        "replicationSource": ""
+                    }
+                ]
+            },
+            {
+                "lidClosed": false,
+                "outputs": [
+                    {
+                        "enabled": true,
+                        "outputIndex": 0,
+                        "position": {
+                            "x": 0,
+                            "y": 0
+                        },
+                        "priority": 0,
+                        "replicationSource": ""
+                    }
+                ]
+            }
+        ],
+        "name": "setups"
+    }
+]

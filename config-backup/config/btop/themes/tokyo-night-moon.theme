@@ -1,0 +1,81 @@
+# Theme: tokyo-night-moon
+# Based on the "moon" variant of folke/tokyonight.nvim palette
+
+# Main bg
+theme[main_bg]="#222436"
+
+# Main text color
+theme[main_fg]="#c8d3f5"
+
+# Title color for boxes
+theme[title]="#c8d3f5"
+
+# Highlight color for keyboard shortcuts
+theme[hi_fg]="#86e1fc"
+
+# Background color of selected item in processes box
+theme[selected_bg]="#2f334d"
+
+# Foreground color of selected item in processes box
+theme[selected_fg]="#c8d3f5"
+
+# Color of inactive/disabled text
+theme[inactive_fg]="#636da6"
+
+# Misc colors for processes box including mini cpu graphs, details memory graph and details status text
+theme[proc_misc]="#86e1fc"
+
+# Cpu box outline color
+theme[cpu_box]="#545c7e"
+
+# Memory/disks box outline color
+theme[mem_box]="#545c7e"
+
+# Net up/down box outline color
+theme[net_box]="#545c7e"
+
+# Processes box outline color
+theme[proc_box]="#545c7e"
+
+# Box divider line and small boxes line color
+theme[div_line]="#3b4261"
+
+# Temperature graph colors
+theme[temp_start]="#4fd6be"
+theme[temp_mid]="#ffc777"
+theme[temp_end]="#ff757f"
+
+# CPU graph colors
+theme[cpu_start]="#82aaff"
+theme[cpu_mid]="#c099ff"
+theme[cpu_end]="#ff757f"
+
+# Mem/Disk free meter
+theme[free_start]="#4fd6be"
+theme[free_mid]="#82aaff"
+theme[free_end]="#c8d3f5"
+
+# Mem/Disk cached meter
+theme[cached_start]="#0db9d7"
+theme[cached_mid]="#86e1fc"
+theme[cached_end]="#82aaff"
+
+# Mem/Disk available meter
+theme[available_start]="#4fd6be"
+theme[available_mid]="#86e1fc"
+theme[available_end]="#82aaff"
+
+# Mem/Disk used meter
+theme[used_start]="#c3e88d"
+theme[used_mid]="#ffc777"
+theme[used_end]="#ff757f"
+
+# Download graph colors
+theme[download_start]="#82aaff"
+theme[download_mid]="#86e1fc"
+theme[download_end]="#4fd6be"
+
+# Upload graph colors
+theme[upload_start]="#fca7ea"
+theme[upload_mid]="#c099ff"
+theme[upload_end]="#82aaff"

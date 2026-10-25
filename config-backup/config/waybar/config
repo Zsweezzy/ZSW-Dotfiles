@@ -1,0 +1,132 @@
+// Waybar config — Tokyo Night Moon theme
+// Layout: desktops | cava | apps || uptime | date | time || wifi | ethernet | audio | gpu | cpu | ram | updates | tray
+// Nerd font glyphs (JetBrainsMono Nerd Font):
+//   wifi \uf1eb  ethernet \uef44  vol-low \uf027  vol-up \uf028  mute \uf026
+//   microchip \uf2db (cpu)  chip \ue266 (gpu)  memory \uefc5 (ram)  download \uf019 (updates)
+
+{
+    "layer": "top",
+    "position": "top",
+    "height": 34,
+    "spacing": 6,
+
+    "modules-left": ["hyprland/workspaces", "custom/cava", "custom/openapps"],
+    "modules-center": ["custom/uptime", "clock#date", "clock"],
+    "modules-right": ["custom/wifi", "custom/ethernet", "pulseaudio", "custom/gpu", "cpu", "memory", "custom/updates", "tray"],
+
+    // Virtual desktop counter: pill numbers for each workspace (per monitor)
+    "hyprland/workspaces": {
+        "format": "{id}",
+        "sort-by-number": true,
+        "on-click": "activate"
+    },
+
+    // Date
+    "clock#date": {
+        "format": "{:%d.%m.%Y}",
+        "interval": 60,
+        "tooltip": false
+    },
+
+    // Time with seconds
+    "clock": {
+        "format": "{:%H:%M:%S}",
+        "format-alt": "{:%a %d.%m.%Y %H:%M}",
+        "tooltip-format": "{:%A, %d. %B %Y}",
+        "interval": 1
+    },
+
+    // Uptime since boot — compact text, sits left of the date
+    "custom/uptime": {
+        "exec": "$HOME/.config/waybar/uptime.sh",
+        "interval": 30,
+        "tooltip": false,
+        "format": "{text}"
+    },
+
+    // Wifi: shows "wifi" (or the SSID after clicking); hover shows SSID/IP/DNS/mask/MAC
+    "custom/wifi": {
+        "exec": "$HOME/.config/waybar/wifi.sh",
+        "return-type": "json",
+        "interval": 60,
+        "signal": 8,
+        "format": "{text}",
+        "on-click": "$HOME/.config/waybar/wifi-toggle.sh"
+    },
+
+    // Ethernet (enp14s0): shows "ethernet"; hover shows IP/DNS/mask/MAC
+    "custom/ethernet": {
+        "exec": "$HOME/.config/waybar/ethernet.sh",
+        "return-type": "json",
+        "interval": 60,
+        "signal": 8,
+        "format": "{text}"
+    },
+
+    // Audio visualizer (cava) — continuous stream, no interval!
+    "custom/cava": {
+        "exec": "$HOME/.config/waybar/cava.sh",
+        "format": "{text}",
+        "tooltip": false,
+        "restart-interval": 3
+    },
+
+    // Open applications (glyph pills) — hyprctl-driven dedupe, sits right next to cava.
+    // Hover lists each app's window titles; click cycles focus to the next app.
+    "custom/openapps": {
+        "exec": "$HOME/.config/waybar/openapps.sh",
+        "return-type": "json",
+        "interval": 5,
+        "signal": 8,
+        "format": "{text}",
+        "on-click": "$HOME/.config/waybar/openapps-focus.sh",
+        "on-click-middle": "$HOME/.config/waybar/openapps-focus.sh prev",
+        "on-click-right": "$HOME/.config/waybar/openapps-focus.sh prev"
+    },
+
+    // Audio (pipewire via pulseaudio compat) — click toggles the popup panel
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-muted": "\uf026 {volume}%",
+        "format-icons": ["\uf027", "\uf027", "\uf028"],
+        "on-click": "$HOME/.config/waybar/audio-popup.py",
+        "on-click-right": "$HOME/.config/waybar/audio-popup.py",
+        "on-click-middle": "$HOME/.config/waybar/audio-popup.py"
+    },
+
+    // GPU usage (AMD sysfs via script)
+    "custom/gpu": {
+        "exec": "$HOME/.config/waybar/gpu.sh",
+        "interval": 2,
+        "format": "\ue266{text}",
+        "tooltip-format": "GPU: {text}"
+    },
+
+    // CPU usage
+    "cpu": {
+        "format": "\uf2db {usage}%",
+        "interval": 2
+    },
+
+    // RAM used/total, e.g. \uefc5 8/24 GB
+    "memory": {
+        "format": "\uefc5 {used:0.0f}/{total:0.0f} GB",
+        "interval": 2
+    },
+
+    // CachyOS pending updates — hover lists them; click opens the update in kitty
+    "custom/updates": {
+        "exec": "$HOME/.config/waybar/cachy-updates.sh",
+        "return-type": "json",
+        "interval": 600,
+        "signal": 9,
+        "format": "{text}",
+        "on-click": "kitty --title 'CachyOS update' -e bash -lc 'yay -Syu; read -rp \"Press Enter to close\"'",
+        "on-click-middle": "pkill -RTMIN+9 -x waybar"
+    },
+
+    // System tray (StatusNotifier)
+    "tray": {
+        "spacing": 10
+    }
+}

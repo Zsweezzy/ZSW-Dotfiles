@@ -1,0 +1,134 @@
+{ config, pkgs, ... }:
+{
+  home.username = "maxii";
+  home.homeDirectory = "/home/maxii";
+  home.stateVersion = "24.05";
+
+  home.packages = with pkgs; [
+    bat
+    eza
+    fd
+    fzf
+    ripgrep
+    jq
+    yq-go
+    zoxide
+    atuin
+    starship
+    direnv
+    gh
+    git
+    lazygit
+    gitui
+    bottom
+    btop
+    dust
+    procs
+    htop
+    fastfetch
+    hyfetch
+    tree
+    wget
+    curl
+    unzip
+    p7zip
+    zip
+    tmux
+    zellij
+    zsh
+    fish
+    nushell
+    bash-completion
+    neovim
+    helix
+    micro
+    nodejs
+    bun
+    python3
+    uv
+    pipx
+    rustup
+    go
+    clang
+    cmake
+    pkg-config
+    ninja
+    meson
+    just
+    gnumake
+    shellcheck
+    shfmt
+    nixfmt
+    alejandra
+    taplo
+    stylua
+    biome
+    prettier
+    sd
+    tokei
+    hyperfine
+    tealdeer
+    glow
+    cht-sh
+    doggo
+    xh
+    httpie
+    delta
+    difftastic
+    rsync
+    openssl
+    age
+    sops
+    gnupg
+    pinentry-curses
+    pciutils
+    usbutils
+    lsof
+    killall
+    ncdu
+    dua
+    # GUI/GL apps intentionally NOT here: Nix-built GL binaries cannot
+    # initialize EGL against the system drivers on non-NixOS (verified:
+    # `eglinfo` from nixpkgs fails with eglInitialize failed). GUI apps stay
+    # on pacman/flatpak, where they use the system Mesa/AMD driver stack.
+    yt-dlp
+    ffmpeg-full
+    ffmpegthumbnailer
+    imagemagick
+    yazi
+    duf
+    cbonsai
+    cmatrix
+    glances
+    hwinfo
+    strace
+    pv
+    less
+    nano
+    playerctl
+    brightnessctl
+    wl-clipboard
+    cliphist
+    grim
+    slurp
+    poppler-utils
+    tesseract
+    lshw
+    dmidecode
+    file
+    which
+    wdiff
+    colordiff
+    icdiff
+  ];
+
+  programs.home-manager.enable = true;
+  programs.direnv.enable = true;
+  programs.direnv.nix-direnv.enable = true;
+  programs.atuin.enable = true;
+  programs.zoxide.enable = true;
+  programs.starship.enable = true;
+  programs.fzf.enable = true;
+  programs.bat.enable = true;
+  programs.eza.enable = true;
+}

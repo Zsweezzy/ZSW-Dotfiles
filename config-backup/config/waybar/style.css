@@ -1,0 +1,127 @@
+/* Waybar — Tokyo Night Moon theme
+ * Palette: https://github.com/folke/tokyonight.nvim (moon variant)
+ *   bg_dark       #16161e
+ *   bg            #1e2030
+ *   bg_highlight  #2f334d
+ *   fg            #c8d3f5
+ *   blue          #82aaff
+ *   cyan          #86e1fc
+ *   green         #9ece6a
+ *   yellow        #e0af68
+ *   magenta       #bb9af7
+ */
+
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "JetBrains Mono Nerd Font", "CaskaydiaCove Nerd Font",
+                 "Noto Sans", "Noto Sans CJK SC", sans-serif;
+    font-size: 13px;
+    min-height: 0;
+}
+
+window#waybar {
+    background-color: rgba(30, 32, 48, 0.9);      /* bg #1e2030 */
+    color: #c8d3f5;                                /* fg */
+    border-radius: 0 0 10px 10px;
+    border-bottom: 2px solid rgb(47, 51, 77);      /* bg_highlight */
+}
+
+window#waybar.empty #window {
+    background-color: transparent;
+}
+
+/* ---------- modules ---------- */
+
+#workspaces {
+    margin-left: 6px;
+}
+
+#workspaces button {
+    background-color: rgba(47, 51, 77, 0.9);       /* bg_highlight */
+    color: #c8d3f5;
+    border-radius: 8px;
+    padding: 0 10px;
+    margin: 4px 3px;
+    transition: all 0.15s ease-out;
+}
+
+#workspaces button:hover {
+    background-color: rgb(47, 51, 77);             /* bg_highlight solid */
+    color: #86e1fc;                                /* cyan */
+}
+
+#workspaces button.active {
+    background-color: rgba(130, 170, 255, 0.2);    /* blue tint */
+    color: #82aaff;                                /* blue */
+    border-bottom: 2px solid #82aaff;
+}
+
+#taskbar button {
+    background-color: rgba(47, 51, 77, 0.9);       /* bg_highlight */
+    color: #c8d3f5;
+    border-radius: 8px;
+    padding: 0 8px;
+    margin: 4px 3px;
+    transition: all 0.15s ease-out;
+}
+
+#taskbar button:hover {
+    background-color: rgb(47, 51, 77);             /* bg_highlight solid */
+    color: #86e1fc;                                /* cyan */
+}
+
+#taskbar button.active {
+    background-color: rgba(130, 170, 255, 0.2);    /* blue tint */
+    color: #82aaff;                                /* blue */
+    border-bottom: 2px solid #82aaff;
+}
+
+#clock,
+#clock.date,
+#cpu,
+#custom-wifi,
+#custom-ethernet,
+#pulseaudio,
+#custom-gpu,
+#custom-cava,
+#custom-updates,
+#custom-openapps,
+#custom-uptime,
+#memory {
+    background-color: rgba(47, 51, 77, 0.9);       /* bg_highlight */
+    border-radius: 8px;
+    padding: 0 12px;
+    margin: 4px 3px;
+}
+
+#clock.date      { color: #e0af68; }               /* yellow — date */
+#clock           { color: #c8d3f5; letter-spacing: 1px; }  /* fg — time */
+#cpu             { color: #86e1fc; }               /* cyan */
+#custom-wifi    { color: #86e1fc; }               /* cyan */
+#custom-ethernet{ color: #82aaff; }               /* blue */
+#pulseaudio      { color: #bb9af7; }               /* magenta */
+#custom-gpu      { color: #9d7cd8; }               /* purple */
+#custom-cava     { color: #86e1fc; }               /* cyan — visualizer bars */
+#custom-updates  { color: #e0af68; }               /* yellow — updates pending */
+#custom-updates.zero { color: #9ece6a; }           /* green — up to date */
+#custom-openapps { color: #d6a6c8; }               /* soft pink — open apps */
+#custom-uptime   { color: #2ac3de; }               /* teal */
+#memory          { color: #9ece6a; }               /* green */
+
+#tray {
+    background-color: transparent;
+    margin: 4px 3px;
+    padding: 0 6px;
+}
+
+tooltip {
+    background-color: #16161e;                     /* bg_dark */
+    border: 1px solid #2f334d;
+    border-radius: 8px;
+    color: #c8d3f5;
+}
+
+tooltip label {
+    color: #c8d3f5;
+}

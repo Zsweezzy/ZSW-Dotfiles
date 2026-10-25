@@ -1,0 +1,78 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
+  "blocks": [
+    {
+      "alignment": "left",
+      "segments": [
+        {
+          "background": "#3B4252",
+          "foreground": "#ECEFF4",
+          "leading_diamond": "",
+          "style": "diamond",
+          "template": "{{ .UserName }} ",
+          "type": "session"
+        },
+        {
+          "background": "#81A1C1",
+          "foreground": "#2E3440",
+          "powerline_symbol": "",
+          "options": {
+            "style": "folder"
+          },
+          "style": "powerline",
+          "template": " {{ .Path }} ",
+          "type": "path"
+        },
+        {
+          "background": "#A3BE8C",
+          "foreground": "#2E3440",
+          "powerline_symbol": "",
+          "options": {
+            "branch_icon": ""
+          },
+          "style": "powerline",
+          "template": "  ({{ .UpstreamIcon }}{{ .HEAD }}{{ if gt .StashCount 0 }}  {{ .StashCount }}{{ end }}) ",
+          "type": "git"
+        },
+        {
+          "background": "#88C0D0",
+          "foreground": "#2E3440",
+          "powerline_symbol": "",
+          "style": "powerline",
+          "template": "  {{ if .PackageManagerIcon }}{{ .PackageManagerIcon }} {{ end }}{{ .Full }} ",
+          "type": "node"
+        },
+        {
+          "background": "#5E81AC",
+          "foreground": "#ECEFF4",
+          "options": {
+            "time_format": "15:04"
+          },
+          "style": "diamond",
+          "template": " ♥ {{ .CurrentDate | date .Format }} ",
+          "trailing_diamond": "",
+          "type": "time"
+        }
+      ],
+      "type": "prompt"
+    },
+    {
+      "alignment": "left",
+      "segments": [
+        {
+          "background": "#EBCB8B",
+          "foreground": "#2E3440",
+          "invert_powerline": true,
+          "leading_diamond": "",
+          "style": "diamond",
+          "template": "  {{.Profile}}{{if .Region}}@{{.Region}}{{end}}",
+          "trailing_diamond": "",
+          "type": "aws"
+        }
+      ],
+      "type": "rprompt"
+    }
+  ],
+  "final_space": true,
+  "version": 4
+}

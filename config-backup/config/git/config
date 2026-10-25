@@ -1,0 +1,24 @@
+[credential "https://gist.github.com"]
+	helper = "!/usr/bin/gh auth git-credential"
+
+[credential "https://github.com"]
+	helper = "!/usr/bin/gh auth git-credential"
+
+[gpg]
+	format = "openpgp"
+
+[gpg "openpgp"]
+	program = "/usr/bin/gpg"
+
+[init]
+	defaultBranch = "main"
+
+[pull]
+	rebase = false
+
+[push]
+	autoSetupRemote = true
+
+[user]
+	email = "zsweezzy@users.noreply.github.com"
+	name = "Maxii"

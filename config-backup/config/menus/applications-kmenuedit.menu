@@ -1,0 +1,32 @@
+<!DOCTYPE Menu PUBLIC '-//freedesktop//DTD Menu 1.0//EN' 'http://www.freedesktop.org/standards/menu-spec/menu-1.0.dtd'>
+<Menu>
+ <Menu>
+  <Name>Internet</Name>
+  <Exclude>
+   <Filename>ferdium.desktop</Filename>
+  </Exclude>
+  <Layout>
+   <Merge type="menus"/>
+   <Menuname>More</Menuname>
+   <Menuname>Terminal</Menuname>
+   <Merge type="files"/>
+   <Filename>nordvpn-gui.desktop</Filename>
+   <Filename>apollo.desktop</Filename>
+   <Filename>bssh.desktop</Filename>
+   <Filename>bvnc.desktop</Filename>
+   <Filename>com.discordapp.Discord.desktop</Filename>
+   <Filename>firefox.desktop</Filename>
+   <Filename>org.kde.kdeconnect.app.desktop</Filename>
+   <Filename>org.kde.kdeconnect.sms.desktop</Filename>
+   <Filename>com.rustdesk.RustDesk.desktop</Filename>
+   <Filename>steam.desktop</Filename>
+   <Filename>dev.vencord.Vesktop.desktop</Filename>
+  </Layout>
+ </Menu>
+ <Menu>
+  <Name>.hidden</Name>
+  <Include>
+   <Filename>ferdium.desktop</Filename>
+  </Include>
+ </Menu>
+</Menu>

@@ -1,0 +1,21 @@
+[Install]
+WantedBy=graphical-session.target
+WantedBy=default.target
+
+[Service]
+ExecStart=%h/.local/bin/shadowclip gui
+PassEnvironment=WAYLAND_DISPLAY
+PassEnvironment=DISPLAY
+PassEnvironment=XDG_RUNTIME_DIR
+PassEnvironment=DBUS_SESSION_BUS_ADDRESS
+PassEnvironment=XDG_SESSION_TYPE
+PassEnvironment=XDG_CURRENT_DESKTOP
+Restart=on-failure
+RestartSec=3
+Type=simple
+
+[Unit]
+After=graphical-session.target
+Description=shadowclip game clip recorder
+StartLimitBurst=3
+StartLimitIntervalSec=60

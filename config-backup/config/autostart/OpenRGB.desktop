@@ -1,0 +1,9 @@
+[Desktop Entry]
+Categories=Utility;
+Comment=OpenRGB 1.1
+Icon=OpenRGB
+Name=OpenRGB
+StartupNotify=true
+Terminal=false
+Type=Application
+Exec=/usr/bin/openrgb --startminimized --server --server-host 0.0.0.0 --server-port 6742 --client localhost:6742

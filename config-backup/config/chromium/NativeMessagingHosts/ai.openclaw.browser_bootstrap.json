@@ -1,0 +1,11 @@
+{
+  "name": "ai.openclaw.browser_bootstrap",
+  "description": "OpenClaw browser extension bootstrap",
+  "path": "/home/maxii/.openclaw/browser/native-messaging/ai.openclaw.browser_bootstrap.bf561bdb02b5dab7.027e51ce381c266a3f4bab64da00c7997ab3c70c8c7ca8dda7dda3f72a93be3c.sh",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://adcmfkifjlhgdlmlekhgfidpfdgnbigo/",
+    "chrome-extension://bjicokbobcbjdammbamjabddbgfkofjf/",
+    "chrome-extension://kcdjddhmeafeomebliikmbpblkmkfoig/"
+  ]
+}

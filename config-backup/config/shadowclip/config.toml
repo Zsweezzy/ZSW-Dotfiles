@@ -1,0 +1,55 @@
+[recording]
+buffer_duration = 60
+start_buffer = true
+clip_duration = 60
+fps = 60
+display = "DP-1"
+resolution = ""
+encoder = "auto"
+color_depth = "8"
+quality = "very_high"
+bitrate_mode = "auto"
+container = "mp4"
+replay_storage = "auto"
+capture_audio = true
+capture_microphone = true
+audio_tracks = [
+    "default_output|default_input",
+    "app-inverse:Firefox",
+    "app-inverse:Spotify",
+]
+low_power = false
+gsr_args = ""
+
+[hotkeys]
+clip = "KEY_F9"
+record = "KEY_F8"
+screenshot = "KEY_F10"
+clip_short = ""
+clip_short_duration = 60
+disable_while_focused = []
+
+[output]
+directory = "/home/maxii/Videos/Vice"
+image_directory = "/home/maxii/Pictures/Vice"
+filename_format = "vice%Y%m%d_%H%M%S"
+
+[notifications]
+enabled = true
+sound = true
+sound_file = ""
+
+[theme]
+panel = "#1e2030e6"
+border = "#485172"
+hilite = "#82aaff33"
+text = "#c8d3f5"
+dim = "#7983a4"
+live = "#f7768e"
+armed = "#9ece6a"
+idle = "#565f89"
+sunken = "#16161e"
+
+[ui]
+start_hidden = true
+tui = true

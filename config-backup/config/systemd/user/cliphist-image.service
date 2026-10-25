@@ -1,0 +1,12 @@
+[Install]
+WantedBy=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/wl-paste --type image --watch /usr/bin/cliphist store
+PassEnvironment=WAYLAND_DISPLAY
+PassEnvironment=XDG_RUNTIME_DIR
+Restart=always
+
+[Unit]
+Description=cliphist: watch image clipboard
+PartOf=graphical-session.target

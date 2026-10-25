@@ -1,0 +1,12 @@
+[ExtractDialog]
+3 screens: Window-Maximized=true
+
+[Extraction]
+openDestinationFolderAfterExtraction=true
+
+[General]
+LockSidebar=true
+ShowSidebar=true
+
+[MainWindow]
+StatusBar=Disabled

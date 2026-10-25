@@ -1,0 +1,17 @@
+[Daemon]
+Autolock=false
+LockGrace=60
+Timeout=0
+
+[Greeter]
+WallpaperPlugin=de.korvexx.ascii_wallpaper
+
+[Greeter][Wallpaper][de.korvexx.ascii_wallpaper][Options]
+Grayscale=true
+
+[Greeter][Wallpaper][de.korvexx.ascii_wallpaper][Wallpaper]
+Images=/home/maxii/Pictures/mpv-shot0001.jpg
+
+[Greeter][Wallpaper][org.kde.image][General]
+Image=/home/maxii/games/Bilder/Wallpaper/a_street_lights_at_night_01.jpg
+PreviewImage=/home/maxii/games/Bilder/Wallpaper/a_street_lights_at_night_01.jpg

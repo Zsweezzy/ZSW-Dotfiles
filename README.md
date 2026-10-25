@@ -1,6 +1,6 @@
-# dotfiles
+# ZSW-Dotfiles
 
-Theme configs and one-off tweaks for my Arch/KDE setup.
+Theme configs and one-off tweaks for Zsweezzy's Arch/KDE setup.
 
 ## Layout
 
@@ -53,6 +53,10 @@ uses `workspace/` for `~/.spicetify` and `config/` for `~/.config/spicetify`.
 theme folder (via the mapping above), then commits & pushes. `rsync
 --delete` keeps the repo mirror exact. Default theme is `bwzs`.
 
+`./apply.sh [theme]` is the reverse: it copies one theme folder back into
+`$HOME` (default `tokyonight-moon`). Use it on a fresh install. Both scripts
+read the same mapping from `components.sh`.
+
 ## Tweaks
 
 One-off tweaks live in `tweaks/<name>/`, each documented in
@@ -65,12 +69,30 @@ One-off tweaks live in `tweaks/<name>/`, each documented in
 - Nothing sensitive is tracked here; KDE session/activity/wallet state is
   deliberately excluded from the sync pairs.
 
+## Merged repositories
+
+Formerly separate repos, merged with their full git history intact
+(each source `main` is a second parent of its import commit):
+
+| Folder | Source repo | Contents |
+|---|---|---|
+| `config-backup/` | Zsweezzy/config-backup | Full `config/`, `home/`, `nix/` backup mirror + `backup.sh` |
+| `tokyonight-moon-dotfiles/` | Zsweezzy/tokyonight-moon-dotfiles | Live hyprland/quickshell/rofi mirrors for the tokyonight-moon theme |
+| `system/` | Zsweezzy/system | System tuning docs (numbered `*.md`) + `scripts/` |
+
+## Related repos
+
+| Repo | Contents |
+|---|---|
+| `Zsweezzy/ZSW-Quickshell` | Live Quickshell configs (`Tokyonight lite`, `Tokyonight full`, `theme-picker`) |
+| `Zsweezzy/cachyos-rebuild` | Packages, `/etc`, theme engine and machine-specific setup |
+
 ## For AI agents and contributors
 
 - Config files keep their comments exactly as the app expects them — a `#`
   line in a config is often semantic (a documented key), never strip it.
   Zero-comment files stay zero-comment; `backup.sh` resyncs from `$HOME`
   with `rsync --delete`, so hand edits here are proposals, not truth.
-- The sync direction is one-way (`$HOME` → repo). If you change a file here
-  on purpose, run `./backup.sh` on the live machine so the mirror and the
-  config agree again.
+- The sync direction is one-way (`$HOME` → repo) for `backup.sh`; `apply.sh`
+  goes the other way on purpose. If you change a file here on purpose, run
+  `./backup.sh` on the live machine so the mirror and the config agree again.

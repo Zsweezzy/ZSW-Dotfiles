@@ -1,0 +1,85 @@
+// PhoneAudio.qml — quickshell shim for phone-audio.
+//
+// Polls `phone-audio status --json` once per second through the CLI binary
+// (PATH must include ~/.local/bin) and exposes the parsed state as properties
+// a bar panel can bind to. Outgoing actions go through the CLI as well, so the
+// shim duplicates none of the core logic.
+//
+//     PhoneAudio.summary      "Maxii · on · 65%"
+//     PhoneAudio.available    is a bluetooth phone present
+//     PhoneAudio.on           is the loopback running
+//     PhoneAudio.phone        selected phone display name
+//     PhoneAudio.profile      active bluez profile
+//     PhoneAudio.volume       volume 0-100 (-1 when unknown)
+//     PhoneAudio.reason       human note when something needs attention
+//     PhoneAudio.toggle()     flip the routing on/off
+//     PhoneAudio.setVolume(v) set volume to v (0-100)
+
+pragma Singleton
+import QtQuick
+import Quickshell
+import Quickshell.Io
+
+Singleton {
+    id: root
+
+    readonly property bool available: root._json.available === true
+    readonly property bool on: root._json.on === true
+    readonly property string phone: (root._json.phone && root._json.phone.name) || ""
+    readonly property string profile: root._json.profile || ""
+    readonly property int volume: typeof root._json.volume === "number"
+        ? Math.round(root._json.volume) : -1
+    readonly property string reason: root._json.reason || ""
+    readonly property string summary: {
+        if (!root.available) return "no phone"
+        var text = root.phone + " · " + (root.on ? "on" : "off")
+        if (root.volume >= 0) text += " · " + root.volume + "%"
+        if (root.reason) text += " (" + root.reason + ")"
+        return text
+    }
+    property var _json: ({})
+
+    // Run the CLI query once per second.
+    Timer {
+        interval: 1000
+        running: true
+        repeat: true
+        onTriggered: root.refresh()
+    }
+
+    Process {
+        id: query
+        command: ["phone-audio", "status", "--json"]
+        stdout: StdioCollector {
+            id: collector
+        }
+        onExited: {
+            var text = collector.text.trim()
+            try { root._json = JSON.parse(text) } catch (err) { root._json = {} }
+        }
+    }
+
+    Process {
+        id: action
+        command: ["phone-audio", "toggle"]
+        stdinEnabled: false
+    }
+
+    // Volume moves arrive faster than the CLI can spawn processes, so a move
+    // that lands while one is in flight is dropped rather than queued. The
+    // 1s status poll reflects the last applied value, so the next poll picks
+    // up where the slider ended even if an intermediate move was skipped.
+    Process {
+        id: actionVolume
+        command: ["phone-audio", "volume", "0"]
+        stdinEnabled: false
+    }
+
+    function refresh() { if (!query.running) query.running = true }
+    function toggle() { if (!action.running) action.running = true }
+    function setVolume(value: real): void {
+        if (actionVolume.running) return
+        actionVolume.command = ["phone-audio", "volume", String(Math.round(value))]
+        actionVolume.running = true
+    }
+}
