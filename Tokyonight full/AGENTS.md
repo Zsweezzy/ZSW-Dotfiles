@@ -1,19 +1,11 @@
-# tokyonight quickshell config
+# Tokyonight full quickshell config
 
-The live config. `quickshell -c tokyonight` loads this directory.
+The live config. `quickshell -c "ZSW-Quickshell/Tokyonight full"` loads this directory.
 
 ## Edit here. Nowhere else.
 
-There is a second copy of these files at
-`~/projects/tokyonight-moon-dotfiles/quickshell/.config/quickshell/tokyonight/`.
-It is a **read-only snapshot** for a public dotfiles repo, stale since 28 Sep.
-Quickshell never loads it and nothing syncs it. Editing it changes nothing on
-screen and the work is invisible until someone remembers to re-sync.
-
-Do not edit the mirror. Do not "helpfully" apply the same change to both.
-
-This directory is its own git repo — commit here. The mirror has its own,
-separate history and is the user's to re-sync.
+This folder is part of the `ZSW-Quickshell` repo — commit from the repo root.
+`../Tokyonight lite/` is the default session bar and a separate config.
 
 ## Prove the reload
 
@@ -25,7 +17,7 @@ Only the log tells you what happened.
 Run it right after saving a `.qml`. Exit 0 = loaded, exit 1 = it broke.
 It prints only the last reload attempt, so it cannot be fooled by history.
 
-Do **not** verify with `quickshell -c tokyonight log | grep "Configuration
+Do **not** verify with `quickshell -c "ZSW-Quickshell/Tokyonight full" log | grep "Configuration
 Loaded"`. That command replays the whole journal since the instance started —
 it currently contains 25 reloads going back hours. Grepping it matches a stale
 line and reports success for an edit that never loaded.
@@ -36,7 +28,7 @@ the file watcher is dead from a bare `touch`.
 ## Other trees
 
 - `~/.config/hypr/` — a separate Hyprland config, and it has **no git**.
-- `~/projects/tokyonight-moon-dotfiles/` — the mirror repo. Read-only here.
+- `../Tokyonight lite/` — the other bar variant in this repo.
 
 ## Conventions
 

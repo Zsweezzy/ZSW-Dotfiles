@@ -6,5 +6,5 @@ __pycache__/
 *.pyc
 
 # OpenCode local planning state; lives on disk, not in git
-/.opencode/
-/.cocoindex_code/
+.opencode/
+.cocoindex_code/

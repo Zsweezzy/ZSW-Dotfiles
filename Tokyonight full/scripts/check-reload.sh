@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Did my .qml edit actually load? Prints ONLY the last reload attempt.
 #
-# Why this exists: `quickshell -c tokyonight log` replays the WHOLE journal
+# Why this exists: `quickshell -c "ZSW-Quickshell/Tokyonight full" log` replays the WHOLE journal
 # since the instance started. Grepping it for "Configuration Loaded" matches
 # stale lines from hours ago and fakes a successful reload. A failed reload
 # leaves the OLD bar on screen, so the screen never tells you either.
@@ -125,6 +125,6 @@ newest_file=$(find "$CFG" -name '*.qml' -printf '%T@ %p\n' 2>/dev/null | sort -r
 if [ -n "$loaded" ] && [ -n "$newest" ] && [ "$newest" -gt "$loaded" ]; then
     echo "check-reload: last load $(date -d "@$loaded" '+%T'), but ${newest_file#$CFG/} changed at $(date -d "@$newest" '+%T')." >&2
     echo "check-reload: the watcher never saw your save — the bar is running stale config." >&2
-    echo "check-reload: restart it with 'quickshell -c tokyonight kill && quickshell -c tokyonight'" >&2
+    echo "check-reload: restart it with quickshell -c \"ZSW-Quickshell/Tokyonight full\" kill && quickshell -c \"ZSW-Quickshell/Tokyonight full\"" >&2
     exit 1
 fi

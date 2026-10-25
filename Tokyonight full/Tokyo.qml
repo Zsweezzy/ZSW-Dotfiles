@@ -156,7 +156,7 @@ Singleton {
 
     // ---------- script locations ----------
     /// scripts live with the config now (self-contained bar; waybar pkg removed)
-    readonly property string scriptDir: Quickshell.env("HOME") + "/.config/quickshell/tokyonight/scripts"
+    readonly property string scriptDir: Quickshell.env("HOME") + "/.config/quickshell/ZSW-Quickshell/Tokyonight full/scripts"
 }
 
 

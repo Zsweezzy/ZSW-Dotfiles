@@ -1,5 +1,5 @@
 // shell.qml — Tokyo Night Moon bar for Quickshell.
-// Launch with:  quickshell -c tokyonight
+// Launch with:  quickshell -c "ZSW-Quickshell/Tokyonight full"
 //@ pragma UseQApplication
 import QtQuick
 import Quickshell
