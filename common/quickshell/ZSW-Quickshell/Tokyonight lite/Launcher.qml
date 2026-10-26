@@ -24,8 +24,9 @@ PanelWindow {
     signal dismissed()
     property string query: ""
     property int index: 0
-    /// Filled on the first open: scanning every .desktop file is startup work
-    /// a launcher that is never opened should not pay. One of these windows
+    /// Filled on every open: scanning every .desktop file is startup work a
+    /// launcher that is never opened should not pay, and a snapshot taken only
+    /// once hides apps installed after the first open. One of these windows
     /// exists per monitor.
     property var apps: []
     /// Width the bar's capsule is drawing right now (see shell.qml). The card
@@ -56,7 +57,7 @@ PanelWindow {
     onOpenChanged: {
         if (!root.open) return;
         // Every open starts clean, like the fresh process this replaced.
-        if (root.apps.length === 0) root.apps = DesktopEntries.applications.values;
+        root.apps = DesktopEntries.applications.values;
         root.query = "";
         root.index = 0;
         Qt.callLater(() => bodyLoader.item?.focusInput());
