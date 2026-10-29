@@ -129,6 +129,9 @@ check "the audio card lists running streams" AudioCard.qml 'n.isStream && n.isSi
 # popup anchored to it) must live there to stay usable over a game.
 check "the bar renders over exclusive fullscreen" Bar.qml \
       'WlrLayershell.layer: WlrLayer.Overlay'
+# The prompt card joins the capsule's bottom edge: the bar's shadow is clipped
+# there, or it darkens the card's top and breaks the join.
+check "capsule shadow stops at the prompt seam" Island.qml 'clip: root.polkitOpen'
 # Nothing on the bar opens on hover: the audio card is a click/Super+A surface
 # like every other card.
 absent "the audio pill does not open on hover" Island.qml 'HoverHandler'

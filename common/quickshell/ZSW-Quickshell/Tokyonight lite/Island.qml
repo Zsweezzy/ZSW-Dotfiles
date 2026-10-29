@@ -201,12 +201,29 @@ Item {
         easing.type: Easing.OutExpo
     }
 
-    RectangularShadow {
-        anchors.fill: capsule
-        radius: capsule.radius
-        blur: Tokyo.shadowBlur
-        offset: Qt.vector2d(0, Tokyo.shadowOffsetY)
-        color: Tokyo.shadowColor
+    // The prompt card joins the capsule's bottom edge, so while it is up the
+    // capsule's shadow has to stop at that edge: this window stacks over the
+    // prompt's, and the 12px of shadow below the capsule would otherwise
+    // darken the card's top and break the join. The prompt draws the rest of
+    // the shadow along the card.
+    Item {
+        x: capsule.x - Tokyo.shadowPad
+        y: capsule.y - Tokyo.shadowPad
+        width: capsule.width + Tokyo.shadowPad * 2
+        height: capsule.height + Tokyo.shadowPad
+                + (root.polkitOpen ? 0 : Tokyo.shadowBlur + Tokyo.shadowOffsetY)
+        clip: root.polkitOpen
+
+        RectangularShadow {
+            x: Tokyo.shadowPad
+            y: Tokyo.shadowPad
+            width: capsule.width
+            height: capsule.height
+            radius: capsule.radius
+            blur: Tokyo.shadowBlur
+            offset: Qt.vector2d(0, Tokyo.shadowOffsetY)
+            color: Tokyo.shadowColor
+        }
     }
 
     Rectangle {
