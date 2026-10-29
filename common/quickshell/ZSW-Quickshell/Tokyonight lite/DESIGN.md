@@ -41,7 +41,6 @@ color: "#1e2030"         // no — now two sources of truth for one pixel
 | `paneEdge` | a pane's own outline |
 | `hairline` | a rule *inside* a pane |
 | `panelFill` | the clock morph's shape |
-| `panelHover` | hover on `panelFill` |
 
 **Never invert the pair.** A `bg` card on a `pane`, or a `bg`-darker fill on a
 lighter surface, reads as a near-black hole punched through the widget. Both
@@ -69,10 +68,10 @@ labels), not a surface.
 | `islandPanelRadius` | 22 | the panel that grows under the capsule |
 | `boxFill` | bg_highlight @ 35% | one step up from `islandFill`: the two boxes inside the control centre. A hover row inside a box uses `panelFill`. |
 
-Workspaces inside the capsule are dots (6px, widening on hover) except the
-active one, which is a `blue` numbered pill (22×16, radius 8, 10px bold
-`islandFill` text). At capsule size a row of numbers is unreadable; the dots
-still say how many workspaces there are.
+Workspaces inside the capsule are dots (6px) except the active one, which is a
+`blue` numbered pill (22×16, radius 8, 10px bold `islandFill` text). At capsule
+size a row of numbers is unreadable; the dots still say how many workspaces
+there are.
 
 The app launcher (`Launcher.qml`, Super+R) is a layer surface in the bar's own
 process, not an island popup: an xdg_popup of the bar's layer surface never gets
@@ -113,7 +112,7 @@ reader identifies the stat by colour before they read the label.
 | `barHeight` | 34 | |
 | `edgeGap` | 6 | matches Hyprland `gaps_out`, so pills sit as far from the screen edge as windows do |
 | `fontSize` | 13 | base body size |
-| `flyoutWidth` | 1100 | moonsettings' flyout. `Bar.qml`'s top-edge hover strip is this wide and centred, so the pointer is inside the panel the moment it opens |
+| `flyoutWidth` | 1100 | the old moonsettings flyout's width; nothing in this tree reads it any more |
 | `panelPadH` / `panelPadV` | 16 | every island flyout card; applied by `Panel.qml` and, for the boxes inside one, `Box.qml` |
 | `panelGap` | 12 | row gap inside a flyout |
 | `islandGap` | 14 | gap between the pills inside the capsule |
@@ -122,8 +121,12 @@ reader identifies the stat by colour before they read the label.
 
 ## Adding an island function
 
-The lite island has **one** flyout: `QuickPanel`. Every pill in the capsule
-opens it, so a new bar function goes into the card, not into a new panel:
+The lite island has **one** card: `QuickPanel`. Every control in the capsule
+opens it, so a new bar function goes into the card, not into a new panel.
+Two surfaces are deliberately outside it: the notification centre (`Bell` opens
+`NotificationsPanel`) and the audio side panel (`AudioFlyout`, hung off the
+capsule's left edge, opened by the volume pill or Super+A). Both are surfaces
+of their own because they hold per-row controls, not a status card.
 
 - a control (a row, a slider, a button) is written inline in `QuickPanel.qml`;
 - a section that already exists as a `Panel` is embedded with
@@ -171,7 +174,6 @@ body; 14px+ only for the clock. `letterSpacing` 1.2–1.5 on small caps labels.
 | **SysFlyout** | **8 / 8** |
 | Toast | 10 / 8 |
 | TrayMenu | 10 / 8 |
-| Tooltip | 20 / 14 |
 
 `padH`/`padV` are declared per file, not shared. The user has asked for the Sys
 card to read as tight as their Hyprland windows (`border_size = 2`). **If you
@@ -217,6 +219,26 @@ an offscreen probe can make it report success about a throwaway. Confirm
 against the live bar's own instance when in doubt, and scan from the
 `Reloading configuration...` line to **EOF** — warnings raised *during* a load
 land between those two lines and a clean-looking check will miss them.
+
+---
+
+## Keyboard
+
+Nothing here reacts to the pointer passing over it: no hover colours, no
+hover-opened cards, no tooltips. A control answers to keyboard focus and to a
+press.
+
+Every control opts in with `activeFocusOnTab: true` and a `function activate()`;
+`FocusRing {}` draws the ring. `Panel.qml` owns navigation: Tab/Shift+Tab and
+the arrows step the focus chain, Enter/Space call `activate()`, Escape closes
+the surface. A panel only has to put its click handler in `activate()`.
+
+`Super+Tab`, `Super+N` and `Super+A` open the control centre, the notification
+centre and the audio side panel through IPC. A keybind carries no pointer
+serial, so an xdg popup opened that way cannot take a keyboard grab — asking for
+one makes it fail to map at all. `Island.qml` opens such popups without the grab,
+keeps the bar's `WlrLayershell.keyboardFocus` Exclusive while one is up, and
+forwards the keys to `Panel.handleKey()`.
 
 ---
 

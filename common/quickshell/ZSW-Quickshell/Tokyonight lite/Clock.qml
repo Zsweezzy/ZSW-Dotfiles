@@ -20,7 +20,6 @@ Module {
         anchors.centerIn: parent
         width: face.contentW
         height: Tokyo.pillHeight
-        hovered: root.hovered
         now: root.now
     }
 }

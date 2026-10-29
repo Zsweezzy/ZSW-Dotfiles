@@ -5,17 +5,13 @@ Item {
     id: root
 
     property string text: ""
-    property string tooltip: ""
     property color fg: Tokyo.fg
     property color bg: Tokyo.pillBg
 
     property var fragments: []
 
-    property bool hoverStyle: false
-    property color hoverBg: Tokyo.bgHighlight
-    property color hoverFg: Tokyo.cyan
     /// Inside the island: no pill fill and no shadow, because the capsule
-    /// already is the pill. Hovering still recolours the text.
+    /// already is the pill.
     property bool flat: false
 
     /// Flyout this module opens, or null. Island.qml instantiates it and sizes
@@ -26,27 +22,16 @@ Item {
 
     property real letterSpacing: 0.2
 
-    property bool hovered: false
-
-    readonly property bool lit: hovered
-
     signal clicked(int button)
 
     signal wheelTick(int yDelta)
-    signal hoverChanged(bool hovering)
 
     implicitHeight: Tokyo.pillHeight
     implicitWidth: (root.fragments.length > 0 ? fragRow.implicitWidth : label.implicitWidth)
                    + hPad * 2
 
-    property color color: (root.hoverStyle && root.lit) ? root.hoverBg : root.bg
-    Behavior on color {
-        ColorAnimation { duration: 150; easing.type: Easing.OutQuad }
-    }
-
-    // Press feedback: the pill dips and darkens under the pointer, so a click
-    // lands visibly before the flyout slides out. Short, because the flyout
-    // itself now opens in 130 ms.
+    // Press feedback: the pill dips under the pointer, so a click lands
+    // visibly before the flyout slides out.
     scale: mouse.pressed ? 0.94 : 1
     Behavior on scale {
         NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
@@ -66,7 +51,7 @@ Item {
         anchors.fill: parent
         radius: Tokyo.pillRadius
         color: root.flat ? "transparent"
-                          : (mouse.pressed ? Qt.darker(root.color, 1.45) : root.color)
+                          : (mouse.pressed ? Qt.darker(root.bg, 1.45) : root.bg)
     }
 
     Text {
@@ -74,11 +59,8 @@ Item {
         anchors.centerIn: parent
         visible: root.fragments.length === 0
         text: root.text
-        color: (hoverStyle && lit) ? root.hoverFg : root.fg
+        color: root.fg
         font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize; letterSpacing: root.letterSpacing }
-        Behavior on color {
-            ColorAnimation { duration: 150; easing.type: Easing.OutQuad }
-        }
     }
 
     Row {
@@ -92,8 +74,7 @@ Item {
 
                 visible: modelData.visible !== false
                 text: modelData.text ?? ""
-                color: (root.hoverStyle && root.lit) ? root.hoverFg
-                                                     : (modelData.color ?? root.fg)
+                color: modelData.color ?? root.fg
                 font { family: Tokyo.fontFamily; pixelSize: Tokyo.fontSize; letterSpacing: root.letterSpacing }
             }
         }
@@ -102,31 +83,8 @@ Item {
     MouseArea {
         id: mouse
         anchors.fill: parent
-        hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-
-        onEntered: {
-            root.hovered = true
-            root.hoverChanged(true)
-        }
-        onExited: {
-            root.hovered = false
-            root.hoverChanged(false)
-        }
         onClicked: m => root.clicked(m.button)
         onWheel: w => root.wheelTick(w.angleDelta.y)
-    }
-
-    property var tooltipHost: null
-    onHoverChanged: hovering => {
-        if (tooltipHost === null) return
-        if (hovering && root.tooltip !== "") tooltipHost.showFor(root, root.tooltip)
-        else tooltipHost.hide()
-    }
-
-    onTooltipChanged: {
-        if (!lit || tooltipHost === null || root.tooltip === "")
-            return
-        tooltipHost.showFor(root, root.tooltip)
     }
 }

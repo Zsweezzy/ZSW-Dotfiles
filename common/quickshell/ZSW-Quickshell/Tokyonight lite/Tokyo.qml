@@ -17,7 +17,7 @@ Singleton {
     readonly property color panelFill: ThemeColors.panelFill
     readonly property color paneEdge: ThemeColors.paneEdge
     /// One step up from the flyout card: the two boxes inside the control
-    /// centre sit lighter than islandFill, but darker than a hover row.
+    /// centre sit lighter than islandFill, but darker than the panel itself.
     readonly property color boxFill: Qt.rgba(ThemeColors.bgHighlight.r, ThemeColors.bgHighlight.g, ThemeColors.bgHighlight.b, 0.35)
     /// "dimmed", for secondary text
     readonly property color dim: ThemeColors.dim
@@ -90,11 +90,9 @@ Singleton {
     readonly property real pillGap: 6 + moduleMarginH * 2
     readonly property real edgeGap: 6
     readonly property real barShiftV: 2
-    // moonsettings' flyout width (FLYOUT_W in its src/app.rs). Bar.qml's
-    // top-edge hover strip is this wide and centred so the pointer is over the
-    // panel the instant it opens; a strip as wide as the bar would open it from
-    // a point the panel does not cover, and its leave-to-dismiss rule then fires
-    // with the pointer never having been inside.
+    // moonsettings' flyout width (FLYOUT_W in its src/app.rs). Nothing in this
+    // tree reads it any more: the flyout opens from a click or a keybind, not
+    // from a pointer sitting over the bar.
     readonly property real flyoutWidth: 1100
 
     readonly property string fontFamily: "JetBrains Mono Nerd Font"

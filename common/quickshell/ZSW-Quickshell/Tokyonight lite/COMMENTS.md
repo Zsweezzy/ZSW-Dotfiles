@@ -213,18 +213,11 @@ This file is the design rationale for AI: read it before editing.
 // Geometry matches waybar: radius 8, vertical margin 4px inside a 34px bar
 // (so 26px tall), horizontal padding 0 12px, gap between pills 12px
 // (3px module margins + 6px bar spacing, GTK box semantics).
-//
-// Hover behavior is opt-in via `hoverStyle` because waybar only defines
-// hover rules for #workspaces (and #taskbar) buttons — the generic pill
-// modules like #clock/#cpu stay visually unchanged on hover.
     // ---------- content ----------
-// shown in the shared Tooltip popup on hover
     /// Coloured spans in a row, instead of `text`: a list of { text, color }.
     /// For a pill standing for more than one stat, where each of them keeps the
     /// accent it had as a pill of its own (Sys.qml: gpu purple, cpu cyan, ram
     /// green). One label and one `fg` cannot say that.
-    // opt-in hover styling (waybar #workspaces / #taskbar buttons)
-    // when false the module ignores hover entirely (e.g. the tray counter)
     /// extra letter spacing on the label (waybar `letter-spacing`).
     /// Default 0.2: Pango rounds each glyph advance to an integer pixel at 1x
     /// (JetBrains Mono: 7.8 -> 8.0) while Qt lays out the exact 7.8px, leaving
@@ -273,21 +266,6 @@ This file is the design rationale for AI: read it before editing.
     /// emitted with the script's stdout (last read line) on every run
     // Quote each argument for sh, then append a settle delay so the final
     // bytes of the script's output drain into the pipe before exit.
-```
-
-## `Tooltip.qml`
-
-```qml
-// Tooltip.qml — hover tooltip popup styled like the waybar `tooltip` CSS rule.
-//
-//   tooltip { background-color: #16161e; border: 1px solid #2f334d;
-//             border-radius: 8px; color: #c8d3f5; }
-//
-// One instance per bar (created in Bar.qml); every module shares it through
-// `tooltipHost`. Anchored below the hovered module via PopupAnchor.item.
-// The 6px gap is transparent padding at the popup's top — avoids QML Margins
-// struct assignment issues.
-    /// anchor below the given item and show the tooltip
 ```
 
 ## `Focus.qml`

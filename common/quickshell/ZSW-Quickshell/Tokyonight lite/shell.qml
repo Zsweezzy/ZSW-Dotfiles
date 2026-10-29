@@ -42,7 +42,14 @@ ShellRoot {
         // Super+Tab: the same flyout the capsule's pills open, on the focused
         // monitor. The bar owns the per-monitor islands, so it routes it.
         function toggleFlyout(): void {
-            bar.toggleFlyout()
+            bar.toggleFlyout(true)
+        }
+        // Super+N / Super+A: the other two surfaces a pointer can open.
+        function toggleNotifications(): void {
+            bar.toggleNotifications(true)
+        }
+        function toggleAudio(): void {
+            bar.toggleAudio(true)
         }
         function toggleThemePicker(): void {
             pickerProcess.running = !pickerProcess.running

@@ -72,16 +72,28 @@ Panel {
         }
 
         MouseArea {
+            id: volumeArea
             anchors.fill: parent
-            onPressed: m => applyVolume(m.x)
+            activeFocusOnTab: true
+            onPressed: m => {
+                forceActiveFocus()
+                applyVolume(m.x)
+            }
             onPositionChanged: m => {
                 if (pressed) applyVolume(m.x)
             }
+            Keys.onLeftPressed: step(-0.05)
+            Keys.onRightPressed: step(0.05)
             function applyVolume(x) {
                 if (!root.sink || !root.sink.audio) return
                 root.sink.audio.volume =
                     Math.max(0, Math.min(1, x / slider.width))
             }
+            function step(delta) {
+                if (!root.sink || !root.sink.audio) return
+                root.sink.audio.volume = Math.max(0, Math.min(1, root.volume + delta))
+            }
+            FocusRing {}
         }
     }
 
@@ -108,10 +120,13 @@ Panel {
 
             MouseArea {
                 anchors.fill: parent
-                onClicked: {
+                activeFocusOnTab: true
+                function activate() {
                     if (root.sink && root.sink.audio)
                         root.sink.audio.muted = !root.muted
                 }
+                onClicked: activate()
+                FocusRing {}
             }
         }
 

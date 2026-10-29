@@ -1,4 +1,4 @@
-// ToastRow.qml — one notification in the transient stack.
+// ToastRow.qml — one notification in the transient stack. 
 //
 // Flat layout: absolute x/y with widths derived from the card's own width, and
 // the card's height derived from the text column's implicitHeight. A nested
@@ -129,7 +129,7 @@ Item {
             anchors { right: parent.right; rightMargin: 4; top: parent.top; topMargin: 4 }
             width: 20; height: 20
             radius: 5
-            color: dHover.containsMouse ? Tokyo.bgHighlight : "transparent"
+            color: "transparent"
 
             Text {
                 anchors.centerIn: parent
@@ -138,9 +138,7 @@ Item {
                 font { family: Tokyo.fontFamily; pixelSize: 12 }
             }
             MouseArea {
-                id: dHover
                 anchors.fill: parent
-                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.leave(true)
             }
@@ -192,3 +190,4 @@ Item {
         function onClosed() { root.leave(false) }
     }
 }
+

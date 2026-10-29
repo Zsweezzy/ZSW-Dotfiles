@@ -31,5 +31,4 @@ Module {
     visible: root.player !== null && root.title !== ""
     fg: Tokyo.magenta
     text: "\uf04b " + root.label
-    tooltip: root.player ? root.player.identity + " — " + root.title : ""
 }

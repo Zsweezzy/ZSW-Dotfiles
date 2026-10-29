@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Wayland
 
 Variants {
     id: barRoot
@@ -15,11 +16,16 @@ Variants {
     /// in another window and rescales with it.
     property real capsuleWidth: Tokyo.launcherWidth
 
-    /// Super+Tab: open the flyout on the focused monitor, exactly as its pills
-    /// do. shell.qml's IpcHandler is the street door; each monitor has its own
-    /// island, so the signal is answered only by the focused one.
-    signal toggleFlyoutRequested
-    function toggleFlyout() { toggleFlyoutRequested() }
+    /// Super+Tab / Super+N / Super+A: open the flyout on the focused monitor,
+    /// exactly as its pills do. shell.qml's IpcHandler is the street door;
+    /// each monitor has its own island, so the signal is answered only by the
+    /// focused one.
+    signal toggleFlyoutRequested(bool byKeyboard)
+    signal toggleNotificationsRequested(bool byKeyboard)
+    signal toggleAudioRequested(bool byKeyboard)
+    function toggleFlyout(byKeyboard) { toggleFlyoutRequested(byKeyboard) }
+    function toggleNotifications(byKeyboard) { toggleNotificationsRequested(byKeyboard) }
+    function toggleAudio(byKeyboard) { toggleAudioRequested(byKeyboard) }
 
     PanelWindow {
         id: win
@@ -30,13 +36,15 @@ Variants {
         implicitHeight: Tokyo.barHeight + Tokyo.shadowPad
         exclusiveZone: Tokyo.barHeight
         color: "transparent"
-
-        Tooltip { id: tip }
+        // An xdg_popup can only be typed into while its parent surface holds
+        // the keyboard. The bar takes it only while a flyout is mapped, so
+        // returning to the last window is automatic when the card closes.
+        WlrLayershell.keyboardFocus: island.keyboardActive ? WlrKeyboardFocus.Exclusive
+                                                           : WlrKeyboardFocus.None
 
         Island {
             id: island
             screen: win.screen
-            tooltipHost: tip
             // Only the monitor the flyout opens on gets a squared header.
             launcherOpen: barRoot.launcherOpen
                           && win.screen.name === Hyprland.focusedMonitor?.name
@@ -84,9 +92,17 @@ Variants {
 
         Connections {
             target: barRoot
-            function onToggleFlyoutRequested() {
+            function onToggleFlyoutRequested(byKeyboard) {
                 if (win.screen.name === Hyprland.focusedMonitor?.name)
-                    island.toggleFlyout()
+                    island.toggleFlyout(byKeyboard)
+            }
+            function onToggleNotificationsRequested(byKeyboard) {
+                if (win.screen.name === Hyprland.focusedMonitor?.name)
+                    island.toggleNotifications(byKeyboard)
+            }
+            function onToggleAudioRequested(byKeyboard) {
+                if (win.screen.name === Hyprland.focusedMonitor?.name)
+                    island.toggleAudio(byKeyboard)
             }
         }
     }

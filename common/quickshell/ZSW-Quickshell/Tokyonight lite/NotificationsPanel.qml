@@ -76,9 +76,13 @@ Panel {
                 }
                 MouseArea {
                     anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: if (root.store !== null)
-                                   root.store.dnd = !root.store.dnd
+                    anchors.margins: -6
+                    activeFocusOnTab: true
+                    function activate() {
+                        if (root.store !== null) root.store.dnd = !root.store.dnd
+                    }
+                    onClicked: activate()
+                    FocusRing {}
                 }
             }
 
@@ -93,9 +97,12 @@ Panel {
                 MouseArea {
                     anchors.fill: parent
                     anchors.margins: -6
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: if (root.store !== null)
-                                   root.store.clearAll()
+                    activeFocusOnTab: true
+                    function activate() {
+                        if (root.store !== null) root.store.clearAll()
+                    }
+                    onClicked: activate()
+                    FocusRing {}
                 }
             }
         }
@@ -151,10 +158,14 @@ Panel {
             width: list.width
             height: root.rowH - 4
             radius: Tokyo.pillRadius
-            color: rowHover.containsMouse ? Tokyo.bgHighlight : Tokyo.panelFill
+            color: Tokyo.panelFill
             border.color: Tokyo.paneEdge
             border.width: 1
-            Behavior on color { ColorAnimation { duration: 110 } }
+
+            // The row's own focus ring: the launch area is only part of the
+            // height (the action buttons take the rest), so the ring belongs to
+            // the whole card rather than to the click target.
+            FocusRing { visible: rowArea.activeFocus }
 
             NotifyIcon {
                 id: icon
@@ -235,8 +246,7 @@ Panel {
                         width: aText.implicitWidth + 12
                         height: 18
                         radius: 5
-                        color: aHover.containsMouse ? Tokyo.bgHighlight
-                                                    : Qt.rgba(0, 0, 0, 0.2)
+                        color: Qt.rgba(0, 0, 0, 0.2)
                         border.color: Tokyo.paneEdge
                         border.width: 1
 
@@ -248,15 +258,15 @@ Panel {
                             font { family: Tokyo.fontFamily; pixelSize: 9 }
                         }
                         MouseArea {
-                            id: aHover
                             anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
+                            activeFocusOnTab: true
+                            function activate() {
                                 modelData.invoke()
                                 if (root.store !== null)
                                     root.store.dismiss(entry.modelData)
                             }
+                            onClicked: activate()
+                            FocusRing {}
                         }
                     }
                 }
@@ -272,7 +282,7 @@ Panel {
                 radius: 5
                 // Always there, not on hover: a delete you have to find is a
                 // delete you do not use.
-                color: dHover.containsMouse ? Tokyo.bgHighlight : "transparent"
+                color: "transparent"
 
                 Text {
                     anchors.centerIn: parent
@@ -281,12 +291,14 @@ Panel {
                     font { family: Tokyo.fontFamily; pixelSize: 13 }
                 }
                 MouseArea {
-                    id: dHover
                     anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: if (root.store !== null)
-                                   root.store.dismiss(entry.modelData)
+                    activeFocusOnTab: true
+                    function activate() {
+                        if (root.store !== null)
+                            root.store.dismiss(entry.modelData)
+                    }
+                    onClicked: activate()
+                    FocusRing {}
                 }
             }
 
@@ -296,16 +308,16 @@ Panel {
                 && modelData.live.actions.length > 0
 
             MouseArea {
-                id: rowHover
+                id: rowArea
                 anchors {
                     left: parent.left; leftMargin: 4
                     right: acts.visible ? acts.left : dismiss.left
                     top: parent.top
                     bottom: acts.visible ? acts.top : parent.bottom
                 }
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.launch(entry.modelData)
+                activeFocusOnTab: true
+                function activate() { root.launch(entry.modelData) }
+                onClicked: activate()
             }
         }
     }

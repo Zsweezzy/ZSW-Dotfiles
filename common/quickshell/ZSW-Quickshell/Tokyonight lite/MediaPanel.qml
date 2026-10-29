@@ -115,11 +115,25 @@ Panel {
             color: Tokyo.magenta
         }
         MouseArea {
+            id: seekArea
             anchors.fill: parent
+            activeFocusOnTab: true
             onPressed: m => {
-                if (root.player && root.length > 0)
-                    root.player.position = Math.max(0, Math.min(1, m.x / width)) * root.length
+                forceActiveFocus()
+                seekTo(m.x / width)
             }
+            Keys.onLeftPressed: seekBy(-5)
+            Keys.onRightPressed: seekBy(5)
+            function seekTo(f) {
+                if (root.player && root.length > 0)
+                    root.player.position = Math.max(0, Math.min(1, f)) * root.length
+            }
+            function seekBy(seconds) {
+                if (!root.player) return
+                root.player.position = Math.max(0, Math.min(root.length,
+                                                            root.pos + seconds))
+            }
+            FocusRing {}
         }
     }
 
@@ -152,7 +166,12 @@ Panel {
             MouseArea {
                 anchors.fill: parent
                 anchors.margins: -8
-                onClicked: if (root.player && root.player.canGoPrevious) root.player.previous()
+                activeFocusOnTab: true
+                function activate() {
+                    if (root.player && root.player.canGoPrevious) root.player.previous()
+                }
+                onClicked: activate()
+                FocusRing {}
             }
         }
 
@@ -163,7 +182,13 @@ Panel {
             MouseArea {
                 anchors.fill: parent
                 anchors.margins: -8
-                onClicked: if (root.player && root.player.canTogglePlaying) root.player.togglePlaying()
+                activeFocusOnTab: true
+                function activate() {
+                    if (root.player && root.player.canTogglePlaying)
+                        root.player.togglePlaying()
+                }
+                onClicked: activate()
+                FocusRing {}
             }
         }
 
@@ -174,7 +199,12 @@ Panel {
             MouseArea {
                 anchors.fill: parent
                 anchors.margins: -8
-                onClicked: if (root.player && root.player.canGoNext) root.player.next()
+                activeFocusOnTab: true
+                function activate() {
+                    if (root.player && root.player.canGoNext) root.player.next()
+                }
+                onClicked: activate()
+                FocusRing {}
             }
         }
 

@@ -18,9 +18,12 @@ Item {
     id: root
 
     required property var screen
-    property var tooltipHost: null
     /// True on the monitor the launcher window is on, while it is mapped.
     property bool launcherOpen: false
+    onLauncherOpenChanged: if (root.launcherOpen) {
+        root.close()
+        audioFlyout.visible = false
+    }
     /// True on the monitor the theme picker is on, while it is mapped.
     property bool pickerOpen: false
     /// True on the monitor the clipboard picker is open on. The picker is an
@@ -35,15 +38,31 @@ Item {
     /// the shell-wide notification store (ShellRoot), for the bell and centre
     property var store: null
 
-    /// Hover-to-open: resting on the capsule opens the control centre. Only a
-    /// hover-opened card closes on leave, so a clicked flyout behaves as before.
-    property bool capsuleHovered: false
-    property bool cardHovered: false
-    property bool openedByHover: false
-
     /// Module whose flyout is open, or null. The module owns the panel
     /// component and the panel owns its width — see Module.qml and Panel.qml.
     property var panelModule: null
+
+    /// The audio side panel is a separate popup, so it has its own lifetime.
+    /// While either surface is mapped the bar takes the keyboard (see Bar.qml):
+    /// an xdg_popup can only receive keys while its parent surface can.
+    readonly property bool keyboardActive: popup.visible || audioFlyout.visible
+
+    /// Keys reach the island itself only when the popup could not take a grab
+    /// (opened from Super+Tab/N/A, where there is no pointer serial). The bar
+    /// then keeps the keyboard and this forwards to whichever surface is up.
+    focus: root.keyboardActive
+    Keys.onPressed: event => root.handleKey(event)
+
+    function handleKey(event) {
+        if (event.key === Qt.Key_Escape) {
+            root.close()
+            audioFlyout.visible = false
+            event.accepted = true
+            return
+        }
+        if (audioFlyout.visible) audioFlyout.handleKey(event)
+        else if (panelLoader.item) panelLoader.item.handleKey(event)
+    }
 
     /// Size of the panel that is open (or would open). The capsule is the
     /// panel's header, so it takes this width while a panel is showing.
@@ -79,25 +98,48 @@ Item {
     property real morphProgress: 1
     onMorphProgressChanged: if (morphProgress === 1) root.outgoingModule = null
 
-    function open(module) {
+    function open(module, byKeyboard) {
         closeTimer.stop()
         root.closing = false
         root.panelModule = module
+        audioFlyout.visible = false
+        // A keybind has no pointer serial, so xdg_popup cannot be grabbed:
+        // asking for the grab just makes the surface fail to map. In that mode
+        // the bar keeps the keyboard (Bar.qml) and forwards keys here.
+        popup.grabFocus = !byKeyboard
         popup.visible = true
-        Qt.callLater(() => card.forceActiveFocus())
+        Qt.callLater(() => {
+            if (panelLoader.item) panelLoader.item.focusFirst()
+            else card.forceActiveFocus()
+        })
     }
 
-    function toggle(module) {
-        root.openedByHover = false
-        if (!popup.visible) root.open(module)
+    function toggle(module, byKeyboard) {
+        if (!popup.visible) root.open(module, byKeyboard)
         else if (root.panelModule === module) root.close()
         else root.switchTo(module)
     }
 
     /// Keyboard entry point (Super+Tab through shell.qml's IpcHandler): the
     /// capsule's own flyout, the same one its pills open.
-    function toggleFlyout() {
-        root.toggle(quickPill)
+    function toggleFlyout(byKeyboard) {
+        root.toggle(quickPill, byKeyboard)
+    }
+
+    /// Super+N: the notification centre.
+    function toggleNotifications(byKeyboard) {
+        root.toggle(bell, byKeyboard)
+    }
+
+    /// Super+A and the audio pill: the advanced audio side panel. It is not an
+    /// island card — it sits beside the capsule — so opening it closes the card.
+    function toggleAudio(byKeyboard) {
+        if (audioFlyout.visible) {
+            audioFlyout.visible = false
+            return
+        }
+        root.close()
+        audioFlyout.toggleFor(capsule, byKeyboard)
     }
 
     // Same pill row, new panel: the card morphs its width/height and the two
@@ -105,7 +147,6 @@ Item {
     function switchTo(module) {
         closeTimer.stop()
         root.closing = false
-        root.openedByHover = false
         root.outgoingModule = root.panelModule
         root.morphProgress = 0
         root.panelModule = module
@@ -113,7 +154,6 @@ Item {
     }
 
     function close() {
-        root.openedByHover = false
         if (!popup.visible || root.closing) return
         root.closing = true
         closeTimer.start()
@@ -125,25 +165,6 @@ Item {
         id: closeTimer
         interval: Tokyo.flyoutDuration
         onTriggered: popup.visible = false
-    }
-
-    // Hover-opening waits out a pointer crossing the bar; leaving waits out
-    // the move from the capsule onto the card, which is a hop between windows.
-    Timer {
-        id: hoverOpenTimer
-        interval: 90
-        onTriggered: {
-            if (popup.visible || root.launcherOpen || root.pickerOpen
-                    || root.polkitOpen) return;
-            root.open(quickPill)
-            root.openedByHover = true
-        }
-    }
-    Timer {
-        id: hoverCloseTimer
-        interval: 150
-        onTriggered: if (root.openedByHover && !root.capsuleHovered
-                         && !root.cardHovered) root.close()
     }
 
     // Morph driver. Finishing at 1 is also what drops the outgoing panel and
@@ -219,7 +240,6 @@ Item {
             Clock {
                 id: clockPill
                 flat: true
-                hoverStyle: true
                 hPad: 0
                 Layout.alignment: Qt.AlignVCenter
                 onClicked: root.toggle(quickPill)
@@ -231,21 +251,19 @@ Item {
             Media {
                 id: mediaPill
                 flat: true
-                hoverStyle: true
                 hPad: 0
-                tooltipHost: root.tooltipHost
                 Layout.alignment: Qt.AlignVCenter
                 onClicked: root.toggle(quickPill)
             }
 
+            // The audio pill opens the advanced side panel, not the quick
+            // card: per-device, per-app volume and routing live there.
             Audio {
                 id: audioPill
                 flat: true
-                hoverStyle: true
                 hPad: 0
-                tooltipHost: root.tooltipHost
                 Layout.alignment: Qt.AlignVCenter
-                onClicked: root.toggle(quickPill)
+                onClicked: root.toggleAudio()
             }
 
             // Everything the bar shows shares one flyout: separate pills would
@@ -257,9 +275,7 @@ Item {
                 mediaModule: mediaPill
                 audioModule: audioPill
                 flat: true
-                hoverStyle: true
                 hPad: 0
-                tooltipHost: root.tooltipHost
                 Layout.alignment: Qt.AlignVCenter
                 onClicked: root.toggle(quickPill)
             }
@@ -279,12 +295,7 @@ Item {
                     id: bell
                     text: "󰂚"
                     flat: true
-                    hoverStyle: true
                     hPad: 0
-                    tooltip: bellHost.unread === 0 ? "No notifications"
-                             : bellHost.unread === 1 ? "1 unread notification"
-                             : bellHost.unread + " unread notifications"
-                    tooltipHost: root.tooltipHost
                     panel: Component {
                         NotificationsPanel {
                             store: root.store
@@ -320,36 +331,13 @@ Item {
         }
     }
 
-    // Hover trigger: the capsule plus the band above it up to the monitor's
-    // top edge (y = 0), so flicking the pointer at the screen border opens the
-    // flyout before it has to find the pill. Taller than this item — hover is
-    // not clipped by a parent's bounds — and it sits after the capsule, which
-    // is where the old capsule-only handler was.
-    Item {
-        id: hoverZone
-        x: capsule.x
-        y: -root.y
-        width: capsule.width
-        height: capsule.y + capsule.height + root.y
-
-        HoverHandler {
-            onHoveredChanged: {
-                root.capsuleHovered = hovered
-                if (hovered) {
-                    hoverCloseTimer.stop()
-                    hoverOpenTimer.start()
-                } else {
-                    hoverOpenTimer.stop()
-                    hoverCloseTimer.start()
-                }
-            }
-        }
-    }
-
     PopupWindow {
         id: popup
         color: "transparent"
         visible: false
+        // The card is a keyboard surface: Tab/arrows move between its controls.
+        // It only works while the bar holds the keyboard (Bar.qml).
+        grabFocus: true
         implicitWidth: root.surfaceWidth + Tokyo.flyoutShadowPad * 2
         implicitHeight: Math.max(1, root.surfaceHeight + Tokyo.flyoutShadowPad)
 
@@ -361,10 +349,6 @@ Item {
             root.panelModule = null
             root.outgoingModule = null
             root.closing = false
-            // The compositor can dismiss us without close(); hover state
-            // follows the window like everything else here.
-            root.cardHovered = false
-            root.openedByHover = false
         }
 
         Shortcut {
@@ -448,21 +432,23 @@ Item {
                 sourceComponent: root.panelModule ? root.panelModule.panel : null
                 // A panel sizes itself from the screen it is on (the control
                 // centre is half the monitor wide), so it gets the island's.
-                onLoaded: if (panelLoader.item) panelLoader.item.hostScreen = root.screen
+                onLoaded: {
+                    if (!panelLoader.item) return
+                    panelLoader.item.hostScreen = root.screen
+                    panelLoader.item.focusFirst()
+                }
                 // Rides the slide; during a morph the slide is already at 1 and
                 // the crossfade takes over.
                 opacity: card.reveal * (root.outgoingModule !== null ? root.morphProgress : 1)
             }
 
-            // Keeps a hover-opened card alive while the pointer is on it. The
-            // card is in another window, so this is not the capsule's hover.
-            HoverHandler {
-                onHoveredChanged: {
-                    root.cardHovered = hovered
-                    if (hovered) hoverCloseTimer.stop()
-                    else hoverCloseTimer.start()
-                }
-            }
         }
+    }
+
+    // The advanced audio panel, to the left of the capsule and vertically
+    // centred. A separate popup, not a second card: it is an instrument panel,
+    // not another view of the control centre.
+    AudioFlyout {
+        id: audioFlyout
     }
 }

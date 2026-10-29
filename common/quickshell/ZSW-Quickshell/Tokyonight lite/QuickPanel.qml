@@ -262,7 +262,12 @@ Panel {
                         }
                         MouseArea {
                             anchors.fill: parent
-                            onClicked: Networking.wifiEnabled = !Networking.wifiEnabled
+                            activeFocusOnTab: true
+                            function activate() {
+                                Networking.wifiEnabled = !Networking.wifiEnabled
+                            }
+                            onClicked: activate()
+                            FocusRing {}
                         }
                     }
                 }
@@ -281,9 +286,8 @@ Panel {
                             width: parent.width
                             height: 24
                             radius: 6
-                            color: hover.pressed ? Tokyo.bgHighlight
-                                   : hover.containsMouse ? Tokyo.panelFill : "transparent"
-                            scale: hover.pressed ? 0.97 : 1
+                            color: rowArea.pressed ? Tokyo.bgHighlight : "transparent"
+                            scale: rowArea.pressed ? 0.97 : 1
                             Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
 
                             Text {
@@ -305,10 +309,12 @@ Panel {
                             }
 
                             MouseArea {
-                                id: hover
+                                id: rowArea
                                 anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: root.pick(modelData)
+                                activeFocusOnTab: true
+                                function activate() { root.pick(modelData) }
+                                onClicked: activate()
+                                FocusRing {}
                             }
                         }
                     }
@@ -356,7 +362,10 @@ Panel {
                         MouseArea {
                             anchors.fill: parent
                             anchors.margins: -6
-                            onClicked: root.submitPsk()
+                            activeFocusOnTab: true
+                            function activate() { root.submitPsk() }
+                            onClicked: activate()
+                            FocusRing {}
                         }
                     }
                 }
@@ -403,7 +412,13 @@ Panel {
                         }
                         MouseArea {
                             anchors.fill: parent
-                            onClicked: if (root.btAdapter) root.btAdapter.enabled = !root.btAdapter.enabled
+                            activeFocusOnTab: true
+                            function activate() {
+                                if (root.btAdapter)
+                                    root.btAdapter.enabled = !root.btAdapter.enabled
+                            }
+                            onClicked: activate()
+                            FocusRing {}
                         }
                     }
                 }
@@ -422,9 +437,8 @@ Panel {
                             width: parent.width
                             height: 24
                             radius: 6
-                            color: hover.pressed ? Tokyo.bgHighlight
-                                   : hover.containsMouse ? Tokyo.panelFill : "transparent"
-                            scale: hover.pressed ? 0.97 : 1
+                            color: rowArea.pressed ? Tokyo.bgHighlight : "transparent"
+                            scale: rowArea.pressed ? 0.97 : 1
                             Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
 
                             Text {
@@ -445,10 +459,14 @@ Panel {
                             }
 
                             MouseArea {
-                                id: hover
+                                id: rowArea
                                 anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: modelData.connected = !modelData.connected
+                                activeFocusOnTab: true
+                                function activate() {
+                                    modelData.connected = !modelData.connected
+                                }
+                                onClicked: activate()
+                                FocusRing {}
                             }
                         }
                     }
@@ -507,9 +525,8 @@ Panel {
                             height: 28
                             radius: Tokyo.pillRadius
                             color: root.powerProfile === modelData.id ? Tokyo.activeTint
-                                   : (hover.pressed ? Tokyo.bgHighlight
-                                      : hover.containsMouse ? Tokyo.panelFill : "transparent")
-                            scale: hover.pressed ? 0.96 : 1
+                                   : (profileArea.pressed ? Tokyo.bgHighlight : "transparent")
+                            scale: profileArea.pressed ? 0.96 : 1
                             Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
                             border.width: 1
                             border.color: root.powerProfile === modelData.id ? Tokyo.blue : "transparent"
@@ -522,10 +539,12 @@ Panel {
                             }
 
                             MouseArea {
-                                id: hover
+                                id: profileArea
                                 anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: root.setProfile(modelData.id)
+                                activeFocusOnTab: true
+                                function activate() { root.setProfile(modelData.id) }
+                                onClicked: activate()
+                                FocusRing {}
                             }
                         }
                     }
@@ -553,17 +572,30 @@ Panel {
                     }
                     Item { Layout.fillWidth: true }
                     Text {
-                        text: root.updates && root.updates.count > 0
-                              ? root.updates.count + " pending" : "up to date"
+                        text: root.updates && root.updates.updating ? "upgrading…"
+                              : root.updates && root.updates.checking ? "checking…"
+                              : root.updates && root.updates.count > 0
+                                  ? root.updates.count + " pending" : "up to date"
                         color: root.updates && root.updates.count > 0 ? Tokyo.cyan : Tokyo.dim
                         font { family: Tokyo.fontFamily; pixelSize: 11; bold: true }
                     }
                 }
 
+                // Every source, not just pacman: the check button counts repos,
+                // Flatpak, AUR and AppImages, and the line is what it found.
+                Text {
+                    width: parent.width
+                    visible: root.updates !== null && root.updates.breakdown !== ""
+                    text: root.updates ? root.updates.breakdown : ""
+                    color: Tokyo.dim
+                    elide: Text.ElideRight
+                    font { family: Tokyo.fontFamily; pixelSize: 10 }
+                }
+
                 Column {
                     width: parent.width
                     spacing: 2
-                    visible: root.updates !== null && root.updates.count > 0
+                    visible: root.updates !== null && root.updates.packages.length > 0
 
                     Repeater {
                         model: root.updates ? root.updates.packages.slice(0, 4) : []
@@ -577,43 +609,83 @@ Panel {
                         }
                     }
                     Text {
-                        visible: root.updates !== null && root.updates.count > 4
-                        text: root.updates ? "+" + (root.updates.count - 4) + " more" : ""
+                        visible: root.updates !== null && root.updates.packages.length > 4
+                        text: root.updates ? "+" + (root.updates.packages.length - 4) + " more" : ""
                         color: Tokyo.dim
                         font { family: Tokyo.fontFamily; pixelSize: 10 }
                     }
                 }
 
-                Rectangle {
+                RowLayout {
                     width: parent.width
-                    height: 30
-                    radius: Tokyo.pillRadius
-                    color: root.updates && root.updates.updating ? Tokyo.bgHighlight
-                           : updatePress.pressed ? Tokyo.bgHighlight
-                           : (root.updates && root.updates.count > 0 ? Tokyo.activeTint : Tokyo.bgHighlight)
-                    scale: updatePress.pressed ? 0.98 : 1
-                    Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
+                    spacing: 6
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: root.updates && root.updates.updating ? "Updating…" : "Update all"
-                        color: root.updates && root.updates.updating ? Tokyo.dim
-                               : (root.updates && root.updates.count > 0 ? Tokyo.cyan : Tokyo.dim)
-                        font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        height: 30
+                        radius: Tokyo.pillRadius
+                        color: checkPress.pressed ? Tokyo.bgHighlight : "transparent"
+                        border.width: 1
+                        border.color: root.updates && root.updates.checking ? Tokyo.blue : Tokyo.paneEdge
+                        scale: checkPress.pressed ? 0.98 : 1
+                        Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: root.updates && root.updates.checking ? "Checking…" : "Check"
+                            color: root.updates && root.updates.checking ? Tokyo.dim : Tokyo.cyan
+                            font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
+                        }
+
+                        MouseArea {
+                            id: checkPress
+                            anchors.fill: parent
+                            activeFocusOnTab: true
+                            enabled: root.updates !== null && !root.updates.checking
+                                   && !root.updates.updating
+                            function activate() {
+                                if (root.updates) root.updates.checkAll()
+                            }
+                            onClicked: activate()
+                            FocusRing {}
+                        }
                     }
 
-                    // Also enabled with nothing pending from pacman: the button
-                    // covers Flatpak, AUR and AppImages too, and those have no
-                    // count here.
-                    MouseArea {
-                        id: updatePress
-                        anchors.fill: parent
-                        enabled: root.updates !== null && !root.updates.updating
-                        onClicked: if (root.updates) root.updates.startUpdate()
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 2
+                        height: 30
+                        radius: Tokyo.pillRadius
+                        color: root.updates && root.updates.updating ? Tokyo.bgHighlight
+                               : updatePress.pressed ? Tokyo.bgHighlight
+                               : (root.updates && root.updates.count > 0 ? Tokyo.activeTint : Tokyo.bgHighlight)
+                        scale: updatePress.pressed ? 0.98 : 1
+                        Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: root.updates && root.updates.updating ? "Updating…" : "Update all"
+                            color: root.updates && root.updates.updating ? Tokyo.dim
+                                   : (root.updates && root.updates.count > 0 ? Tokyo.cyan : Tokyo.dim)
+                            font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
+                        }
+
+                        MouseArea {
+                            id: updatePress
+                            anchors.fill: parent
+                            activeFocusOnTab: true
+                            enabled: root.updates !== null && !root.updates.updating
+                            function activate() {
+                                if (root.updates) root.updates.startUpdate()
+                            }
+                            onClicked: activate()
+                            FocusRing {}
+                        }
                     }
                 }
 
-                // One line of live pacman output, or why the run failed.
+                // One line of live output, or why a check/upgrade failed.
                 Text {
                     width: parent.width
                     visible: root.updates !== null && root.updates.status !== ""
@@ -649,10 +721,8 @@ Panel {
                             width: (parent.width - 24) / 5
                             height: 30
                             radius: Tokyo.pillRadius
-                            color: root.confirm === modelData.id ? Tokyo.red
-                                                                 : (hover.containsMouse ? Tokyo.panelFill
-                                                                                        : "transparent")
-                            scale: hover.pressed ? 0.9 : 1
+                            color: root.confirm === modelData.id ? Tokyo.red : "transparent"
+                            scale: sessionArea.pressed ? 0.9 : 1
                             Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
                             Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
@@ -665,10 +735,12 @@ Panel {
                             }
 
                             MouseArea {
-                                id: hover
+                                id: sessionArea
                                 anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: root.act(modelData.id)
+                                activeFocusOnTab: true
+                                function activate() { root.act(modelData.id) }
+                                onClicked: activate()
+                                FocusRing {}
                             }
                         }
                     }

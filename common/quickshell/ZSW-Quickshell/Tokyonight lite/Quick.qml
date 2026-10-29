@@ -43,14 +43,6 @@ Module {
         },
     ]
 
-    tooltip: {
-        const parts = []
-        if (root.wifiNetwork) parts.push(root.wifiNetwork.name)
-        if (root.btOn) parts.push("Bluetooth")
-        if (root.updates.count > 0) parts.push(root.updates.count + " updates")
-        return parts.join(" · ")
-    }
-
     /// The capsule's clock, now-playing and volume modules. The one flyout
     /// shows them, so the pills no longer open panels of their own.
     property var clockModule: null

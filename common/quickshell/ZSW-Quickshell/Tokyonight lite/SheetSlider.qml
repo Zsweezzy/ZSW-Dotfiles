@@ -56,10 +56,23 @@ Item {
     }
 
     MouseArea {
+        id: sliderArea
         anchors.fill: parent
-        onPressed: m => root.moved(Math.max(0, Math.min(1, m.x / width)))
-        onPositionChanged: m => {
-            if (pressed) root.moved(Math.max(0, Math.min(1, m.x / width)))
+        activeFocusOnTab: true
+        onPressed: m => {
+            forceActiveFocus()
+            moveTo(m.x / width)
         }
+        onPositionChanged: m => {
+            if (pressed) moveTo(m.x / width)
+        }
+        // Left/right change the value; up/down are left to the panel's focus
+        // navigation, so a slider cannot trap the keyboard.
+        Keys.onLeftPressed: moveTo(root.value - 0.02)
+        Keys.onRightPressed: moveTo(root.value + 0.02)
+        function moveTo(v) {
+            root.moved(Math.max(0, Math.min(1, v)))
+        }
+        FocusRing {}
     }
 }

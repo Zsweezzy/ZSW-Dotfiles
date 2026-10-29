@@ -100,10 +100,34 @@ check "capsule widens for the polkit prompt" Island.qml \
 check "Super+Tab toggles the flyout by IPC" shell.qml \
       'function toggleFlyout(): void {'
 check "the bar routes the flyout to the focused island" Bar.qml \
-      'function onToggleFlyoutRequested() {'
+      'function onToggleFlyoutRequested(byKeyboard) {'
+check "the bar routes Super+N to the focused island" Bar.qml \
+      'function onToggleNotificationsRequested(byKeyboard) {'
+check "the bar routes Super+A to the focused island" Bar.qml \
+      'function onToggleAudioRequested(byKeyboard) {'
 # The clipboard picker is a per-monitor layer surface like the launcher, not a
 # popup: a popup of the bar cannot hold keyboard focus.
 check "clipboard picker is per-monitor" shell.qml 'delegate: Clipboard'
+
+# The audio pill opens an instrument panel of its own, hanging off the capsule,
+# rather than a card inside it: routing and per-app streams do not fit in a
+# drawer that is sized for the control centre.
+check "the audio pill opens its side panel" Island.qml \
+      'onClicked: root.toggleAudio()'
+check "the side panel anchors to the capsule" AudioFlyout.qml 'root.anchor.item = item'
+check "the side panel lists running streams" AudioFlyout.qml 'n.isStream && n.isSink'
+
+# Hover is gone everywhere: rows react to keyboard focus and a press. A hover
+# colour is how a keyboard-only control centre rots, so it is a hard rule.
+for f in *.qml; do
+    absent "no hover in $f" "$f" 'hoverEnabled'
+done
+
+# The Check button queries every source, not only the polled repos.
+check "check queries repos" Updates.qml 'checkupdates 2>/dev/null | wc -l'
+check "check queries flatpak" Updates.qml 'flatpak remote-ls --updates'
+check "check queries the AUR" Updates.qml 'yay -Qua'
+
 
 if ! command -v quickshell >/dev/null; then
     echo "skip runtime probe (no quickshell)"
@@ -120,7 +144,9 @@ cp tests/panel-probe.qml.in "$TMP/panel-probe.qml"
 out=$(QT_QPA_PLATFORM=offscreen timeout 20 quickshell -p "$TMP/panel-probe.qml" 2>&1)
 clean=$(sed 's/\x1b\[[0-9;]*m//g' <<<"$out")
 
-for want in clock=300 audio=288 media=300 quick=720 notifications=380; do
+# AudioFlyout is a PopupWindow, so its implicit width is the 360px card plus
+# Tokyo.flyoutShadowPad on both sides for the shadow.
+for want in clock=300 audio=288 media=300 quick=720 notifications=380 audioflyout=392; do
     if grep -qE "(^|: )$want" <<<"$clean"; then
         echo "ok   ${want%%=*} panel is ${want#*=}px wide"
     else
