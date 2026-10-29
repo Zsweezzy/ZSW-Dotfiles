@@ -146,6 +146,14 @@ check "a monitor shot saves the frozen frame" Screenshot.qml \
       'crop.grabToImage(result => {'
 check "the window is mapped only for a shot" Screenshot.qml 'visible: root.open'
 check "a click is not a region" Screenshot.qml 'if (root.sw < 8 || root.sh < 8)'
+# Hyprland.monitors is an ObjectModel: indexing it yields undefined, so every
+# screen would map with no capture view and time the whole shot out.
+check "monitors come from the ObjectModel's values" Screenshot.qml \
+      'readonly property var monitors: Hyprland.monitors.values'
+# Region mode maps every screen, so the press can land on any of them: each
+# window holds every frame and can save a box that crosses outputs.
+check "a region holds every monitor's frame on every screen" Screenshot.qml \
+      'root.mode === "region" ? root.monitors'
 check "Print reaches the focused monitor" shell.qml \
       'root.screenshotScreen = Hyprland.focusedMonitor?.name ?? ""'
 # The prompt card joins the capsule's bottom edge: the bar's shadow is clipped

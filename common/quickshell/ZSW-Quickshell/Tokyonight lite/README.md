@@ -33,7 +33,7 @@ keyboard.
 | `Super+N` | open/close the notification centre |
 | `Super+A` | open/close the audio card beside the control centre |
 | `Print` | screenshot the focused monitor |
-| `Shift+Print` | screenshot a dragged region |
+| `Shift+Print` | screenshot a dragged region (can cross monitors) |
 | `Super+Print` | open the latest screenshot in qView |
 | `Tab` / `Shift+Tab` | next / previous control in an open panel |
 | arrows | same as Tab, both axes |

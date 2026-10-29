@@ -14,6 +14,9 @@ ShellRoot {
     /// and the monitor it belongs to — read once, when the key is pressed.
     property string screenshotMode: ""
     property string screenshotScreen: ""
+    /// The selection in layout pixels. Region mode maps every screen, so the
+    /// one being dragged has to tell the others what to draw.
+    property rect screenshotRect: Qt.rect(0, 0, 0, 0)
 
     Connections {
         target: Hyprland
@@ -58,6 +61,7 @@ ShellRoot {
         // Print / Shift+Print. hyprshot and grim+slurp are gone: the shell
         // grabs the frame itself (Screenshot.qml).
         function screenshot(mode: string): void {
+            root.screenshotRect = Qt.rect(0, 0, 0, 0)
             root.screenshotScreen = Hyprland.focusedMonitor?.name ?? ""
             root.screenshotMode = root.screenshotScreen === "" ? "" : mode
         }
@@ -127,14 +131,20 @@ ShellRoot {
         }
     }
 
-    // Print / Shift+Print. One overlay, on the monitor that had the keyboard
-    // when the key was pressed, like hyprshot's `-m active` was.
+    // Print / Shift+Print. Region mode maps every screen so a drag can leave
+    // the one it started on; monitor mode stays on the focused screen, like
+    // hyprshot's `-m active` was.
     Variants {
         model: Quickshell.screens
         delegate: Screenshot {
             required property ShellScreen modelData
             screen: modelData
-            mode: modelData.name === root.screenshotScreen ? root.screenshotMode : ""
+            mode: (root.screenshotMode === "region"
+                   || modelData.name === root.screenshotScreen) ? root.screenshotMode : ""
+            // Every screen draws the same selection, so a box dragged onto the
+            // next monitor still reads as one box.
+            region: root.screenshotRect
+            onRegionPicked: (x, y, w, h) => root.screenshotRect = Qt.rect(x, y, w, h)
             onDone: root.screenshotMode = ""
         }
     }

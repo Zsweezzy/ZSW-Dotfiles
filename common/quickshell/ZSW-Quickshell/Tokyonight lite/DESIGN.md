@@ -281,6 +281,14 @@ involved at all.
   close both happen.
 - **The grab follows the output scale**, so a 2x monitor saves at 3840x2160
   while the window is 1920x1080.
+- **A region maps every screen and every window holds every frame.** The frames
+  are laid out like the desk (Hyprland's geometry, bounding box as the origin),
+  so a box dragged off the screen it started on still saves as one image from
+  the window that took the press. The selection is a `rect` in layout pixels
+  shared through `shell.qml`, so the other screens draw the same box.
+- **`Hyprland.monitors` is an ObjectModel, not an array.** Indexing it yields
+  `undefined`: read `.values` or the window maps with no capture view, then
+  times the whole shot out with "no frame from the compositor".
 - **`QImage` has no `copy()` in QML.** A `result.image.copy(...)` throws inside
   the grab callback and is swallowed with no log line. Cropping is the
   `ShaderEffectSource`'s job; that item is what gets grabbed.
