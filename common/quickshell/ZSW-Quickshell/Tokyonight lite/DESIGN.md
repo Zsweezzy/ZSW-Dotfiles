@@ -222,21 +222,27 @@ land between those two lines and a clean-looking check will miss them.
 
 ## Notifications
 
-Toasts and the notification centre are swaync's, not this tree's: it holds
-`org.freedesktop.Notifications` and draws its own layer surfaces. There is no
-`NotificationServer` here to fight it for the bus. The island's bell only runs
-`swaync-client -t` and polls `-c` for the badge.
+Notifications are this shell's, like polkit: `NotificationStore.qml` declares
+the `NotificationServer` that holds `org.freedesktop.Notifications`, so there is
+no second daemon and no `swaync-client` in any pill. The store keeps a JSONL
+history (`~/.local/state/quickshell/tokyonight/notifications.json`) because the
+service only hands out live objects, and it is the history the centre reads.
 
-The styling lives in `~/.config/swaync/style.css`, which mirrors the island by
-hand (`#1a1b26`, `pillRadius`, 11/10px type). Change the toast there, not in QML.
+- **The bell** opens `NotificationsPanel` as an ordinary island flyout, and its
+  badge is `store.unread`. Opening the centre marks everything read; DND and
+  CLEAR ALL are in its header.
+- **Rows** carry the app, its icon (`scripts/notify-icons.py`), a relative
+  timestamp, and the notification's actions while the daemon still holds the
+  live object. Once it is gone the row stays, without buttons.
+- **Toasts** are one `Toast` popup per bar window, top-right, capped at four
+  rows. They are suppressed while DND is on or the centre is open, and they
+  leave the notification in the centre unless the × was pressed.
+- **Timeouts** follow swaync's numbers, not the client's `expireTimeout`:
+  normal 6s, low 5s, critical and resident until dismissed.
 
-The control centre must sit flush under the capsule: Hyprland's exclusive zone
-for the bar already places its surface at the capsule's bottom edge, so
-`control-center-margin-top` stays 0 in `~/.config/swaync/config.json`. A margin
-there pushes the panel down and opens a strip of the window behind it between
-pill and panel. Keep `control-center-width` equal to `Tokyo.notifWidth` (400)
-and `layer-shell-cover-screen` on, which is what lets the capsule widen while
-the panel is up.
+Not implemented, deliberately: swaync's grouping by app, inhibitors, scripts,
+notification-visibility rules and inline replies. Gettext-style `body-markup`
+is advertised as unsupported because the rows draw plain text.
 
 ---
 

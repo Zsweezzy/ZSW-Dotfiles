@@ -50,6 +50,19 @@ check "surface holds both panels while morphing" Island.qml \
       'readonly property real surfaceWidth: Math.max(root.openWidth,'
 check "quick module is the one that declares a panel" Quick.qml 'panel: Component {'
 check "every pill opens that flyout" Island.qml 'onClicked: root.toggle(quickPill)'
+# Notifications are this shell's daemon and this shell's centre, not swaync's:
+# the bell opens its own panel and the badge is the store's unread count.
+check "the bell opens the notification centre" Island.qml \
+      'onClicked: root.toggle(bell)'
+check "the centre is the bell's own panel" Island.qml 'panel: Component {'
+check "the badge is the store's unread count" Island.qml \
+      'readonly property int unread: root.store ? root.store.unread : 0'
+absent "the bell does not shell out to swaync" Island.qml 'swaync-client'
+check "the shell owns the notification daemon" shell.qml \
+      'NotificationStore { id: notificationStore }'
+check "the bar hands the store to its islands" Bar.qml \
+      'store: barRoot.notifications'
+check "toasts follow the store" Bar.qml 'store: barRoot.notifications'
 absent "clock has no flyout of its own" Clock.qml 'panel: Component {'
 absent "audio has no flyout of its own" Audio.qml 'panel: Component {'
 absent "media has no flyout of its own" Media.qml 'panel: Component {'
@@ -107,7 +120,7 @@ cp tests/panel-probe.qml.in "$TMP/panel-probe.qml"
 out=$(QT_QPA_PLATFORM=offscreen timeout 20 quickshell -p "$TMP/panel-probe.qml" 2>&1)
 clean=$(sed 's/\x1b\[[0-9;]*m//g' <<<"$out")
 
-for want in clock=300 audio=288 media=300 quick=720; do
+for want in clock=300 audio=288 media=300 quick=720 notifications=380; do
     if grep -qE "(^|: )$want" <<<"$clean"; then
         echo "ok   ${want%%=*} panel is ${want#*=}px wide"
     else

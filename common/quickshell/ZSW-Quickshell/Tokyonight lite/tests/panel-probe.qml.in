@@ -23,12 +23,14 @@ ShellRoot {
     Component { id: clockPanel; ClockPanel {} }
     Component { id: audioPanel; AudioPanel {} }
     Component { id: mediaPanel; MediaPanel {} }
+    Component { id: notifPanel; NotificationsPanel {} }
 
     Component.onCompleted: {
         report("clock", clockPanel.createObject(this))
         report("audio", audioPanel.createObject(this))
         report("media", mediaPanel.createObject(this))
         report("quick", quick.panel.createObject(this))
+        report("notifications", notifPanel.createObject(this))
         Qt.quit()
     }
 }

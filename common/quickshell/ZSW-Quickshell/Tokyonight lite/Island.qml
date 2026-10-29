@@ -32,12 +32,8 @@ Item {
     /// closes any flyout that was open underneath.
     property bool polkitOpen: false
     onPolkitOpenChanged: if (root.polkitOpen) root.close()
-    /// swaync's notification centre is up on this monitor. It is not this
-    /// shell's window, so the bar can only match it: the capsule widens to the
-    /// panel's width and squares off, and an open flyout closes instead of
-    /// stacking two cards in the same place.
-    property bool notifOpen: false
-    onNotifOpenChanged: if (root.notifOpen) root.close()
+    /// the shell-wide notification store (ShellRoot), for the bell and centre
+    property var store: null
 
     /// Hover-to-open: resting on the capsule opens the control centre. Only a
     /// hover-opened card closes on leave, so a clicked flyout behaves as before.
@@ -138,7 +134,7 @@ Item {
         interval: 90
         onTriggered: {
             if (popup.visible || root.launcherOpen || root.pickerOpen
-                    || root.polkitOpen || root.notifOpen) return;
+                    || root.polkitOpen) return;
             root.open(quickPill)
             root.openedByHover = true
         }
@@ -177,7 +173,6 @@ Item {
         // join the capsule's square bottom edge instead of poking out under a
         // narrow pill.
         width: root.polkitOpen ? Tokyo.polkitWidth
-               : root.notifOpen ? Tokyo.notifWidth
                : root.pickerOpen ? Tokyo.pickerWidth
                : root.launcherOpen ? Tokyo.launcherWidth
                : popup.visible ? root.openWidth
@@ -189,8 +184,7 @@ Item {
             NumberAnimation {
                 duration: root.outgoingModule !== null
                           ? Tokyo.flyoutDuration
-                          : (root.launcherOpen || root.pickerOpen || root.polkitOpen
-                             || root.notifOpen)
+                          : (root.launcherOpen || root.pickerOpen || root.polkitOpen)
                             ? Tokyo.expandDuration : Tokyo.collapseDuration
                 easing.type: Easing.OutCubic
             }
@@ -201,9 +195,9 @@ Item {
         // bottom corners square off into the card (which is at least as wide).
         // The launcher's window carries the same header shape.
         bottomLeftRadius: popup.visible || root.launcherOpen || root.pickerOpen
-                          || root.polkitOpen || root.notifOpen ? 0 : height / 2
+                          || root.polkitOpen ? 0 : height / 2
         bottomRightRadius: popup.visible || root.launcherOpen || root.pickerOpen
-                           || root.polkitOpen || root.notifOpen ? 0 : height / 2
+                           || root.polkitOpen ? 0 : height / 2
         Behavior on bottomLeftRadius {
             NumberAnimation { duration: Tokyo.collapseDuration; easing.type: Easing.OutCubic }
         }
@@ -270,13 +264,16 @@ Item {
                 onClicked: root.toggle(quickPill)
             }
 
-            // Notifications live in swaync, so the bell is a toggle for its
-            // control centre rather than a panel of our own — the count is the
-            // only state quickshell keeps.
+            // The bell is the centre's entry and the badge its unread count.
+            // Both live in this shell, so there is no second process to poll
+            // and no layer event to chase.
             Item {
+                id: bellHost
                 Layout.alignment: Qt.AlignVCenter
                 implicitWidth: bell.implicitWidth
                 implicitHeight: bell.implicitHeight
+
+                readonly property int unread: root.store ? root.store.unread : 0
 
                 Module {
                     id: bell
@@ -284,13 +281,20 @@ Item {
                     flat: true
                     hoverStyle: true
                     hPad: 0
-                    tooltip: "Notifications"
+                    tooltip: bellHost.unread === 0 ? "No notifications"
+                             : bellHost.unread === 1 ? "1 unread notification"
+                             : bellHost.unread + " unread notifications"
                     tooltipHost: root.tooltipHost
-                    onClicked: Quickshell.execDetached(["swaync-client", "-t"])
+                    panel: Component {
+                        NotificationsPanel {
+                            store: root.store
+                        }
+                    }
+                    onClicked: root.toggle(bell)
                 }
 
                 Rectangle {
-                    visible: bellCount.value > 0
+                    visible: bellHost.unread > 0
                     anchors { right: parent.right; top: parent.top
                               topMargin: -3; rightMargin: -5 }
                     width: Math.max(12, badgeText.implicitWidth + 6)
@@ -306,25 +310,10 @@ Item {
                     Text {
                         id: badgeText
                         anchors.centerIn: parent
-                        text: bellCount.value > 99 ? "99+" : String(bellCount.value)
+                        text: bellHost.unread > 99 ? "99+"
+                              : String(bellHost.unread)
                         color: Tokyo.islandFill
                         font { family: Tokyo.fontFamily; pixelSize: 8; bold: true }
-                    }
-                }
-
-                Poll {
-                    id: bellCount
-                    property int value: 0
-                    // swaync-client prints the count without a newline, and a
-                    // line parser only emits complete lines — the echo flushes it.
-                    // Only ask while swaync runs: swaync-client's D-Bus lookup
-                    // activates the daemon, so an unguarded poll would start it
-                    // two seconds after login and defeat the D-Bus activation.
-                    command: ["sh", "-c", "pgrep -x swaync >/dev/null && swaync-client -c -sw; echo"]
-                    interval: 2000
-                    onResult: line => {
-                        const n = parseInt(String(line).trim())
-                        bellCount.value = isNaN(n) ? 0 : n
                     }
                 }
             }

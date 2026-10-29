@@ -10,21 +10,17 @@ ShellRoot {
     property bool pickerOpen: false
     property bool launcherOpen: false
     property bool clipboardOpen: false
-    /// swaync's control centre is up. It is the session's notification daemon
-    /// (see Island.qml), so the bar only observes its layer surface.
-    property bool notifOpen: false
 
     Connections {
         target: Hyprland
-        // The theme picker and swaync's control centre are other processes'
-        // layer surfaces: Hyprland's own map/unmap events are the only way
-        // this shell learns they are up, and the capsule widens to match them.
+        // The theme picker is another process's layer surface: Hyprland's own
+        // map/unmap events are the only way this shell learns it is up, and the
+        // capsule widens to match it.
         function onRawEvent(event) {
             const open = event.name === "openlayer" ? true
                        : event.name === "closelayer" ? false : null;
             if (open === null) return;
             if (event.data === "quickshell-theme-picker") root.pickerOpen = open;
-            else if (event.data === "swaync-control-center") root.notifOpen = open;
         }
     }
 
@@ -66,10 +62,12 @@ ShellRoot {
             root.clipboardOpen = false;
         }
     }
-    // Notifications are swaync's: it owns org.freedesktop.Notifications and
-    // draws both the toasts and the control centre. The island only toggles
-    // its panel, so there is no NotificationServer here to fight it for the
-    // bus name.
+    // The notification daemon and the history behind the centre. One for the
+    // whole shell: `NotificationServer` claims org.freedesktop.Notifications,
+    // and a second claim from another bar window's copy would simply fail, so
+    // the server and the list it fills have to be the same object everywhere.
+    NotificationStore { id: notificationStore }
+
     // The bar first, so its layer surface sits under the launcher's.
     Bar {
         id: bar
@@ -77,7 +75,7 @@ ShellRoot {
         pickerOpen: root.pickerOpen
         clipboardOpen: root.clipboardOpen
         polkitOpen: polkitAgent.isActive
-        notifOpen: root.notifOpen
+        notifications: notificationStore
     }
 
     // One launcher surface per monitor, like the bar. A window is bound to

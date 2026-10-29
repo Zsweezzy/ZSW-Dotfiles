@@ -9,8 +9,8 @@ Variants {
     property bool pickerOpen: false
     property bool clipboardOpen: false
     property bool polkitOpen: false
-    /// swaync's control centre is up on the focused monitor.
-    property bool notifOpen: false
+    /// shared NotificationStore (shell.qml) — the daemon, history and toasts
+    property var notifications: null
     /// The focused monitor's capsule width, animated. The launcher card lives
     /// in another window and rescales with it.
     property real capsuleWidth: Tokyo.launcherWidth
@@ -46,13 +46,31 @@ Variants {
                            && win.screen.name === Hyprland.focusedMonitor?.name
             polkitOpen: barRoot.polkitOpen
                         && win.screen.name === Hyprland.focusedMonitor?.name
-            notifOpen: barRoot.notifOpen
-                       && win.screen.name === Hyprland.focusedMonitor?.name
+            store: barRoot.notifications
             anchors {
                 horizontalCenter: parent.horizontalCenter
                 verticalCenter: parent.verticalCenter
                 verticalCenterOffset: Tokyo.barShiftV - Tokyo.shadowPad / 2
             }
+        }
+
+        // The toasts have no pill to hang off, and a PopupWindow can only place
+        // itself against an anchor item, so this is the marker they aim at:
+        // zero-sized, in the bar's top-right corner, clear of the bar itself.
+        Item {
+            id: toastAnchor
+            anchors {
+                top: parent.top; right: parent.right
+                topMargin: Tokyo.barHeight + 8; rightMargin: Tokyo.edgeGap + 3
+            }
+            width: 0
+            height: 0
+        }
+
+        // One per window so a toast lands on the monitor you are looking at.
+        Toast {
+            store: barRoot.notifications
+            anchorItem: toastAnchor
         }
 
         // Only the focused monitor's capsule drives the launcher card, which
