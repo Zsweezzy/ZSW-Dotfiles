@@ -1,15 +1,14 @@
 import QtQuick
-import Quickshell
 import Quickshell.Io
 
-// Pending repo updates. The module owns the upgrade process, not the panel:
-// closing the flyout while pacman runs must not kill a half-applied
-// transaction, and a panel is destroyed the moment it unmaps.
-Module {
+// Pending repo updates, owned by the Quick module so the state and the upgrade
+// process outlive the flyout. Closing the card mid-pacman must not kill a
+// half-applied transaction, and a panel is destroyed the moment it unmaps.
+Item {
     id: root
 
     /// One line per pending package, as `checkupdates` prints them
-    /// ("pkg old -> new"). The panel renders them verbatim.
+    /// ("pkg old -> new"). The flyout renders them verbatim.
     property var packages: []
     readonly property int count: root.packages.length
 
@@ -17,15 +16,6 @@ Module {
     property bool updating: false
     /// Last line of pacman's output, or the verdict once it exits.
     property string status: ""
-
-    visible: root.updating || root.count > 0
-    fg: Tokyo.cyan
-    text: root.updating ? "\uf021" : "\uf019 " + root.count
-    tooltip: root.updating ? "Updating…" : root.count + " updates pending"
-
-    panel: Component {
-        UpdatesPanel { updatesModule: root }
-    }
 
     Poll {
         id: updatesPoll

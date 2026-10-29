@@ -10,9 +10,6 @@ ShellRoot {
     property bool pickerOpen: false
     property bool launcherOpen: false
     property bool clipboardOpen: false
-    /// Bumped by IPC so the focused monitor's island opens the updates flyout
-    /// from a keybind. The island owns the pill; nothing outside can reach it.
-    property int updatesRequest: 0
 
     Connections {
         target: Hyprland
@@ -37,9 +34,6 @@ ShellRoot {
         }
         function toggleClipboard(): void {
             root.clipboardOpen = !root.clipboardOpen
-        }
-        function toggleUpdates(): void {
-            root.updatesRequest++
         }
         function toggleThemePicker(): void {
             pickerProcess.running = !pickerProcess.running
@@ -73,7 +67,6 @@ ShellRoot {
         launcherOpen: root.launcherOpen
         pickerOpen: root.pickerOpen
         clipboardOpen: root.clipboardOpen
-        updatesRequest: root.updatesRequest
     }
 
     // One launcher surface per monitor, like the bar. A window is bound to

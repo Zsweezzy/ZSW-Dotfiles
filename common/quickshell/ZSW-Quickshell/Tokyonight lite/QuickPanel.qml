@@ -5,9 +5,10 @@ import Quickshell.Bluetooth
 import Quickshell.Io
 import Quickshell.Networking
 
-// Wi-Fi, Bluetooth, display and session in one card. It reads the module's
-// live objects; every action is a property write or an execDetached, so the
-// panel can be destroyed at any moment without losing state.
+// Control centre: network, Bluetooth, display, power, system and updates in
+// one card. It reads the module's live objects; every action is a property
+// write or an execDetached, so the panel can be destroyed at any moment
+// without losing state.
 Panel {
     id: root
 
@@ -16,6 +17,8 @@ Panel {
 
     readonly property var wifiDevice: root.quickModule ? root.quickModule.wifiDevice : null
     readonly property var btAdapter: root.quickModule ? root.quickModule.btAdapter : null
+    readonly property var sys: root.quickModule ? root.quickModule.sys : null
+    readonly property var updates: root.quickModule ? root.quickModule.updates : null
 
     readonly property var networks: {
         if (!root.wifiDevice) return []
@@ -44,6 +47,9 @@ Panel {
     property bool brightnessRead: false
     property int nightTemp: 6500
 
+    /// Current powerprofilesctl profile: performance, balanced or power-saver.
+    property string powerProfile: ""
+
     implicitWidth: 340
 
     Component.onCompleted: root.scan(true)
@@ -70,6 +76,12 @@ Panel {
         root.pskNetwork.connectWithPsk(root.pskText)
         root.pskNetwork = null
         root.pskText = ""
+    }
+
+    function setProfile(id) {
+        root.powerProfile = id
+        setPower.command = ["powerprofilesctl", "set", id]
+        setPower.running = true
     }
 
     function act(id) {
@@ -139,7 +151,7 @@ Panel {
         visible: Networking.wifiEnabled
 
         Repeater {
-            model: root.networks.slice(0, 5)
+            model: root.networks.slice(0, 4)
 
             delegate: Rectangle {
                 required property var modelData
@@ -150,7 +162,6 @@ Panel {
                 color: hover.containsMouse ? Tokyo.panelFill : "transparent"
 
                 Text {
-                    id: netName
                     anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
                     width: parent.width - 64
                     text: modelData.name
@@ -278,7 +289,7 @@ Panel {
         visible: root.btAdapter !== null && root.btAdapter.enabled
 
         Repeater {
-            model: root.btDevices.slice(0, 4)
+            model: root.btDevices.slice(0, 3)
 
             delegate: Rectangle {
                 required property var modelData
@@ -343,6 +354,210 @@ Panel {
         }
     }
 
+    Rectangle {
+        width: parent.width
+        height: 1
+        color: Tokyo.paneEdge
+    }
+
+    // ---- Power profile ----
+    Row {
+        width: parent.width
+        spacing: 6
+
+        Repeater {
+            model: [
+                { id: "performance", label: "Performance" },
+                { id: "balanced", label: "Balanced" },
+                { id: "power-saver", label: "Saver" },
+            ]
+
+            delegate: Rectangle {
+                required property var modelData
+
+                width: (parent.width - 12) / 3
+                height: 28
+                radius: Tokyo.pillRadius
+                color: root.powerProfile === modelData.id ? Tokyo.activeTint
+                       : (hover.containsMouse ? Tokyo.panelFill : "transparent")
+                border.width: 1
+                border.color: root.powerProfile === modelData.id ? Tokyo.blue : "transparent"
+
+                Text {
+                    anchors.centerIn: parent
+                    text: modelData.label
+                    color: root.powerProfile === modelData.id ? Tokyo.blue : Tokyo.fg
+                    font { family: Tokyo.fontFamily; pixelSize: 10 }
+                }
+
+                MouseArea {
+                    id: hover
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: root.setProfile(modelData.id)
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        width: parent.width
+        height: 1
+        color: Tokyo.paneEdge
+    }
+
+    // ---- System ----
+    RowLayout {
+        width: parent.width
+        Text {
+            text: "CPU"
+            color: Tokyo.dim
+            font { family: Tokyo.fontFamily; pixelSize: 11 }
+        }
+        Item { Layout.fillWidth: true }
+        Text {
+            text: Math.round(root.sys ? root.sys.cpuPct : 0) + "%"
+            color: Tokyo.cyan
+            font { family: Tokyo.fontFamily; pixelSize: 11; bold: true }
+        }
+    }
+    Rectangle {
+        width: parent.width
+        height: 4
+        radius: 2
+        color: Tokyo.bgHighlight
+        Rectangle {
+            width: parent.width * Math.min(1, (root.sys ? root.sys.cpuPct : 0) / 100)
+            height: parent.height
+            radius: 2
+            color: Tokyo.cyan
+            Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+        }
+    }
+
+    RowLayout {
+        width: parent.width
+        Text {
+            text: "RAM"
+            color: Tokyo.dim
+            font { family: Tokyo.fontFamily; pixelSize: 11 }
+        }
+        Item { Layout.fillWidth: true }
+        Text {
+            text: root.sys ? Math.round(root.sys.ramUsed) + " / " + Math.round(root.sys.ramTotal) + " GB" : ""
+            color: Tokyo.green
+            font { family: Tokyo.fontFamily; pixelSize: 11; bold: true }
+        }
+    }
+    Rectangle {
+        width: parent.width
+        height: 4
+        radius: 2
+        color: Tokyo.bgHighlight
+        Rectangle {
+            width: parent.width * Math.min(1, (root.sys ? root.sys.ramPct : 0) / 100)
+            height: parent.height
+            radius: 2
+            color: Tokyo.green
+            Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+        }
+    }
+
+    Text {
+        width: parent.width
+        visible: root.sys !== null
+        text: root.sys ? "CPU " + root.sys.cpuTemp + "°   GPU " + root.sys.gpuTemp
+                         + "°   Fan " + root.sys.fanRpm + " rpm" : ""
+        color: Tokyo.islandDim
+        elide: Text.ElideRight
+        font { family: Tokyo.fontFamily; pixelSize: 10 }
+    }
+
+    Rectangle {
+        width: parent.width
+        height: 1
+        color: Tokyo.paneEdge
+    }
+
+    // ---- Updates ----
+    RowLayout {
+        width: parent.width
+        Text {
+            text: "Updates"
+            color: Tokyo.dim
+            font { family: Tokyo.fontFamily; pixelSize: 12 }
+        }
+        Item { Layout.fillWidth: true }
+        Text {
+            text: root.updates && root.updates.count > 0
+                  ? root.updates.count + " pending" : "up to date"
+            color: root.updates && root.updates.count > 0 ? Tokyo.cyan : Tokyo.dim
+            font { family: Tokyo.fontFamily; pixelSize: 11; bold: true }
+        }
+    }
+
+    Column {
+        width: parent.width
+        spacing: 2
+        visible: root.updates !== null && root.updates.count > 0
+
+        Repeater {
+            model: root.updates ? root.updates.packages.slice(0, 4) : []
+            delegate: Text {
+                required property string modelData
+                width: parent.width
+                text: modelData
+                color: Tokyo.fg
+                elide: Text.ElideRight
+                font { family: Tokyo.fontFamily; pixelSize: 10 }
+            }
+        }
+        Text {
+            visible: root.updates !== null && root.updates.count > 4
+            text: root.updates ? "+" + (root.updates.count - 4) + " more" : ""
+            color: Tokyo.dim
+            font { family: Tokyo.fontFamily; pixelSize: 10 }
+        }
+    }
+
+    Rectangle {
+        width: parent.width
+        height: 30
+        radius: Tokyo.pillRadius
+        color: root.updates && root.updates.updating ? Tokyo.bgHighlight
+               : (root.updates && root.updates.count > 0 ? Tokyo.activeTint : Tokyo.bgHighlight)
+
+        Text {
+            anchors.centerIn: parent
+            text: root.updates && root.updates.updating ? "Updating…" : "Update all"
+            color: root.updates && root.updates.updating ? Tokyo.dim
+                   : (root.updates && root.updates.count > 0 ? Tokyo.cyan : Tokyo.dim)
+            font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            enabled: root.updates !== null && !root.updates.updating && root.updates.count > 0
+            onClicked: if (root.updates) root.updates.startUpdate()
+        }
+    }
+
+    // One line of live pacman output, or why the run failed.
+    Text {
+        width: parent.width
+        visible: root.updates !== null && root.updates.status !== ""
+        text: root.updates ? root.updates.status : ""
+        color: root.updates && root.updates.status.startsWith("Failed") ? Tokyo.red : Tokyo.dim
+        elide: Text.ElideRight
+        font { family: Tokyo.fontFamily; pixelSize: 10 }
+    }
+
+    Rectangle {
+        width: parent.width
+        height: 1
+        color: Tokyo.paneEdge
+    }
+
     // ---- Session ----
     Row {
         width: parent.width
@@ -360,7 +575,7 @@ Panel {
             delegate: Rectangle {
                 required property var modelData
 
-                width: 56
+                width: (parent.width - 24) / 5
                 height: 30
                 radius: Tokyo.pillRadius
                 color: root.confirm === modelData.id ? Tokyo.red
@@ -386,7 +601,7 @@ Panel {
         }
     }
 
-    // ---- Processes: display state is not in D-Bus ----
+    // ---- Processes: display and power state are not in D-Bus ----
 
     // All three outputs, one line each: "VCP 10 C <now> <max>".
     Process {
@@ -406,6 +621,19 @@ Panel {
             }
         }
     }
+
+    Process {
+        id: readPower
+        command: ["powerprofilesctl", "get"]
+        running: true
+        stdout: SplitParser {
+            onRead: line => {
+                const value = String(line).trim()
+                if (value !== "") root.powerProfile = value
+            }
+        }
+    }
+    Process { id: setPower }
 
     Timer {
         id: brightnessTimer

@@ -8,9 +8,6 @@ Variants {
     property bool launcherOpen: false
     property bool pickerOpen: false
     property bool clipboardOpen: false
-    /// Bumped by shell.qml from the updates keybind; the focused monitor's
-    /// island consumes it.
-    property int updatesRequest: 0
     /// The focused monitor's capsule width, animated. The launcher card lives
     /// in another window and rescales with it.
     property real capsuleWidth: Tokyo.launcherWidth
@@ -31,8 +28,6 @@ Variants {
             id: island
             screen: win.screen
             tooltipHost: tip
-            window: win
-            updatesRequest: barRoot.updatesRequest
             // Only the monitor the flyout opens on gets a squared header.
             launcherOpen: barRoot.launcherOpen
                           && win.screen.name === Hyprland.focusedMonitor?.name

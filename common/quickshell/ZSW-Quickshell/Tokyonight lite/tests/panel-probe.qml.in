@@ -6,10 +6,8 @@ import Quickshell
 ShellRoot {
     Clock { id: clock }
     Audio { id: audio }
-    Sys { id: sys }
     Media { id: media }
     Quick { id: quick }
-    Updates { id: updates }
 
     function report(name, comp) {
         if (comp === null) {
@@ -24,10 +22,8 @@ ShellRoot {
     Component.onCompleted: {
         report("clock", clock.panel)
         report("audio", audio.panel)
-        report("sys", sys.panel)
         report("media", media.panel)
         report("quick", quick.panel)
-        report("updates", updates.panel)
         Qt.quit()
     }
 }

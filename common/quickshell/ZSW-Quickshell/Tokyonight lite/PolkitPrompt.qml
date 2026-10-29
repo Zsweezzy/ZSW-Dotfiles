@@ -5,9 +5,9 @@ import Quickshell.Services.Polkit
 import Quickshell.Wayland
 
 // The polkit authentication dialog. Replaces hyprpolkitagent: the password
-// prompt is this card instead of a separate GTK window, so `pkexec`, systemd
-// reboot and anything else privileged asks in the shell that is already on
-// screen. One agent per session: hyprpolkitagent must not be started.
+// prompt is a card under the bar instead of a separate GTK window, so
+// `pkexec`, systemd reboot and anything else privileged ask where the shell
+// already is. One agent per session: hyprpolkitagent must not be started.
 PanelWindow {
     id: root
 
@@ -18,57 +18,62 @@ PanelWindow {
     /// output at runtime (Hyprland stops sending it input after a rebuild).
     property bool open: false
 
-    visible: root.open && root.flow !== null
+    /// True while the card should be on screen.
+    readonly property bool shown: root.open && root.flow !== null
+
     color: "transparent"
     anchors { top: true; left: true; right: true; bottom: true }
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-polkit"
-    WlrLayershell.keyboardFocus: root.visible ? WlrKeyboardFocus.Exclusive
-                                              : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: root.shown ? WlrKeyboardFocus.Exclusive
+                                            : WlrKeyboardFocus.None
+    // Zero-sized while idle so every click passes through to the desktop;
+    // full while a prompt is up so nothing behind it can be clicked.
+    mask: Region { item: inputArea }
 
-    onFlowChanged: {
-        password.text = ""
-        if (root.flow) Qt.callLater(() => password.forceActiveFocus())
+    Item {
+        id: inputArea
+        width: root.shown ? root.width : 0
+        height: root.shown ? root.height : 0
+    }
+
+    onShownChanged: {
+        if (root.shown) Qt.callLater(() => card.focusInput())
     }
 
     function cancel() {
         if (root.flow) root.flow.cancelAuthenticationRequest()
     }
 
-    function submit() {
-        if (!root.flow) return
-        root.flow.submit(password.text)
-        password.text = ""
-        password.forceActiveFocus()
-    }
-
-    Shortcut {
-        sequence: "Escape"
-        context: Qt.WindowShortcut
-        onActivated: root.cancel()
-    }
-
-    Rectangle {
-        anchors.fill: parent
-        color: Tokyo.scrim
-        MouseArea {
-            anchors.fill: parent
-            onClicked: root.cancel()
-        }
-    }
+    // Escape cancels. Keys on the field rather than a window Shortcut:
+    // QQuickShortcut's destructor segfaults this Qt build when the window dies
+    // with a flow open (three core dumps on 2026-10-29). The field holds focus
+    // whenever the card is up, so the key still arrives.
 
     Rectangle {
         id: card
 
-        anchors.centerIn: parent
+        x: (root.width - width) / 2
+        // Parked above the surface while closed: the card stays in the scene
+        // graph, because an item that has never been rendered does not paint
+        // when it is first shown. Moving it is a change the surface reports.
+        y: root.shown ? Tokyo.barHeight + Tokyo.panelGap : -card.height - 40
         width: 400
         height: body.implicitHeight + Tokyo.panelPadV * 2
         radius: Tokyo.islandPanelRadius
         color: Tokyo.islandFill
 
-        // Swallow clicks on the card so only the scrim cancels.
-        MouseArea { anchors.fill: parent }
+        function focusInput() {
+            password.forceActiveFocus()
+        }
+
+        function submit() {
+            if (!root.flow) return
+            root.flow.submit(password.text)
+            password.text = ""
+            password.forceActiveFocus()
+        }
 
         Column {
             id: body
@@ -121,8 +126,8 @@ PanelWindow {
                     selectionColor: Tokyo.blue
                     selectedTextColor: Tokyo.islandFill
                     font { family: Tokyo.fontFamily; pixelSize: 12 }
-                    focus: root.visible
-                    onAccepted: root.submit()
+                    onAccepted: card.submit()
+                    Keys.onEscapePressed: root.cancel()
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
@@ -146,7 +151,6 @@ PanelWindow {
                 Item { Layout.fillWidth: true }
 
                 Text {
-                    id: cancelLabel
                     text: "Cancel"
                     color: Tokyo.red
                     font { family: Tokyo.fontFamily; pixelSize: 10 }
