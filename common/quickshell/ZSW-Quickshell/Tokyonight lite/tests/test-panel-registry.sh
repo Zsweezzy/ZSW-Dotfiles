@@ -139,6 +139,15 @@ check "the hidden bar is click-through" Bar.qml \
       'mask: Region { item: win.outOfTheWay ? null : island }'
 check "the capsule hides with the bar" Bar.qml 'visible: !win.outOfTheWay'
 check "an open card brings the bar back" Bar.qml '!island.anyOpen'
+# Print/Shift+Print: the shell grabs the frame itself, over every window.
+check "the screenshot overlay is an overlay layer" Screenshot.qml \
+      'WlrLayershell.layer: WlrLayer.Overlay'
+check "a monitor shot saves the frozen frame" Screenshot.qml \
+      'crop.grabToImage(result => {'
+check "the window is mapped only for a shot" Screenshot.qml 'visible: root.open'
+check "a click is not a region" Screenshot.qml 'if (root.sw < 8 || root.sh < 8)'
+check "Print reaches the focused monitor" shell.qml \
+      'root.screenshotScreen = Hyprland.focusedMonitor?.name ?? ""'
 # The prompt card joins the capsule's bottom edge: the bar's shadow is clipped
 # there, or it darkens the card's top and breaks the join.
 check "capsule shadow stops at the prompt seam" Island.qml 'clip: root.polkitOpen'

@@ -10,6 +10,10 @@ ShellRoot {
     property bool pickerOpen: false
     property bool launcherOpen: false
     property bool clipboardOpen: false
+    /// "monitor" / "region" while the screenshot overlay is up, "" otherwise,
+    /// and the monitor it belongs to — read once, when the key is pressed.
+    property string screenshotMode: ""
+    property string screenshotScreen: ""
 
     Connections {
         target: Hyprland
@@ -51,6 +55,12 @@ ShellRoot {
         function toggleAudio(): void {
             bar.toggleAudio(true)
         }
+        // Print / Shift+Print. hyprshot and grim+slurp are gone: the shell
+        // grabs the frame itself (Screenshot.qml).
+        function screenshot(mode: string): void {
+            root.screenshotScreen = Hyprland.focusedMonitor?.name ?? ""
+            root.screenshotMode = root.screenshotScreen === "" ? "" : mode
+        }
         function toggleThemePicker(): void {
             pickerProcess.running = !pickerProcess.running
         }
@@ -74,6 +84,9 @@ ShellRoot {
     // and a second claim from another bar window's copy would simply fail, so
     // the server and the list it fills have to be the same object everywhere.
     NotificationStore { id: notificationStore }
+
+    // The desktop itself, under every window: hyprpaper's replacement.
+    Wallpaper {}
 
     // The bar first, so its layer surface sits under the launcher's.
     Bar {
@@ -111,6 +124,18 @@ ShellRoot {
             open: root.clipboardOpen
                   && modelData.name === Hyprland.focusedMonitor?.name
             onDismissed: root.clipboardOpen = false
+        }
+    }
+
+    // Print / Shift+Print. One overlay, on the monitor that had the keyboard
+    // when the key was pressed, like hyprshot's `-m active` was.
+    Variants {
+        model: Quickshell.screens
+        delegate: Screenshot {
+            required property ShellScreen modelData
+            screen: modelData
+            mode: modelData.name === root.screenshotScreen ? root.screenshotMode : ""
+            onDone: root.screenshotMode = ""
         }
     }
 

@@ -32,6 +32,9 @@ keyboard.
 | `Super+Tab` | open/close the island control centre |
 | `Super+N` | open/close the notification centre |
 | `Super+A` | open/close the audio card beside the control centre |
+| `Print` | screenshot the focused monitor |
+| `Shift+Print` | screenshot a dragged region |
+| `Super+Print` | open the latest screenshot in qView |
 | `Tab` / `Shift+Tab` | next / previous control in an open panel |
 | arrows | same as Tab, both axes |
 | `Enter` / `Space` | activate the focused control |
@@ -934,6 +937,7 @@ Brightness.qml      shared DDC/CI brightness service (display map, debounced wri
 Workspaces/Cava/OpenApps/Wifi/Ethernet/Audio/Gpu/Cpu/Mem/Updates.qml
 AudioCard.qml         audio card in the island popup: per-app volume, in/out devices
 TrayMenu.qml          SNI right-click menu rendered as a flyout (same look as the island cards)
+Screenshot.qml        Print/Shift+Print overlay: wlr-screencopy frame, region crop, save + wl-copy
 BrightnessFlyout.qml  per-monitor DDC/CI luminance slider (right-click a workspace pill)
 Clock.qml             the one centre pill: HH:mm:ss over the date, a clock glyph
                       while its flyout is open (left-click → morph)

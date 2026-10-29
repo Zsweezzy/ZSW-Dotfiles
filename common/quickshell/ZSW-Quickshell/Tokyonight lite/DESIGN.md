@@ -263,6 +263,30 @@ forwards the keys to `Panel.handleKey()`.
 
 ---
 
+## Screenshots
+
+`Screenshot.qml` is one overlay per screen, mapped only while a shot is in
+flight. It captures with `ScreencopyView`, so grim, slurp and hyprshot are not
+involved at all.
+
+- **The frame is taken before anything is drawn.** The window is still empty
+  when the compositor serves the frame, so the saved image never contains the
+  overlay. What the user sees afterwards is that frozen frame, and a region is
+  a crop of it, never a second capture.
+- **The surface is 1x1 until its first configure.** A capture requested from
+  `onModeChanged` records that size instead of the screen; the retry timer
+  waits for `width === screen.width`.
+- **`done()` unmaps the window, so it waits for the grab.** An unmapped surface
+  renders nothing, and the `grabToImage` callback is where the save and the
+  close both happen.
+- **The grab follows the output scale**, so a 2x monitor saves at 3840x2160
+  while the window is 1920x1080.
+- **`QImage` has no `copy()` in QML.** A `result.image.copy(...)` throws inside
+  the grab callback and is swallowed with no log line. Cropping is the
+  `ShaderEffectSource`'s job; that item is what gets grabbed.
+
+---
+
 ## Notifications
 
 Notifications are this shell's, like polkit: `NotificationStore.qml` declares
