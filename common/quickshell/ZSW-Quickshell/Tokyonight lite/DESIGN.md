@@ -289,6 +289,10 @@ involved at all.
 - **`Hyprland.monitors` is an ObjectModel, not an array.** Indexing it yields
   `undefined`: read `.values` or the window maps with no capture view, then
   times the whole shot out with "no frame from the compositor".
+- **Layout is in Quickshell's pixels, not Hyprland's.** `HyprlandMonitor`
+  reports `width`/`height` in physical pixels but `x`/`y` in layout pixels, so
+  a 2x output laid out with them draws at twice its size and the window shows
+  only its top-left quarter. `Quickshell.screens` is already layout-sized.
 - **`QImage` has no `copy()` in QML.** A `result.image.copy(...)` throws inside
   the grab callback and is swallowed with no log line. Cropping is the
   `ShaderEffectSource`'s job; that item is what gets grabbed.

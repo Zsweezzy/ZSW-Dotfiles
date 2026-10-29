@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Wayland
 
@@ -40,20 +39,17 @@ PanelWindow {
     property real sw: 0
     property real sh: 0
 
-    // Hyprland's geometry, not the window's: a 2x output is 1920 wide here and
-    // 3840 in the file. `.values` because monitors is an ObjectModel, not an
-    // array: indexing it directly yields undefined.
-    readonly property var monitors: Hyprland.monitors.values ?? []
-    readonly property var own: {
-        for (let i = 0; i < root.monitors.length; i++)
-            if (root.monitors[i].name === root.screen.name) return root.monitors[i]
-        return null
-    }
+    // Quickshell's screens are in layout pixels, which is the space the frames
+    // are laid out in. Hyprland's monitor width/height are physical, so a 2x
+    // output drawn with them covers twice its size and shows its top-left
+    // quarter only.
+    readonly property var screens: Quickshell.screens
+    readonly property var own: root.screen
     readonly property real ownX: root.own ? root.own.x : 0
     readonly property real ownY: root.own ? root.own.y : 0
     /// The bounding box of every monitor, so the frames lay out like the desk.
     readonly property rect box: {
-        const ms = root.monitors
+        const ms = root.screens
         if (ms.length === 0) return Qt.rect(0, 0, 0, 0)
         let x0 = ms[0].x, y0 = ms[0].y
         let x1 = x0 + ms[0].width, y1 = y0 + ms[0].height
@@ -80,12 +76,6 @@ PanelWindow {
         root.sy = 0
         root.sw = 0
         root.sh = 0
-    }
-
-    function screenFor(name: string): var {
-        for (let i = 0; i < Quickshell.screens.length; i++)
-            if (Quickshell.screens[i].name === name) return Quickshell.screens[i]
-        return null
     }
 
     function pick(x: real, y: real, w: real, h: real): void {
@@ -185,7 +175,7 @@ PanelWindow {
         Repeater {
             id: views
             model: root.open
-                ? (root.mode === "region" ? root.monitors : (root.own ? [root.own] : []))
+                ? (root.mode === "region" ? root.screens : (root.own ? [root.own] : []))
                 : []
             delegate: ScreencopyView {
                 required property var modelData
@@ -194,7 +184,7 @@ PanelWindow {
                 width: modelData.width
                 height: modelData.height
                 // No cursor in the picture, and one frame is all this needs.
-                captureSource: root.screenFor(modelData.name)
+                captureSource: modelData
                 paintCursor: false
                 live: false
                 onHasContentChanged: root.settle()
