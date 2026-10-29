@@ -198,7 +198,7 @@ Item {
         property: "morphProgress"
         to: 1
         duration: Tokyo.flyoutDuration
-        easing.type: Easing.OutCubic
+        easing.type: Easing.OutExpo
     }
 
     RectangularShadow {
@@ -230,7 +230,7 @@ Item {
                           ? Tokyo.flyoutDuration
                           : (root.launcherOpen || root.pickerOpen || root.polkitOpen)
                             ? Tokyo.expandDuration : Tokyo.collapseDuration
-                easing.type: Easing.OutCubic
+                easing.type: Easing.OutExpo
             }
         }
         height: Tokyo.islandHeight
@@ -243,10 +243,10 @@ Item {
         bottomRightRadius: popup.visible || root.launcherOpen || root.pickerOpen
                            || root.polkitOpen ? 0 : height / 2
         Behavior on bottomLeftRadius {
-            NumberAnimation { duration: Tokyo.collapseDuration; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: Tokyo.collapseDuration; easing.type: Easing.OutExpo }
         }
         Behavior on bottomRightRadius {
-            NumberAnimation { duration: Tokyo.collapseDuration; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: Tokyo.collapseDuration; easing.type: Easing.OutExpo }
         }
         color: Tokyo.islandFill
 
@@ -416,7 +416,7 @@ Item {
             // instant size, since the surface is not resized per frame.
             Behavior on width {
                 enabled: root.outgoingModule !== null
-                NumberAnimation { duration: Tokyo.flyoutDuration; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: Tokyo.flyoutDuration; easing.type: Easing.OutExpo }
             }
             // Never 0: closing nulls panelModule, the loader drops its item and
             // this binding collapses in the same commit — a 0-height xdg_popup
@@ -424,7 +424,7 @@ Item {
             height: Math.max(1, root.panelHeight)
             Behavior on height {
                 enabled: root.outgoingModule !== null
-                NumberAnimation { duration: Tokyo.flyoutDuration; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: Tokyo.flyoutDuration; easing.type: Easing.OutExpo }
             }
             // The surface holds the larger of the two panels while morphing, so
             // the card is centred in it rather than left-aligned (the popup is
@@ -440,7 +440,7 @@ Item {
             // if the panel's height lands a frame late.
             property real reveal: popup.visible && !root.closing ? 1 : 0
             Behavior on reveal {
-                NumberAnimation { duration: Tokyo.flyoutDuration; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: Tokyo.flyoutDuration; easing.type: Easing.OutExpo }
             }
             y: -height * (1 - reveal)
             radius: Tokyo.islandPanelRadius

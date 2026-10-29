@@ -36,6 +36,11 @@ Variants {
         implicitHeight: Tokyo.barHeight + Tokyo.shadowPad
         exclusiveZone: Tokyo.barHeight
         color: "transparent"
+        // Overlay, not the default top: Hyprland hides top layers behind an
+        // exclusive-fullscreen window (a game), and only the overlay layer is
+        // allowed above it. The bar and the popups anchored to it stay usable
+        // there.
+        WlrLayershell.layer: WlrLayer.Overlay
         // An xdg_popup can only be typed into while its parent surface holds
         // the keyboard. The bar takes it only while a flyout is mapped, so
         // returning to the last window is automatic when the card closes.

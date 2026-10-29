@@ -23,8 +23,9 @@ Launched at session start by `hyprland.lua`
 
 ## Keyboard
 
-Nothing here reacts to the mouse passing over it: no hover colours, no
-hover-opened cards, no tooltips. Every control is reachable from the keyboard.
+Rows never react to the pointer passing over them: no hover colours, no
+tooltips and no hover-opened cards. Every control is reachable from the
+keyboard.
 
 | key | what it does |
 |-----|--------------|

@@ -37,6 +37,10 @@ Module {
             visible: root.btAdapter !== null,
         },
         {
+            text: "\uefc5 " + Math.round(root.sys.ramPct) + "%",
+            color: Tokyo.green,
+        },
+        {
             text: root.updates.updating ? "\uf021" : "\uf019 " + root.updates.count,
             color: Tokyo.cyan,
             visible: root.updates.updating || root.updates.count > 0,

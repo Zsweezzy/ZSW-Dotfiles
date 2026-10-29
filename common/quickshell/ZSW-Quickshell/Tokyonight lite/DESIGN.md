@@ -58,7 +58,7 @@ behind it, and the same pane measured two different values over two windows.
 `islandFill`, `islandDim`. The bar is now one near-black capsule at the top
 centre (saneAspect's dynamic-island look) instead of floating pills; the
 capsule's drop shadow still uses `shadowColor` / `shadowBlur` /
-`shadowOffsetY`. `islandDim` is secondary ink inside a panel (calendar headers,
+`shadowOffsetY`. `islandDim` is secondary ink inside a panel (muted labels,
 labels), not a surface.
 
 | token | value | notes |
@@ -85,6 +85,11 @@ the keypress and the card. The capsule widens into the card with the same
 A layer surface's `screen` must never change while it runs: repointing it
 rebuilds the surface, and Hyprland then delivers no pointer events to the
 replacement — the window is drawn but every click falls through it.
+
+`Bar.qml` puts the bar on `WlrLayer.Overlay`. Hyprland hides every other layer
+under an exclusive-fullscreen window and only overlay is allowed above it; the
+island popup rides with its parent surface, so the bar and its cards stay
+usable over a game.
 
 ### Ink
 
@@ -134,9 +139,10 @@ edge, so there is one window to dismiss and one keyboard owner.
   its content and loses only its own card padding.
 
 The card is two `Box`es side by side: left is status (time, now playing,
-volume, CPU/RAM), right is the controls. `Box.qml` is the only container —
-the card border stays that of the flyout, and a box one step lighter groups its
-sections.
+volume, CPU and RAM as two plain rows), right is the controls: Wi-Fi and
+Bluetooth toggles listing only saved/paired devices, power profile, updates and
+session. `Box.qml` is the only container — the card border stays that of the
+flyout, and a box one step lighter groups its sections.
 
 A new pill is wired in `Island.qml` with `onClicked: root.toggle(quickPill)`.
 A module whose state the card shows passes itself to `Quick` there
@@ -225,8 +231,8 @@ land between those two lines and a clean-looking check will miss them.
 ## Keyboard
 
 Nothing here reacts to the pointer passing over it: no hover colours, no
-hover-opened cards, no tooltips. A control answers to keyboard focus and to a
-press.
+tooltips and no hover-opened cards. A control answers to keyboard focus and to
+a press.
 
 Every control opts in with `activeFocusOnTab: true` and a `function activate()`;
 `FocusRing {}` draws the ring. `Panel.qml` owns navigation: Tab/Shift+Tab and

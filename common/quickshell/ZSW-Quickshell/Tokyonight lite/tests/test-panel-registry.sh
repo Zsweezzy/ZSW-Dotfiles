@@ -125,10 +125,30 @@ check "the audio card shares the drawer's surface" Island.qml \
       'active: root.audioOpen'
 check "the audio card lists running streams" AudioCard.qml 'n.isStream && n.isSink'
 
+# Exclusive fullscreen hides every layer except overlay, so the bar (and the
+# popup anchored to it) must live there to stay usable over a game.
+check "the bar renders over exclusive fullscreen" Bar.qml \
+      'WlrLayershell.layer: WlrLayer.Overlay'
+# Nothing on the bar opens on hover: the audio card is a click/Super+A surface
+# like every other card.
+absent "the audio pill does not open on hover" Island.qml 'HoverHandler'
+
+# The card lost its calendar, both sliders and the sensor footer, and its
+# device lists show only what is already saved or paired.
+check "the main pill shows RAM again" Quick.qml 'root.sys.ramPct'
+check "Wi-Fi lists only saved or connected networks" QuickPanel.qml \
+      'n.connected || n.known'
+check "Bluetooth lists only paired or connected devices" QuickPanel.qml \
+      'd.connected || d.paired'
+absent "no brightness slider in the card" QuickPanel.qml 'Brightness'
+absent "no temperature or fan footer" QuickPanel.qml 'fanRpm'
+absent "the card has no calendar" ClockPanel.qml 'daysInMonth'
+absent "no DDC brightness read at open" QuickPanel.qml 'getvcp'
+
 # Hover is gone everywhere: rows react to keyboard focus and a press. A hover
 # colour is how a keyboard-only control centre rots, so it is a hard rule.
 for f in *.qml; do
-    absent "no hover in $f" "$f" 'hoverEnabled'
+    absent "no hover colour in $f" "$f" 'hoverEnabled'
 done
 
 # The Check button queries every source, not only the polled repos.

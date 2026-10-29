@@ -29,7 +29,7 @@ Panel {
 
     readonly property var networks: {
         if (!root.wifiDevice) return []
-        const list = root.wifiDevice.networks.values.slice()
+        const list = root.wifiDevice.networks.values.filter(n => n.connected || n.known)
         list.sort((a, b) => (b.connected - a.connected) || (b.known - a.known)
                   || (b.signalStrength - a.signalStrength))
         return list
@@ -37,29 +37,20 @@ Panel {
 
     readonly property var btDevices: {
         if (!root.btAdapter) return []
-        const list = root.btAdapter.devices.values.filter(d => d.connected || d.paired
-                                                        || (d.name ?? "") !== "")
+        const list = root.btAdapter.devices.values.filter(d => d.connected || d.paired)
         list.sort((a, b) => (b.connected - a.connected) || (a.name ?? "").localeCompare(b.name ?? ""))
         return list
     }
 
-    /// Secured network waiting for a password, or null.
-    property var pskNetwork: null
-    property string pskText: ""
-
     /// Session action armed by its first click; a second click runs it.
     property string confirm: ""
-
-    property int brightness: 50
-    property bool brightnessRead: false
-    property int nightTemp: 6500
 
     /// Current powerprofilesctl profile: performance, balanced or power-saver.
     property string powerProfile: ""
 
-    // Half the monitor, and never narrower than two boxes need: the Wi-Fi rows
-    // and sliders read better wide than squeezed into a pill's width. Offscreen
-    // (no screen) it falls back to that same minimum.
+    // Half the monitor, and never narrower than two boxes need: the device rows
+    // read better wide than squeezed into a pill's width. Offscreen (no screen)
+    // it falls back to that same minimum.
     implicitWidth: root.hostScreen ? Math.max(720, root.hostScreen.width / 2) : 720
 
     Component.onCompleted: root.scan(true)
@@ -71,21 +62,8 @@ Panel {
     }
 
     function pick(network) {
-        if (network.connected) {
-            network.disconnect()
-        } else if (network.known || network.security === WifiSecurityType.Open) {
-            network.connect()
-        } else {
-            root.pskNetwork = network
-            root.pskText = ""
-        }
-    }
-
-    function submitPsk() {
-        if (!root.pskNetwork) return
-        root.pskNetwork.connectWithPsk(root.pskText)
-        root.pskNetwork = null
-        root.pskText = ""
+        if (network.connected) network.disconnect()
+        else network.connect()
     }
 
     function setProfile(id) {
@@ -168,19 +146,6 @@ Panel {
                         font { family: Tokyo.fontFamily; pixelSize: 11; bold: true }
                     }
                 }
-                Rectangle {
-                    width: parent.width
-                    height: 4
-                    radius: 2
-                    color: Tokyo.bgHighlight
-                    Rectangle {
-                        width: parent.width * Math.min(1, (root.sys ? root.sys.cpuPct : 0) / 100)
-                        height: parent.height
-                        radius: 2
-                        color: Tokyo.cyan
-                        Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
-                    }
-                }
 
                 RowLayout {
                     width: parent.width
@@ -195,29 +160,6 @@ Panel {
                         color: Tokyo.green
                         font { family: Tokyo.fontFamily; pixelSize: 11; bold: true }
                     }
-                }
-                Rectangle {
-                    width: parent.width
-                    height: 4
-                    radius: 2
-                    color: Tokyo.bgHighlight
-                    Rectangle {
-                        width: parent.width * Math.min(1, (root.sys ? root.sys.ramPct : 0) / 100)
-                        height: parent.height
-                        radius: 2
-                        color: Tokyo.green
-                        Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
-                    }
-                }
-
-                Text {
-                    width: parent.width
-                    visible: root.sys !== null
-                    text: root.sys ? "CPU " + root.sys.cpuTemp + "°   GPU " + root.sys.gpuTemp
-                                     + "°   Fan " + root.sys.fanRpm + " rpm" : ""
-                    color: Tokyo.islandDim
-                    elide: Text.ElideRight
-                    font { family: Tokyo.fontFamily; pixelSize: 10 }
                 }
             }
 
@@ -278,7 +220,7 @@ Panel {
                     visible: Networking.wifiEnabled
 
                     Repeater {
-                        model: root.networks.slice(0, 4)
+                        model: root.networks
 
                         delegate: Rectangle {
                             required property var modelData
@@ -316,56 +258,6 @@ Panel {
                                 onClicked: activate()
                                 FocusRing {}
                             }
-                        }
-                    }
-                }
-
-                // Password entry for a network that is not stored yet. Same card, no
-                // second dialog.
-                RowLayout {
-                    width: parent.width
-                    visible: root.pskNetwork !== null
-                    spacing: 6
-
-                    Text {
-                        text: root.pskNetwork ? root.pskNetwork.name : ""
-                        color: Tokyo.dim
-                        elide: Text.ElideRight
-                        Layout.maximumWidth: 120
-                        font { family: Tokyo.fontFamily; pixelSize: 11 }
-                    }
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 26
-                        radius: Tokyo.pillRadius
-                        color: "transparent"
-                        border.width: 1
-                        border.color: Tokyo.paneEdge
-
-                        TextInput {
-                            id: pskInput
-                            anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
-                            verticalAlignment: TextInput.AlignVCenter
-                            color: Tokyo.fg
-                            echoMode: TextInput.Password
-                            selectionColor: Tokyo.blue
-                            font { family: Tokyo.fontFamily; pixelSize: 11 }
-                            focus: root.pskNetwork !== null
-                            onAccepted: root.submitPsk()
-                            Keys.onEscapePressed: root.pskNetwork = null
-                        }
-                    }
-                    Text {
-                        text: "Join"
-                        color: Tokyo.cyan
-                        font { family: Tokyo.fontFamily; pixelSize: 11; bold: true }
-                        MouseArea {
-                            anchors.fill: parent
-                            anchors.margins: -6
-                            activeFocusOnTab: true
-                            function activate() { root.submitPsk() }
-                            onClicked: activate()
-                            FocusRing {}
                         }
                     }
                 }
@@ -429,7 +321,7 @@ Panel {
                     visible: root.btAdapter !== null && root.btAdapter.enabled
 
                     Repeater {
-                        model: root.btDevices.slice(0, 3)
+                        model: root.btDevices
 
                         delegate: Rectangle {
                             required property var modelData
@@ -469,34 +361,6 @@ Panel {
                                 FocusRing {}
                             }
                         }
-                    }
-                }
-
-                Rectangle {
-                    width: parent.width
-                    height: 1
-                    color: Tokyo.paneEdge
-                }
-
-                // ---- Display ----
-                SheetSlider {
-                    label: "Brightness"
-                    valueText: root.brightness + "%"
-                    value: root.brightness / 100
-                    onMoved: v => {
-                        root.brightness = Math.round(v * 100)
-                        brightnessTimer.restart()
-                    }
-                }
-
-                SheetSlider {
-                    label: "Night light"
-                    // 0 at the slider's left edge means "no tint".
-                    valueText: root.nightTemp >= 6500 ? "off" : root.nightTemp + "K"
-                    value: (6500 - root.nightTemp) / 4000
-                    onMoved: v => {
-                        root.nightTemp = Math.round(6500 - v * 4000)
-                        tempTimer.restart()
                     }
                 }
 
@@ -548,12 +412,6 @@ Panel {
                             }
                         }
                     }
-                }
-
-                Rectangle {
-                    width: parent.width
-                    height: 1
-                    color: Tokyo.paneEdge
                 }
 
                 Rectangle {
@@ -749,26 +607,7 @@ Panel {
         }
     }
 
-    // ---- Processes: display and power state are not in D-Bus ----
-
-    // All three outputs, one line each: "VCP 10 C <now> <max>".
-    Process {
-        id: readBrightness
-        command: ["sh", "-c",
-                  "for d in 1 2 3; do ddcutil --display $d getvcp 10 --terse 2>/dev/null; done"]
-        running: true
-        stdout: SplitParser {
-            onRead: line => {
-                if (root.brightnessRead) return
-                const fields = String(line).trim().split(/\s+/)
-                const value = parseInt(fields[3])
-                if (!isNaN(value)) {
-                    root.brightness = value
-                    root.brightnessRead = true
-                }
-            }
-        }
-    }
+    // ---- Processes: power state is not in D-Bus ----
 
     Process {
         id: readPower
@@ -782,27 +621,4 @@ Panel {
         }
     }
     Process { id: setPower }
-
-    Timer {
-        id: brightnessTimer
-        interval: 250
-        onTriggered: {
-            if (setBrightness.running) return
-            setBrightness.command = ["sh", "-c",
-                "for d in 1 2 3; do ddcutil --display $d setvcp 10 " + root.brightness
-                + " >/dev/null 2>&1 & done; wait"]
-            setBrightness.running = true
-        }
-    }
-    Process { id: setBrightness }
-
-    Timer {
-        id: tempTimer
-        interval: 200
-        onTriggered: {
-            setTemp.command = ["hyprctl", "hyprsunset", "temperature", String(root.nightTemp)]
-            setTemp.running = true
-        }
-    }
-    Process { id: setTemp }
 }
