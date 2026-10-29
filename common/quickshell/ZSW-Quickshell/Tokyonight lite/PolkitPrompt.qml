@@ -14,6 +14,9 @@ PanelWindow {
 
     /// The running authentication request, or null when nothing is pending.
     property var flow: null
+    /// The flow whose text is on screen. Kept after the request ends so the
+    /// card can roll back up with its content still drawn.
+    property var displayFlow: null
     /// True only on the focused monitor: the prompt is a per-screen window,
     /// like the launcher, because a layer surface cannot be moved to another
     /// output at runtime (Hyprland stops sending it input after a rebuild).
@@ -45,6 +48,9 @@ PanelWindow {
 
     onShownChanged: {
         if (!root.shown) return;
+        // Held for the roll-up: the body is bound to this, not to `flow`, so
+        // a closing card does not empty out while it slides back up.
+        root.displayFlow = root.flow;
         // A cancelled attempt leaves its text in the field; a later prompt
         // must not start with someone else's masked password in it.
         password.text = "";
@@ -69,6 +75,7 @@ PanelWindow {
         width: card.width + Tokyo.shadowBlur * 2
         height: card.height + Tokyo.shadowBlur + Tokyo.shadowOffsetY
         clip: true
+        visible: card.height > 1
 
         RectangularShadow {
             x: Tokyo.shadowBlur
@@ -89,18 +96,29 @@ PanelWindow {
         id: card
 
         x: (root.width - width) / 2
-        // Parked above the surface while closed: the card stays in the scene
-        // graph, because an item that has never been rendered does not paint
-        // when it is first shown. Moving it is a change the surface reports.
-        y: root.shown ? Tokyo.barHeight : -card.height - 40
+        // Parked above the surface only once the roll-up has finished, so the
+        // card rolls back into the capsule instead of vanishing from it. An
+        // item that has never been rendered does not paint when it is first
+        // shown, so the card is moved, never hidden.
+        y: root.shown || card.height > 1 ? Tokyo.barHeight : -card.height - 40
         // The capsule widens to this while the prompt is up, and its bottom
         // edge is square, so the two read as one shape.
         width: Math.min(Tokyo.polkitWidth, root.capsuleWidth)
-        height: body.implicitHeight + Tokyo.panelPadV * 2
+        // Unrolls out of the capsule like the launcher, and rolls back up on
+        // close; the content's own height is the target.
+        height: root.shown ? body.implicitHeight + Tokyo.panelPadV * 2 : 0
+        Behavior on height {
+            NumberAnimation {
+                duration: root.shown ? Tokyo.expandDuration : Tokyo.collapseDuration
+                easing.type: Easing.OutCubic
+            }
+        }
         radius: Tokyo.islandPanelRadius
         topLeftRadius: 0
         topRightRadius: 0
         color: Tokyo.islandFill
+        // Keeps the body from drawing below a partly unrolled card.
+        clip: true
 
         function focusInput() {
             password.forceActiveFocus()
@@ -119,6 +137,10 @@ PanelWindow {
             y: Tokyo.panelPadV
             width: card.width - Tokyo.panelPadH * 2
             spacing: 12
+            opacity: root.shown ? 1 : 0
+            Behavior on opacity {
+                NumberAnimation { duration: Tokyo.expandDuration; easing.type: Easing.OutCubic }
+            }
 
             Row {
                 width: parent.width
@@ -131,7 +153,7 @@ PanelWindow {
                 }
                 Text {
                     width: parent.width - 26
-                    text: root.flow ? root.flow.message : ""
+                    text: root.displayFlow ? root.displayFlow.message : ""
                     color: Tokyo.fg
                     wrapMode: Text.WordWrap
                     font { family: Tokyo.fontFamily; pixelSize: 12 }
@@ -140,9 +162,9 @@ PanelWindow {
 
             Text {
                 width: parent.width
-                visible: root.flow && root.flow.supplementaryMessage !== ""
-                text: root.flow ? root.flow.supplementaryMessage : ""
-                color: root.flow && root.flow.supplementaryIsError ? Tokyo.red : Tokyo.dim
+                visible: root.displayFlow && root.displayFlow.supplementaryMessage !== ""
+                text: root.displayFlow ? root.displayFlow.supplementaryMessage : ""
+                color: root.displayFlow && root.displayFlow.supplementaryIsError ? Tokyo.red : Tokyo.dim
                 wrapMode: Text.WordWrap
                 font { family: Tokyo.fontFamily; pixelSize: 11 }
             }
@@ -170,8 +192,8 @@ PanelWindow {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: password.text.length === 0
-                        text: root.flow && root.flow.inputPrompt !== ""
-                              ? root.flow.inputPrompt : "Password"
+                        text: root.displayFlow && root.displayFlow.inputPrompt !== ""
+                              ? root.displayFlow.inputPrompt : "Password"
                         color: Tokyo.dim
                         font { family: Tokyo.fontFamily; pixelSize: 12 }
                     }

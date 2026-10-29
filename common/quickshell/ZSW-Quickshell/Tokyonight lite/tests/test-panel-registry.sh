@@ -63,7 +63,9 @@ check "quick composes the updates probe" Quick.qml 'Updates { id: updateData }'
 check "polkit prompt is bound to the agent flow" shell.qml \
       'flow: polkitAgent.flow'
 check "polkit prompt joins the capsule" PolkitPrompt.qml \
-      'y: root.shown ? Tokyo.barHeight : -card.height - 40'
+      'y: root.shown || card.height > 1 ? Tokyo.barHeight : -card.height - 40'
+check "polkit card unrolls from the capsule" PolkitPrompt.qml \
+      'height: root.shown ? body.implicitHeight + Tokyo.panelPadV * 2 : 0'
 check "capsule widens for the polkit prompt" Island.qml \
       'width: root.polkitOpen ? Tokyo.polkitWidth'
 # The clipboard picker is a per-monitor layer surface like the launcher, not a
