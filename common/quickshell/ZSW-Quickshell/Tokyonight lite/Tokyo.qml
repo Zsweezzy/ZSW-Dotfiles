@@ -46,6 +46,9 @@ Singleton {
     // a different, colder palette.
     readonly property color islandFill: ThemeColors.islandFill
     readonly property color islandDim: Qt.rgba(ThemeColors.fg.r, ThemeColors.fg.g, ThemeColors.fg.b, 0.45)
+    /// Dims the desktop behind a modal card (the polkit prompt). Not a theme
+    /// colour: it is black at partial alpha in every theme.
+    readonly property color scrim: Qt.rgba(0, 0, 0, 0.45)
     readonly property real islandHeight: 30
     readonly property real islandPadH: 14
     /// Gap between the pills inside the capsule.

@@ -11,6 +11,9 @@ Item {
     property bool active: true
 
     signal result(string output)
+    /// Emitted before each run, so a poll that reports a list can start from
+    /// empty instead of appending to the previous run's lines.
+    signal started()
 
     function shellCmd() {
         const parts = []
@@ -44,6 +47,7 @@ Item {
 
     function refresh() {
         if (root.command.length === 0) return
+        root.started()
         proc.command = ["sh", "-c", root.shellCmd()]
         proc.running = true
     }

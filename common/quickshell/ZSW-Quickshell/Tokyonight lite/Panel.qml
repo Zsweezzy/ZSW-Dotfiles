@@ -13,7 +13,11 @@ Item {
     default property alias content: body.data
 
     implicitHeight: body.implicitHeight + root.padV * 2
-    width: implicitWidth
+    // A flyout declares the narrowest width it works at; the island puts it in
+    // a card that is at least as wide as the capsule's pill row, so the item
+    // fills that card instead of leaving a dead strip beside it. Offscreen (no
+    // parent) it stays at its own width, which is what the probe checks.
+    width: parent ? parent.width : implicitWidth
 
     Column {
         id: body

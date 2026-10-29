@@ -42,6 +42,24 @@ check "surface holds both panels while morphing" Island.qml \
 check "clock module declares its panel" Clock.qml 'panel: Component {'
 check "audio module declares its panel" Audio.qml 'panel: Component {'
 check "sys module declares its panel" Sys.qml 'panel: Component {'
+check "media module declares its panel" Media.qml 'panel: Component {'
+check "quick module declares its panel" Quick.qml 'panel: Component {'
+check "updates module declares its panel" Updates.qml 'panel: Component {'
+
+# The upgrade process outlives the panel: a flyout close mid-pacman must not
+# kill a half-applied transaction.
+check "updates process lives in the module" Updates.qml \
+      'command: ["pkexec", "pacman", "-Syu", "--noconfirm"]'
+# One polkit agent per session, and it is ours: the prompt is bound to the
+# agent's flow rather than to a window of its own.
+check "polkit prompt is bound to the agent flow" shell.qml \
+      'flow: polkitAgent.flow'
+# Tray items are published to whichever process watches StatusNotifierWatcher;
+# nothing else on the desktop does, so the island must.
+check "island hosts the system tray" Island.qml 'Tray {'
+# The clipboard picker is a per-monitor layer surface like the launcher, not a
+# popup: a popup of the bar cannot hold keyboard focus.
+check "clipboard picker is per-monitor" shell.qml 'delegate: Clipboard'
 
 if ! command -v quickshell >/dev/null; then
     echo "skip runtime probe (no quickshell)"
@@ -58,7 +76,7 @@ cp tests/panel-probe.qml.in "$TMP/panel-probe.qml"
 out=$(QT_QPA_PLATFORM=offscreen timeout 20 quickshell -p "$TMP/panel-probe.qml" 2>&1)
 clean=$(sed 's/\x1b\[[0-9;]*m//g' <<<"$out")
 
-for want in clock=300 audio=288 sys=320; do
+for want in clock=300 audio=288 sys=320 media=300 quick=340 updates=340; do
     if grep -qE "(^|: )$want" <<<"$clean"; then
         echo "ok   ${want%%=*} panel is ${want#*=}px wide"
     else

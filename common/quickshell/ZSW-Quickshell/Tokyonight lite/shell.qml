@@ -2,12 +2,17 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import Quickshell.Services.Polkit
 import Quickshell.Wayland
 
 ShellRoot {
     id: root
     property bool pickerOpen: false
     property bool launcherOpen: false
+    property bool clipboardOpen: false
+    /// Bumped by IPC so the focused monitor's island opens the updates flyout
+    /// from a keybind. The island owns the pill; nothing outside can reach it.
+    property int updatesRequest: 0
 
     Connections {
         target: Hyprland
@@ -30,8 +35,31 @@ ShellRoot {
         function toggleLauncher(): void {
             root.launcherOpen = !root.launcherOpen
         }
+        function toggleClipboard(): void {
+            root.clipboardOpen = !root.clipboardOpen
+        }
+        function toggleUpdates(): void {
+            root.updatesRequest++
+        }
         function toggleThemePicker(): void {
             pickerProcess.running = !pickerProcess.running
+        }
+    }
+
+    // Privileged prompts are the shell's own card (PolkitPrompt), so polkit
+    // asks here instead of in a second, differently styled window. One agent
+    // per session: hyprpolkitagent must not be started alongside this.
+    PolkitAgent {
+        id: polkitAgent
+    }
+    Variants {
+        model: Quickshell.screens
+        delegate: PolkitPrompt {
+            required property ShellScreen modelData
+            screen: modelData
+            flow: polkitAgent.flow
+            open: polkitAgent.isActive
+                  && modelData.name === Hyprland.focusedMonitor?.name
         }
     }
 
@@ -44,6 +72,8 @@ ShellRoot {
         id: bar
         launcherOpen: root.launcherOpen
         pickerOpen: root.pickerOpen
+        clipboardOpen: root.clipboardOpen
+        updatesRequest: root.updatesRequest
     }
 
     // One launcher surface per monitor, like the bar. A window is bound to
@@ -59,6 +89,19 @@ ShellRoot {
             open: root.launcherOpen
                   && modelData.name === Hyprland.focusedMonitor?.name
             onDismissed: root.launcherOpen = false
+        }
+    }
+
+    // Clipboard history, same per-monitor lifecycle as the launcher. It floats
+    // instead of joining the capsule: a keybind, not the bar, opens it.
+    Variants {
+        model: Quickshell.screens
+        delegate: Clipboard {
+            required property ShellScreen modelData
+            screen: modelData
+            open: root.clipboardOpen
+                  && modelData.name === Hyprland.focusedMonitor?.name
+            onDismissed: root.clipboardOpen = false
         }
     }
 }

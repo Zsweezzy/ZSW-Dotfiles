@@ -12,16 +12,26 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
 import Quickshell
+import Quickshell.Hyprland
 
 Item {
     id: root
 
     required property var screen
     property var tooltipHost: null
+    /// The bar's window. Tray menus are positioned relative to it.
+    property var window: null
     /// True on the monitor the launcher window is on, while it is mapped.
     property bool launcherOpen: false
     /// True on the monitor the theme picker is on, while it is mapped.
     property bool pickerOpen: false
+    /// True on the monitor the clipboard picker is open on. The picker is an
+    /// overlay window, so an open flyout would otherwise sit on top of its
+    /// field; opening it closes the flyout.
+    property bool clipboardOpen: false
+    onClipboardOpenChanged: if (root.clipboardOpen) root.close()
+    /// Bumped by the updates keybind; only the focused monitor reacts.
+    property int updatesRequest: 0
 
     /// Module whose flyout is open, or null. The module owns the panel
     /// component and the panel owns its width — see Module.qml and Panel.qml.
@@ -73,6 +83,12 @@ Item {
         if (!popup.visible) root.open(module)
         else if (root.panelModule === module) root.close()
         else root.switchTo(module)
+    }
+
+    onUpdatesRequestChanged: {
+        if (root.updatesRequest === 0) return
+        if (Hyprland.focusedMonitor?.name !== root.screen.name) return
+        root.toggle(updatesPill)
     }
 
     // Same pill row, new panel: the card morphs its width/height and the two
@@ -175,6 +191,18 @@ Item {
                 onClicked: root.toggle(clockPill)
             }
 
+            // Only visible while a player has a track; a paused player keeps
+            // the pill, a closed one takes it away.
+            Media {
+                id: mediaPill
+                flat: true
+                hoverStyle: true
+                hPad: 0
+                tooltipHost: root.tooltipHost
+                Layout.alignment: Qt.AlignVCenter
+                onClicked: root.toggle(mediaPill)
+            }
+
             Audio {
                 id: audioPill
                 flat: true
@@ -185,6 +213,18 @@ Item {
                 onClicked: root.toggle(audioPill)
             }
 
+            // Wi-Fi, Bluetooth, display and session share one flyout: four
+            // pills for them would push the capsule past the screen edge.
+            Quick {
+                id: quickPill
+                flat: true
+                hoverStyle: true
+                hPad: 0
+                tooltipHost: root.tooltipHost
+                Layout.alignment: Qt.AlignVCenter
+                onClicked: root.toggle(quickPill)
+            }
+
             Sys {
                 id: sysPill
                 flat: true
@@ -193,6 +233,24 @@ Item {
                 tooltipHost: root.tooltipHost
                 Layout.alignment: Qt.AlignVCenter
                 onClicked: root.toggle(sysPill)
+            }
+
+            // Hidden at zero updates; checkupdates runs every half hour, so the
+            // pill appears on its own once the mirrors have something new.
+            Updates {
+                id: updatesPill
+                flat: true
+                hoverStyle: true
+                hPad: 0
+                tooltipHost: root.tooltipHost
+                Layout.alignment: Qt.AlignVCenter
+                onClicked: root.toggle(updatesPill)
+            }
+
+            // Nothing else on this desktop is a StatusNotifierWatcher.
+            Tray {
+                window: root.window
+                Layout.alignment: Qt.AlignVCenter
             }
 
             // Notifications live in swaync, so the bell is a toggle for its
@@ -331,12 +389,14 @@ Item {
             // Fades out under the incoming panel while the card morphs.
             Loader {
                 id: outgoingLoader
+                width: card.width
                 sourceComponent: root.outgoingModule ? root.outgoingModule.panel : null
                 opacity: 1 - root.morphProgress
             }
 
             Loader {
                 id: panelLoader
+                width: card.width
                 sourceComponent: root.panelModule ? root.panelModule.panel : null
                 // Rides the slide; during a morph the slide is already at 1 and
                 // the crossfade takes over.
