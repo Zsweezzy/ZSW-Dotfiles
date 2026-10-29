@@ -24,7 +24,7 @@ ShellRoot {
     Component { id: audioPanel; AudioPanel {} }
     Component { id: mediaPanel; MediaPanel {} }
     Component { id: notifPanel; NotificationsPanel {} }
-    Component { id: audioFlyout; AudioFlyout {} }
+    Component { id: audioCard; AudioCard {} }
 
     Component.onCompleted: {
         report("clock", clockPanel.createObject(this))
@@ -32,7 +32,7 @@ ShellRoot {
         report("media", mediaPanel.createObject(this))
         report("quick", quick.panel.createObject(this))
         report("notifications", notifPanel.createObject(this))
-        report("audioflyout", audioFlyout.createObject(this))
+        report("audiocard", audioCard.createObject(this))
         Qt.quit()
     }
 }

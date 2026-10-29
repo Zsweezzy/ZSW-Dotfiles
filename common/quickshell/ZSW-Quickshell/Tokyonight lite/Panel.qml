@@ -15,7 +15,7 @@ Item {
     property real padH: Tokyo.panelPadH
     property real padV: Tokyo.panelPadV
     /// Gap between the body's children. Most panels use the house value; the
-    /// audio side panel packs rows tighter.
+    /// audio card packs rows tighter.
     property real gap: Tokyo.panelGap
 
     /// Screen the panel is on, set by Island's Loader. Null offscreen (the

@@ -1,8 +1,9 @@
-// AudioFlyout.qml — the audio pill's panel, beside the capsule.
+// AudioCard.qml — the audio card, hanging off the control centre's left edge.
 //
-// Not an island card: this is an instrument panel, not another view of the
-// control centre, so it hangs off the capsule's left edge and the card is
-// closed while it is up (Island.qml owns both lifetimes).
+// Not a flyout of its own: the drawer and this card live in the same popup
+// surface (Island.qml), so opening audio opens the control centre with its card
+// beside it — one window to dismiss, and the drawer already holds the keyboard.
+// The card shares the drawer's top line and slides in with it.
 //
 // Sections: outputs, inputs, applications. A device row is how you *choose*
 // that device, so only the default one carries volume and mute — a slider on a
@@ -17,15 +18,13 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Services.Pipewire
 
-PopupWindow {
+Item {
     id: root
 
-    color: "transparent"
-    visible: false
-    grabFocus: false
-    // 360 is the card; the extra room on both sides is the shadow's.
-    implicitWidth: 360 + Tokyo.flyoutShadowPad * 2
-    implicitHeight: body.implicitHeight + Tokyo.flyoutShadowPad * 2
+    readonly property int cardWidth: 360
+
+    implicitWidth: cardWidth
+    implicitHeight: body.implicitHeight
 
     /// Device rows are only worth showing when they can carry volume: a node
     /// with no audio interface is still selectable, its controls just do not
@@ -66,37 +65,13 @@ PopupWindow {
         else Pipewire.preferredDefaultAudioSink = node
     }
 
-    /// Anchor to the capsule's left edge, vertically centred on it, and flip
-    /// sides if that would leave the screen (PopupAdjustment). `byKeyboard`
-    /// skips the grab: a keybind carries no pointer serial, and a popup that
-    /// asks for one without it never maps.
-    function toggleFor(item, byKeyboard) {
-        root.anchor.item = item
-        root.anchor.edges = Edges.Left
-        root.anchor.gravity = Edges.Left
-        root.anchor.adjustment = PopupAdjustment.All
-        root.grabFocus = !byKeyboard
-        root.visible = !root.visible
-    }
-
-    /// Forwarded by Island.qml when the bar, not this popup, holds the keyboard.
+    /// Forwarded by Island.qml when the bar, not the popup, holds the keyboard.
     function handleKey(event) {
         body.handleKey(event)
     }
 
-    Shortcut {
-        sequence: "Escape"
-        context: Qt.WindowShortcut
-        onActivated: root.visible = false
-    }
-
-    // Focus only lands once the surface exists; before that the chain has no
-    // window to put focus in.
-    onVisibleChanged: if (visible) Qt.callLater(body.focusFirst)
-
-    // The card is the panel's own surface, unlike the island's drawer: this
-    // window hangs beside the capsule, so it needs the fill, the border and the
-    // shadow the island's card gets from Island.qml.
+    // The drawer's card is part of the island; this one rides in the same
+    // popup, so it carries its own fill, border and shadow.
     Rectangle {
         id: card
         anchors.fill: body
@@ -117,9 +92,7 @@ PopupWindow {
 
     Panel {
         id: body
-        width: root.implicitWidth - Tokyo.flyoutShadowPad * 2
-        x: Tokyo.flyoutShadowPad
-        y: Tokyo.flyoutShadowPad
+        width: root.cardWidth
         gap: 2
 
         Text {

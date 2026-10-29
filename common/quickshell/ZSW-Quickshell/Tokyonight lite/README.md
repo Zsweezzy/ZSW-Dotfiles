@@ -30,7 +30,7 @@ hover-opened cards, no tooltips. Every control is reachable from the keyboard.
 |-----|--------------|
 | `Super+Tab` | open/close the island control centre |
 | `Super+N` | open/close the notification centre |
-| `Super+A` | open/close the audio side panel |
+| `Super+A` | open/close the audio card beside the control centre |
 | `Tab` / `Shift+Tab` | next / previous control in an open panel |
 | arrows | same as Tab, both axes |
 | `Enter` / `Space` | activate the focused control |
@@ -95,8 +95,9 @@ module at `scripts/`.
   values. `NetworkMonitor.qml` refreshes one shared snapshot every second; all
   non-loopback adapters are represented, with non-Wi‑Fi adapters grouped under
   the Ethernet tooltip.
-- Clicking the audio pill (or Super+A) opens `AudioFlyout.qml` beside the
-  capsule: output/input devices (click a row to make it the default, through
+- Clicking the audio pill (or Super+A) opens the control centre with
+  `AudioCard.qml` beside its left edge, in the same popup surface: output/input
+  devices (click a row to make it the default, through
   `Pipewire.preferredDefaultAudioSink/Source`) and a slider + mute for every
   running playback stream. Only the default device carries volume, because a
   slider on a device nothing is routed through changes nothing.
@@ -929,8 +930,8 @@ Tokyo.qml            palette + geometry singleton
 NetworkMonitor.qml  shared per-adapter rate/latency data source
 Brightness.qml      shared DDC/CI brightness service (display map, debounced writes)
 Workspaces/Cava/OpenApps/Wifi/Ethernet/Audio/Gpu/Cpu/Mem/Updates.qml
-AudioFlyout.qml       popup with per-app volume + input/output device switching
-TrayMenu.qml          SNI right-click menu rendered as a flyout (same look as AudioFlyout)
+AudioCard.qml         audio card in the island popup: per-app volume, in/out devices
+TrayMenu.qml          SNI right-click menu rendered as a flyout (same look as the island cards)
 BrightnessFlyout.qml  per-monitor DDC/CI luminance slider (right-click a workspace pill)
 Clock.qml             the one centre pill: HH:mm:ss over the date, a clock glyph
                       while its flyout is open (left-click → morph)

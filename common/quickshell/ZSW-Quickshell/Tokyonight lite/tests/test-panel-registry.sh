@@ -32,7 +32,7 @@ check "panel is chosen by module, not by name" Island.qml \
 # A 0-height xdg_popup is a Wayland protocol error, and closing nulls the module
 # in the same commit that drops the loader's item.
 check "panel surface never collapses to zero height" Island.qml \
-      'implicitHeight: Math.max(1, root.surfaceHeight + Tokyo.flyoutShadowPad)'
+      'Math.max(1, Math.max(root.surfaceHeight, root.audioHeight)'
 # The flyout is a drawer: the card slides down from behind the capsule inside
 # an already-full-height surface, instead of resizing the surface mid-map.
 check "flyout slides in as a drawer" Island.qml \
@@ -109,13 +109,21 @@ check "the bar routes Super+A to the focused island" Bar.qml \
 # popup: a popup of the bar cannot hold keyboard focus.
 check "clipboard picker is per-monitor" shell.qml 'delegate: Clipboard'
 
-# The audio pill opens an instrument panel of its own, hanging off the capsule,
-# rather than a card inside it: routing and per-app streams do not fit in a
-# drawer that is sized for the control centre.
-check "the audio pill opens its side panel" Island.qml \
+# The audio pill opens the instrument panel: routing and per-app streams do not
+# fit in a drawer sized for the control centre.
+check "the audio pill opens its card" Island.qml \
       'onClicked: root.toggleAudio()'
-check "the side panel anchors to the capsule" AudioFlyout.qml 'root.anchor.item = item'
-check "the side panel lists running streams" AudioFlyout.qml 'n.isStream && n.isSink'
+# Not a flyout of its own: the card rides in the drawer's popup surface, sharing
+# its top line, so there is one window to dismiss and one keyboard owner. It
+# sits beside the drawer's left column, where the volume pill is, and must not
+# shift the drawer on screen.
+check "the audio card hangs beside the drawer" Island.qml \
+      'x: Tokyo.flyoutShadowPad'
+check "the audio card does not move the drawer" Island.qml \
+      'x: Tokyo.flyoutShadowPad + root.audioExtra'
+check "the audio card shares the drawer's surface" Island.qml \
+      'active: root.audioOpen'
+check "the audio card lists running streams" AudioCard.qml 'n.isStream && n.isSink'
 
 # Hover is gone everywhere: rows react to keyboard focus and a press. A hover
 # colour is how a keyboard-only control centre rots, so it is a hard rule.
@@ -144,9 +152,9 @@ cp tests/panel-probe.qml.in "$TMP/panel-probe.qml"
 out=$(QT_QPA_PLATFORM=offscreen timeout 20 quickshell -p "$TMP/panel-probe.qml" 2>&1)
 clean=$(sed 's/\x1b\[[0-9;]*m//g' <<<"$out")
 
-# AudioFlyout is a PopupWindow, so its implicit width is the 360px card plus
-# Tokyo.flyoutShadowPad on both sides for the shadow.
-for want in clock=300 audio=288 media=300 quick=720 notifications=380 audioflyout=392; do
+# The audio card rides in the drawer's surface, so its implicit width is the
+# 360px card itself — no shadow padding, the popup carries that.
+for want in clock=300 audio=288 media=300 quick=720 notifications=380 audiocard=360; do
     if grep -qE "(^|: )$want" <<<"$clean"; then
         echo "ok   ${want%%=*} panel is ${want#*=}px wide"
     else

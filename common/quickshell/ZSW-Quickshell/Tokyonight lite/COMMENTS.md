@@ -350,7 +350,7 @@ This file is the design rationale for AI: read it before editing.
 //   format          {icon} {volume}%
 //   format-muted    \uf026 {volume}%
 //   format-icons    [\uf027, \uf027, \uf028]   (threshold at 67%)
-//   click/wheel     opens the AudioFlyout (per-app volume, in/out devices)
+//   click/wheel     opens the audio card beside the control centre (same surface)
 //   right/middle    same flyout — there is no separate popup anymore
 //   scroll          volume ±5%, clamped to the shared overboost ceiling
 //   tooltip         : "{desc} {volume}%" (hidden while the flyout is open)

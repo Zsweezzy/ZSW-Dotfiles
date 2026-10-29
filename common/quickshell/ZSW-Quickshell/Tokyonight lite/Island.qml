@@ -22,7 +22,7 @@ Item {
     property bool launcherOpen: false
     onLauncherOpenChanged: if (root.launcherOpen) {
         root.close()
-        audioFlyout.visible = false
+        root.audioOpen = false
     }
     /// True on the monitor the theme picker is on, while it is mapped.
     property bool pickerOpen: false
@@ -42,25 +42,38 @@ Item {
     /// component and the panel owns its width — see Module.qml and Panel.qml.
     property var panelModule: null
 
-    /// The audio side panel is a separate popup, so it has its own lifetime.
-    /// While either surface is mapped the bar takes the keyboard (see Bar.qml):
-    /// an xdg_popup can only receive keys while its parent surface can.
-    readonly property bool keyboardActive: popup.visible || audioFlyout.visible
+    /// True while the audio card is hanging off the drawer's left edge. One
+    /// popup, so it needs no lifetime of its own.
+    property bool audioOpen: false
+
+    /// The audio card is part of the drawer's surface, so one surface means one
+    /// keyboard: while the popup is mapped the bar takes it (see Bar.qml), an
+    /// xdg_popup can only receive keys while its parent surface can.
+    readonly property bool keyboardActive: popup.visible
 
     /// Keys reach the island itself only when the popup could not take a grab
     /// (opened from Super+Tab/N/A, where there is no pointer serial). The bar
-    /// then keeps the keyboard and this forwards to whichever surface is up.
+    /// then keeps the keyboard and this forwards to whichever card has focus.
     focus: root.keyboardActive
     Keys.onPressed: event => root.handleKey(event)
+
+    function focusIn(item) {
+        let it = root.Window.activeFocusItem
+        while (it) {
+            if (it === item) return true
+            it = it.parent
+        }
+        return false
+    }
 
     function handleKey(event) {
         if (event.key === Qt.Key_Escape) {
             root.close()
-            audioFlyout.visible = false
             event.accepted = true
             return
         }
-        if (audioFlyout.visible) audioFlyout.handleKey(event)
+        if (audioLoader.item && root.focusIn(audioLoader.item))
+            audioLoader.item.handleKey(event)
         else if (panelLoader.item) panelLoader.item.handleKey(event)
     }
 
@@ -79,6 +92,14 @@ Item {
             outgoingLoader.item ? outgoingLoader.item.implicitWidth : 0)
     readonly property real surfaceHeight: Math.max(root.panelHeight,
             outgoingLoader.item ? outgoingLoader.item.implicitHeight : 0)
+    /// The audio card's share of the popup: the drawer keeps its width and the
+    /// card hangs off its left edge, sharing its top line.
+    readonly property real audioWidth: root.audioOpen && audioLoader.item
+                                       ? audioLoader.item.implicitWidth : 0
+    readonly property real audioHeight: root.audioOpen && audioLoader.item
+                                        ? audioLoader.item.implicitHeight : 0
+    readonly property real audioExtra: root.audioWidth > 0
+                                       ? Tokyo.panelGap + root.audioWidth : 0
 
     width: capsule.width
     height: Tokyo.islandHeight
@@ -102,7 +123,6 @@ Item {
         closeTimer.stop()
         root.closing = false
         root.panelModule = module
-        audioFlyout.visible = false
         // A keybind has no pointer serial, so xdg_popup cannot be grabbed:
         // asking for the grab just makes the surface fail to map. In that mode
         // the bar keeps the keyboard (Bar.qml) and forwards keys here.
@@ -131,15 +151,16 @@ Item {
         root.toggle(bell, byKeyboard)
     }
 
-    /// Super+A and the audio pill: the advanced audio side panel. It is not an
-    /// island card — it sits beside the capsule — so opening it closes the card.
+    /// Super+A and the audio pill: the audio card hangs off the control centre,
+    /// so it brings the drawer with it. Toggling it off leaves the drawer up.
     function toggleAudio(byKeyboard) {
-        if (audioFlyout.visible) {
-            audioFlyout.visible = false
+        if (root.audioOpen) {
+            root.audioOpen = false
             return
         }
-        root.close()
-        audioFlyout.toggleFor(capsule, byKeyboard)
+        if (!popup.visible) root.open(quickPill, byKeyboard)
+        else if (root.panelModule !== quickPill) root.switchTo(quickPill)
+        root.audioOpen = true
     }
 
     // Same pill row, new panel: the card morphs its width/height and the two
@@ -147,6 +168,7 @@ Item {
     function switchTo(module) {
         closeTimer.stop()
         root.closing = false
+        root.audioOpen = false
         root.outgoingModule = root.panelModule
         root.morphProgress = 0
         root.panelModule = module
@@ -156,6 +178,7 @@ Item {
     function close() {
         if (!popup.visible || root.closing) return
         root.closing = true
+        root.audioOpen = false
         closeTimer.start()
     }
 
@@ -338,8 +361,9 @@ Item {
         // The card is a keyboard surface: Tab/arrows move between its controls.
         // It only works while the bar holds the keyboard (Bar.qml).
         grabFocus: true
-        implicitWidth: root.surfaceWidth + Tokyo.flyoutShadowPad * 2
-        implicitHeight: Math.max(1, root.surfaceHeight + Tokyo.flyoutShadowPad)
+        implicitWidth: root.surfaceWidth + Tokyo.flyoutShadowPad * 2 + root.audioExtra
+        implicitHeight: Math.max(1, Math.max(root.surfaceHeight, root.audioHeight)
+                                    + Tokyo.flyoutShadowPad)
 
         // An xdg_popup dismisses itself on an outside click, and that write
         // drops the binding on `visible` — so the state has to follow the
@@ -348,6 +372,7 @@ Item {
         onVisibleChanged: if (!visible) {
             root.panelModule = null
             root.outgoingModule = null
+            root.audioOpen = false
             root.closing = false
         }
 
@@ -363,6 +388,12 @@ Item {
             popup.anchor.gravity = Edges.Bottom
             popup.anchor.adjustment = PopupAdjustment.All
         }
+
+        // The popup is centred under the capsule. Growing it to the left would
+        // drag the drawer with it, so the anchor rect takes the card's share on
+        // the right: the popup shifts left by exactly what it gained, and the
+        // drawer stays where it is.
+        anchor.margins.right: root.audioExtra
 
         // The flyout's shadow, in the transparent room the popup keeps around
         // the card. It is not inside the card: clip: true there would eat it.
@@ -397,9 +428,11 @@ Item {
             }
             // The surface holds the larger of the two panels while morphing, so
             // the card is centred in it rather than left-aligned (the popup is
-            // centred under the capsule). The pad on both sides is the room
-            // the shadow needs.
-            x: Tokyo.flyoutShadowPad + (root.surfaceWidth - width) / 2
+            // centred under the capsule). The audio card, when it is up, owns
+            // the left strip; the margin on the popup shifts the whole surface
+            // left by that same amount, so the drawer does not move on screen.
+            // The pad on both sides is the room the shadow needs.
+            x: Tokyo.flyoutShadowPad + root.audioExtra + (root.surfaceWidth - width) / 2
             // Drawer: the popup surface is already this tall, so the whole card
             // slides down from behind the capsule, and back up on close.
             // Animating the surface's own height instead resizes it mid-map and
@@ -443,12 +476,21 @@ Item {
             }
 
         }
-    }
 
-    // The advanced audio panel, to the left of the capsule and vertically
-    // centred. A separate popup, not a second card: it is an instrument panel,
-    // not another view of the control centre.
-    AudioFlyout {
-        id: audioFlyout
+        // The audio card, in the drawer's own surface: beside the status box the
+        // volume pill lives in (the drawer's left column), sharing the top line
+        // and riding the same slide. Loaded only while open so the panel's
+        // `focusFirst` cannot run on a hidden card.
+        Loader {
+            id: audioLoader
+            active: root.audioOpen
+            // The popup grew left by exactly this strip (audioExtra on the
+            // popup's right margin keeps the drawer still), so the card hugs
+            // the popup's left pad and the gap falls between it and the drawer.
+            x: Tokyo.flyoutShadowPad
+            property real reveal: card.reveal
+            y: -height * (1 - reveal)
+            sourceComponent: Component { AudioCard {} }
+        }
     }
 }

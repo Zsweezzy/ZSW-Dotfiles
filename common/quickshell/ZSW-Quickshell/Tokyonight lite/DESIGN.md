@@ -123,10 +123,10 @@ reader identifies the stat by colour before they read the label.
 
 The lite island has **one** card: `QuickPanel`. Every control in the capsule
 opens it, so a new bar function goes into the card, not into a new panel.
-Two surfaces are deliberately outside it: the notification centre (`Bell` opens
-`NotificationsPanel`) and the audio side panel (`AudioFlyout`, hung off the
-capsule's left edge, opened by the volume pill or Super+A). Both are surfaces
-of their own because they hold per-row controls, not a status card.
+The notification centre (`Bell` opens `NotificationsPanel`) is the one surface
+of its own. The audio card (`AudioCard`, opened by the volume pill or Super+A)
+is not: it rides in the control centre's popup, hanging off the drawer's left
+edge, so there is one window to dismiss and one keyboard owner.
 
 - a control (a row, a slider, a button) is written inline in `QuickPanel.qml`;
 - a section that already exists as a `Panel` is embedded with
@@ -170,7 +170,7 @@ body; 14px+ only for the clock. `letterSpacing` 1.2–1.5 on small caps labels.
 
 | file | padH / padV |
 |---|---|
-| AudioFlyout, BrightnessFlyout, NotificationCenter, SettingsFlyout | 16 / 12 |
+| AudioCard, BrightnessFlyout, NotificationCenter, SettingsFlyout | 16 / 12 |
 | **SysFlyout** | **8 / 8** |
 | Toast | 10 / 8 |
 | TrayMenu | 10 / 8 |
@@ -234,7 +234,7 @@ the arrows step the focus chain, Enter/Space call `activate()`, Escape closes
 the surface. A panel only has to put its click handler in `activate()`.
 
 `Super+Tab`, `Super+N` and `Super+A` open the control centre, the notification
-centre and the audio side panel through IPC. A keybind carries no pointer
+centre and the audio card through IPC. A keybind carries no pointer
 serial, so an xdg popup opened that way cannot take a keyboard grab — asking for
 one makes it fail to map at all. `Island.qml` opens such popups without the grab,
 keeps the bar's `WlrLayershell.keyboardFocus` Exclusive while one is up, and
