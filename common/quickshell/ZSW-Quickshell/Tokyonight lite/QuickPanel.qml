@@ -48,10 +48,15 @@ Panel {
     /// Current powerprofilesctl profile: performance, balanced or power-saver.
     property string powerProfile: ""
 
-    // Half the monitor, and never narrower than two boxes need: the device rows
-    // read better wide than squeezed into a pill's width. Offscreen (no screen)
-    // it falls back to that same minimum.
-    implicitWidth: root.hostScreen ? Math.max(720, root.hostScreen.width / 2) : 720
+    // The control centre is the space-hungry card, so its own padding runs one
+    // step tighter than the house values; its boxes follow (see below).
+    padH: 12
+    padV: 12
+
+    // 42% of the monitor, and never narrower than two boxes need: the device
+    // rows read better wide than squeezed into a pill's width. Offscreen (no
+    // screen) it falls back to that same minimum.
+    implicitWidth: root.hostScreen ? Math.max(680, root.hostScreen.width * 0.42) : 680
 
     Component.onCompleted: root.scan(true)
     Component.onDestruction: root.scan(false)
@@ -104,12 +109,15 @@ Panel {
 
         Row {
             anchors.fill: parent
-            spacing: Tokyo.panelGap
+            spacing: 10
 
             Box {
                 id: todayBox
+                padH: 12
+                padV: 12
+                gap: 10
                 // Wide enough for the calendar's seven day columns, then a share.
-                width: Math.max(300, (columns.width - Tokyo.panelGap) * 0.42)
+                width: Math.max(300, (columns.width - 10) * 0.42)
                 height: columns.implicitHeight
 
                 ClockPanel {
@@ -165,7 +173,10 @@ Panel {
 
             Box {
                 id: controlBox
-                width: columns.width - todayBox.width - Tokyo.panelGap
+                padH: 12
+                padV: 12
+                gap: 10
+                width: columns.width - todayBox.width - 10
                 height: columns.implicitHeight
 
                 // ---- Wi-Fi ----
@@ -226,7 +237,7 @@ Panel {
                             required property var modelData
 
                             width: parent.width
-                            height: 24
+                            height: 22
                             radius: 6
                             color: rowArea.pressed ? Tokyo.bgHighlight : "transparent"
                             scale: rowArea.pressed ? 0.97 : 1
@@ -327,7 +338,7 @@ Panel {
                             required property var modelData
 
                             width: parent.width
-                            height: 24
+                            height: 22
                             radius: 6
                             color: rowArea.pressed ? Tokyo.bgHighlight : "transparent"
                             scale: rowArea.pressed ? 0.97 : 1
@@ -386,7 +397,7 @@ Panel {
                             required property var modelData
 
                             width: (parent.width - 12) / 3
-                            height: 28
+                            height: 26
                             radius: Tokyo.pillRadius
                             color: root.powerProfile === modelData.id ? Tokyo.activeTint
                                    : (profileArea.pressed ? Tokyo.bgHighlight : "transparent")
@@ -481,7 +492,7 @@ Panel {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredWidth: 1
-                        height: 30
+                        height: 28
                         radius: Tokyo.pillRadius
                         color: checkPress.pressed ? Tokyo.bgHighlight : "transparent"
                         border.width: 1
@@ -513,7 +524,7 @@ Panel {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredWidth: 2
-                        height: 30
+                        height: 28
                         radius: Tokyo.pillRadius
                         color: root.updates && root.updates.updating ? Tokyo.bgHighlight
                                : updatePress.pressed ? Tokyo.bgHighlight
@@ -577,7 +588,7 @@ Panel {
                             required property var modelData
 
                             width: (parent.width - 24) / 5
-                            height: 30
+                            height: 28
                             radius: Tokyo.pillRadius
                             color: root.confirm === modelData.id ? Tokyo.red : "transparent"
                             scale: sessionArea.pressed ? 0.9 : 1

@@ -12,7 +12,11 @@ Item {
 
     default property alias content: col.data
 
-    implicitHeight: col.implicitHeight + Tokyo.panelPadV * 2
+    property real padH: Tokyo.panelPadH
+    property real padV: Tokyo.panelPadV
+    property real gap: Tokyo.panelGap
+
+    implicitHeight: col.implicitHeight + root.padV * 2
 
     Rectangle {
         anchors.fill: parent
@@ -22,9 +26,9 @@ Item {
 
     Column {
         id: col
-        x: Tokyo.panelPadH
-        y: Tokyo.panelPadV
-        width: root.width - Tokyo.panelPadH * 2
-        spacing: Tokyo.panelGap
+        x: root.padH
+        y: root.padV
+        width: root.width - root.padH * 2
+        spacing: root.gap
     }
 }

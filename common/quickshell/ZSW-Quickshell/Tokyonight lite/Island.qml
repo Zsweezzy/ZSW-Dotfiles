@@ -46,6 +46,11 @@ Item {
     /// popup, so it needs no lifetime of its own.
     property bool audioOpen: false
 
+    /// Any card is on screen. Bar.qml keeps the whole island out of the way
+    /// over a fullscreen window until one of these asks for it.
+    readonly property bool anyOpen: popup.visible || audioOpen || launcherOpen
+                                    || pickerOpen || clipboardOpen || polkitOpen
+
     /// The audio card is part of the drawer's surface, so one surface means one
     /// keyboard: while the popup is mapped the bar takes it (see Bar.qml), an
     /// xdg_popup can only receive keys while its parent surface can.
@@ -413,14 +418,25 @@ Item {
         anchor.margins.right: root.audioExtra
 
         // The flyout's shadow, in the transparent room the popup keeps around
-        // the card. It is not inside the card: clip: true there would eat it.
-        RectangularShadow {
-            anchors.fill: card
-            radius: card.radius
-            blur: Tokyo.flyoutShadowBlur
-            offset: Qt.vector2d(0, Tokyo.flyoutShadowOffsetY)
+        // the card. A plain rounded rect blurred by MultiEffect, not
+        // RectangularShadow: that one draws its shape inset from its item, so
+        // the fade starts a dozen pixels away from the card and the gap reads
+        // as a hard line. The rect is the card grown by the blur, so the fade
+        // is already at zero when it reaches the item's edge.
+        Rectangle {
+            x: card.x - Tokyo.flyoutShadowBlur
+            y: card.y - Tokyo.flyoutShadowBlur + Tokyo.flyoutShadowOffsetY
+            width: card.width + Tokyo.flyoutShadowBlur * 2
+            height: card.height + Tokyo.flyoutShadowBlur * 2
+            radius: card.radius + Tokyo.flyoutShadowBlur
             color: Tokyo.flyoutShadowColor
             visible: card.reveal > 0
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                blurEnabled: true
+                blur: 1.0
+                blurMax: Tokyo.flyoutShadowBlur
+            }
         }
 
         Rectangle {

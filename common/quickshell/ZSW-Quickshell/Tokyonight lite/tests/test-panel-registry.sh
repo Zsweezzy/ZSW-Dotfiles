@@ -129,6 +129,16 @@ check "the audio card lists running streams" AudioCard.qml 'n.isStream && n.isSi
 # popup anchored to it) must live there to stay usable over a game.
 check "the bar renders over exclusive fullscreen" Bar.qml \
       'WlrLayershell.layer: WlrLayer.Overlay'
+# Overlay also means a pill on every game's screen, so the bar hides while the
+# active workspace holds a fullscreen (mode 2/3) window and returns on a card.
+check "the bar steps aside under fullscreen" Bar.qml \
+      'readonly property bool outOfTheWay:'
+check "fullscreen means mode 2 or 3, not maximized" Bar.qml \
+      '.filter(c => c.fullscreen >= 2)'
+check "the hidden bar is click-through" Bar.qml \
+      'mask: Region { item: win.outOfTheWay ? null : island }'
+check "the capsule hides with the bar" Bar.qml 'visible: !win.outOfTheWay'
+check "an open card brings the bar back" Bar.qml '!island.anyOpen'
 # The prompt card joins the capsule's bottom edge: the bar's shadow is clipped
 # there, or it darkens the card's top and breaks the join.
 check "capsule shadow stops at the prompt seam" Island.qml 'clip: root.polkitOpen'
@@ -177,7 +187,7 @@ clean=$(sed 's/\x1b\[[0-9;]*m//g' <<<"$out")
 
 # The audio card rides in the drawer's surface, so its implicit width is the
 # 360px card itself — no shadow padding, the popup carries that.
-for want in clock=300 audio=288 media=300 quick=720 notifications=380 audiocard=360; do
+for want in clock=300 audio=288 media=300 quick=680 notifications=380 audiocard=360; do
     if grep -qE "(^|: )$want" <<<"$clean"; then
         echo "ok   ${want%%=*} panel is ${want#*=}px wide"
     else

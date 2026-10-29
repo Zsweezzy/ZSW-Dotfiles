@@ -133,7 +133,6 @@ Panel {
                 root.player.position = Math.max(0, Math.min(root.length,
                                                             root.pos + seconds))
             }
-            FocusRing {}
         }
     }
 

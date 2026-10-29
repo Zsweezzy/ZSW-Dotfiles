@@ -313,7 +313,6 @@ Item {
                     vs.audio.volume = Math.max(0, Math.min(1,
                                         vs.value + direction * 0.05))
             }
-            FocusRing {}
         }
     }
 

@@ -91,6 +91,19 @@ under an exclusive-fullscreen window and only overlay is allowed above it; the
 island popup rides with its parent surface, so the bar and its cards stay
 usable over a game.
 
+Being above everything is only half of it: a pill sitting on a game is not
+"usable", it is in the way. So the bar steps aside while the active workspace
+holds a window in fullscreen mode 2 or 3 — `outOfTheWay` in `Bar.qml` — and
+comes back the moment a card is asked for (`island.anyOpen`, `polkitOpen`).
+Maximized (mode 1) is not fullscreen here: the bar stays, because the window
+still leaves room for it. The test is a `hyprctl -j clients` poll, not
+`Hyprland.toplevels` (its cached `fullscreen` goes stale) and not the
+workspace's `hasFullscreen` (true for maximized too).
+
+Out of the way means hidden *and* click-through: the surface stays mapped with
+`mask: Region { item: null }` and `Island.visible: false`, so a keybind opens
+its popup against a parent that already exists instead of racing the remap.
+
 ### Ink
 
 | token | use it for |
@@ -235,7 +248,9 @@ tooltips and no hover-opened cards. A control answers to keyboard focus and to
 a press.
 
 Every control opts in with `activeFocusOnTab: true` and a `function activate()`;
-`FocusRing {}` draws the ring. `Panel.qml` owns navigation: Tab/Shift+Tab and
+`FocusRing {}` draws the ring. Sliders leave it out: a panel focuses its first
+control on open, and on a slider that ring read as a permanent selection box.
+`Panel.qml` owns navigation: Tab/Shift+Tab and
 the arrows step the focus chain, Enter/Space call `activate()`, Escape closes
 the surface. A panel only has to put its click handler in `activate()`.
 

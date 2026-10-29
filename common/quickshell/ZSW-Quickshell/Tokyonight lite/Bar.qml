@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import Quickshell.Wayland
 
 Variants {
@@ -27,6 +28,12 @@ Variants {
     function toggleNotifications(byKeyboard) { toggleNotificationsRequested(byKeyboard) }
     function toggleAudio(byKeyboard) { toggleAudioRequested(byKeyboard) }
 
+    /// Workspaces holding a window in fullscreen mode 2/3 — the mode that
+    /// covers the bar. Polled rather than read from Hyprland's cached client
+    /// objects (their `fullscreen` goes stale) and not the workspace's
+    /// `hasFullscreen` flag (which counts maximized windows too).
+    property var fullscreenWorkspaces: []
+
     PanelWindow {
         id: win
         required property ShellScreen modelData
@@ -36,6 +43,51 @@ Variants {
         implicitHeight: Tokyo.barHeight + Tokyo.shadowPad
         exclusiveZone: Tokyo.barHeight
         color: "transparent"
+
+        // hyprctl rather than Hyprland.toplevels: the cached client objects keep
+        // a stale `fullscreen`, and the workspace's own hasFullscreen counts
+        // maximized windows too. One probe on the focused monitor is enough —
+        // the answer covers every output.
+        Process {
+            id: fsProbe
+            command: ["hyprctl", "-j", "clients"]
+            stdout: StdioCollector {
+                onStreamFinished: {
+                    try {
+                        barRoot.fullscreenWorkspaces = JSON.parse(text)
+                            .filter(c => c.fullscreen >= 2)
+                            .map(c => c.workspace.id)
+                    } catch (e) {
+                        // A failed probe leaves the last known state alone.
+                    }
+                }
+            }
+        }
+
+        Timer {
+            interval: 1000
+            repeat: true
+            running: win.screen.name === Hyprland.focusedMonitor?.name
+            onTriggered: fsProbe.running = true
+        }
+
+        Component.onCompleted: fsProbe.running = true
+
+        // Hyprland hides *top* layers behind an exclusive-fullscreen window and
+        // draws overlay ones over it — which is why this bar is an overlay. The
+        // price was a pill sitting on every game's screen. Stay out of the way
+        // until a card is asked for; then Overlay is exactly what puts the bar
+        // (and the popup hanging off it) above the game.
+        readonly property var hereWorkspace: Hyprland.monitorFor(win.screen)?.activeWorkspace
+        readonly property bool fullscreenHere:
+            barRoot.fullscreenWorkspaces.indexOf(hereWorkspace?.id) >= 0
+        readonly property bool outOfTheWay:
+            fullscreenHere && !island.anyOpen && !barRoot.polkitOpen
+
+        // Mapped but invisible and click-through while out of the way: the
+        // surface stays alive, so the keybind can open a popup against a
+        // parent that is already mapped instead of racing the remap.
+        mask: Region { item: win.outOfTheWay ? null : island }
         // Overlay, not the default top: Hyprland hides top layers behind an
         // exclusive-fullscreen window (a game), and only the overlay layer is
         // allowed above it. The bar and the popups anchored to it stay usable
@@ -50,6 +102,7 @@ Variants {
         Island {
             id: island
             screen: win.screen
+            visible: !win.outOfTheWay
             // Only the monitor the flyout opens on gets a squared header.
             launcherOpen: barRoot.launcherOpen
                           && win.screen.name === Hyprland.focusedMonitor?.name

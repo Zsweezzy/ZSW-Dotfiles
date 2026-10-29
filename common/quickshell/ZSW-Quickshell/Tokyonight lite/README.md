@@ -38,7 +38,8 @@ keyboard.
 | `Escape` | close the panel |
 
 A control opts in with `activeFocusOnTab: true`, `function activate()` and a
-`FocusRing {}`; `Panel.qml` owns the navigation. A keybind has no pointer
+`FocusRing {}` — sliders skip the ring, which read as a selection box when a
+panel focused its first control on open. `Panel.qml` owns the navigation. A keybind has no pointer
 serial, so a popup it opens cannot take an xdg grab — `Island.qml` opens those
 without one and forwards the keys from the bar instead (see `DESIGN.md`).
 
