@@ -78,10 +78,11 @@ Singleton {
     // The polkit card is this wide; the capsule widens to it while a prompt
     // is up, same join as the launcher.
     readonly property real polkitWidth: 400
-    // The picker panel is this wide (two 190px cards plus gaps and padding);
-    // the capsule widens to it while the picker is open for the same reason.
-    // shortcut: fixed to two themes, update both widths when a third lands.
-    readonly property real pickerWidth: 432
+    // The picker panel is this wide (three 190px cards — the two named themes
+    // plus the "+" card — with 12px gaps and 20px padding); the capsule widens
+    // to it while the picker is open for the same reason. More themes scroll
+    // inside that width instead of widening the panel.
+    readonly property real pickerWidth: 634
     // Standalone floating slabs only (the toast card): free-floating shapes
     // read as a drifted bar fragment at the bar's own radius of 10.
     readonly property int popupRadius: 20
