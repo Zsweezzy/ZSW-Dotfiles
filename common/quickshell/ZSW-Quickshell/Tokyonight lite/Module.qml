@@ -44,6 +44,14 @@ Item {
         ColorAnimation { duration: 150; easing.type: Easing.OutQuad }
     }
 
+    // Press feedback: the pill dips and darkens under the pointer, so a click
+    // lands visibly before the flyout slides out. Short, because the flyout
+    // itself now opens in 130 ms.
+    scale: mouse.pressed ? 0.94 : 1
+    Behavior on scale {
+        NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
+    }
+
     RectangularShadow {
         anchors.fill: surface
         radius: surface.radius
@@ -57,7 +65,8 @@ Item {
         id: surface
         anchors.fill: parent
         radius: Tokyo.pillRadius
-        color: root.flat ? "transparent" : root.color
+        color: root.flat ? "transparent"
+                          : (mouse.pressed ? Qt.darker(root.color, 1.45) : root.color)
     }
 
     Text {

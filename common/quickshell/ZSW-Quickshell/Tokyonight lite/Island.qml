@@ -98,6 +98,12 @@ Item {
         else root.switchTo(module)
     }
 
+    /// Keyboard entry point (Super+Tab through shell.qml's IpcHandler): the
+    /// capsule's own flyout, the same one its pills open.
+    function toggleFlyout() {
+        root.toggle(quickPill)
+    }
+
     // Same pill row, new panel: the card morphs its width/height and the two
     // contents crossfade. Nothing retracts and the surface never unmaps.
     function switchTo(module) {
@@ -129,7 +135,7 @@ Item {
     // the move from the capsule onto the card, which is a hop between windows.
     Timer {
         id: hoverOpenTimer
-        interval: 260
+        interval: 90
         onTriggered: {
             if (popup.visible || root.launcherOpen || root.pickerOpen
                     || root.polkitOpen || root.notifOpen) return;
@@ -139,7 +145,7 @@ Item {
     }
     Timer {
         id: hoverCloseTimer
-        interval: 200
+        interval: 150
         onTriggered: if (root.openedByHover && !root.capsuleHovered
                          && !root.cardHovered) root.close()
     }
@@ -355,8 +361,8 @@ Item {
         id: popup
         color: "transparent"
         visible: false
-        implicitWidth: root.surfaceWidth
-        implicitHeight: Math.max(1, root.surfaceHeight)
+        implicitWidth: root.surfaceWidth + Tokyo.flyoutShadowPad * 2
+        implicitHeight: Math.max(1, root.surfaceHeight + Tokyo.flyoutShadowPad)
 
         // An xdg_popup dismisses itself on an outside click, and that write
         // drops the binding on `visible` — so the state has to follow the
@@ -385,6 +391,17 @@ Item {
             popup.anchor.adjustment = PopupAdjustment.All
         }
 
+        // The flyout's shadow, in the transparent room the popup keeps around
+        // the card. It is not inside the card: clip: true there would eat it.
+        RectangularShadow {
+            anchors.fill: card
+            radius: card.radius
+            blur: Tokyo.flyoutShadowBlur
+            offset: Qt.vector2d(0, Tokyo.flyoutShadowOffsetY)
+            color: Tokyo.flyoutShadowColor
+            visible: card.reveal > 0
+        }
+
         Rectangle {
             id: card
             focus: true
@@ -407,8 +424,9 @@ Item {
             }
             // The surface holds the larger of the two panels while morphing, so
             // the card is centred in it rather than left-aligned (the popup is
-            // centred under the capsule).
-            x: (root.surfaceWidth - width) / 2
+            // centred under the capsule). The pad on both sides is the room
+            // the shadow needs.
+            x: Tokyo.flyoutShadowPad + (root.surfaceWidth - width) / 2
             // Drawer: the popup surface is already this tall, so the whole card
             // slides down from behind the capsule, and back up on close.
             // Animating the surface's own height instead resizes it mid-map and

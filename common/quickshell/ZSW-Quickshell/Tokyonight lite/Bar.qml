@@ -15,6 +15,12 @@ Variants {
     /// in another window and rescales with it.
     property real capsuleWidth: Tokyo.launcherWidth
 
+    /// Super+Tab: open the flyout on the focused monitor, exactly as its pills
+    /// do. shell.qml's IpcHandler is the street door; each monitor has its own
+    /// island, so the signal is answered only by the focused one.
+    signal toggleFlyoutRequested
+    function toggleFlyout() { toggleFlyoutRequested() }
+
     PanelWindow {
         id: win
         required property ShellScreen modelData
@@ -56,6 +62,14 @@ Variants {
             property: "capsuleWidth"
             value: island.capsuleWidth
             when: win.screen.name === Hyprland.focusedMonitor?.name
+        }
+
+        Connections {
+            target: barRoot
+            function onToggleFlyoutRequested() {
+                if (win.screen.name === Hyprland.focusedMonitor?.name)
+                    island.toggleFlyout()
+            }
         }
     }
 }

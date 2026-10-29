@@ -281,7 +281,10 @@ Panel {
                             width: parent.width
                             height: 24
                             radius: 6
-                            color: hover.containsMouse ? Tokyo.panelFill : "transparent"
+                            color: hover.pressed ? Tokyo.bgHighlight
+                                   : hover.containsMouse ? Tokyo.panelFill : "transparent"
+                            scale: hover.pressed ? 0.97 : 1
+                            Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
 
                             Text {
                                 anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
@@ -419,7 +422,10 @@ Panel {
                             width: parent.width
                             height: 24
                             radius: 6
-                            color: hover.containsMouse ? Tokyo.panelFill : "transparent"
+                            color: hover.pressed ? Tokyo.bgHighlight
+                                   : hover.containsMouse ? Tokyo.panelFill : "transparent"
+                            scale: hover.pressed ? 0.97 : 1
+                            Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
 
                             Text {
                                 anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
@@ -501,7 +507,10 @@ Panel {
                             height: 28
                             radius: Tokyo.pillRadius
                             color: root.powerProfile === modelData.id ? Tokyo.activeTint
-                                   : (hover.containsMouse ? Tokyo.panelFill : "transparent")
+                                   : (hover.pressed ? Tokyo.bgHighlight
+                                      : hover.containsMouse ? Tokyo.panelFill : "transparent")
+                            scale: hover.pressed ? 0.96 : 1
+                            Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
                             border.width: 1
                             border.color: root.powerProfile === modelData.id ? Tokyo.blue : "transparent"
 
@@ -580,7 +589,10 @@ Panel {
                     height: 30
                     radius: Tokyo.pillRadius
                     color: root.updates && root.updates.updating ? Tokyo.bgHighlight
+                           : updatePress.pressed ? Tokyo.bgHighlight
                            : (root.updates && root.updates.count > 0 ? Tokyo.activeTint : Tokyo.bgHighlight)
+                    scale: updatePress.pressed ? 0.98 : 1
+                    Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
 
                     Text {
                         anchors.centerIn: parent
@@ -590,9 +602,13 @@ Panel {
                         font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
                     }
 
+                    // Also enabled with nothing pending from pacman: the button
+                    // covers Flatpak, AUR and AppImages too, and those have no
+                    // count here.
                     MouseArea {
+                        id: updatePress
                         anchors.fill: parent
-                        enabled: root.updates !== null && !root.updates.updating && root.updates.count > 0
+                        enabled: root.updates !== null && !root.updates.updating
                         onClicked: if (root.updates) root.updates.startUpdate()
                     }
                 }
@@ -636,6 +652,8 @@ Panel {
                             color: root.confirm === modelData.id ? Tokyo.red
                                                                  : (hover.containsMouse ? Tokyo.panelFill
                                                                                         : "transparent")
+                            scale: hover.pressed ? 0.9 : 1
+                            Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
                             Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
                             Text {

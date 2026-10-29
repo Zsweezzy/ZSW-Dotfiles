@@ -4,6 +4,8 @@ import Quickshell.Io
 // Pending repo updates, owned by the Quick module so the state and the upgrade
 // process outlive the flyout. Closing the card mid-pacman must not kill a
 // half-applied transaction, and a panel is destroyed the moment it unmaps.
+// The upgrade itself covers every source on this machine (see
+// scripts/update-all.sh); only the pacman count is polled here.
 Item {
     id: root
 
@@ -12,9 +14,9 @@ Item {
     property var packages: []
     readonly property int count: root.packages.length
 
-    /// True from the pkexec start until pacman exits.
+    /// True from the script start until the last source finishes.
     property bool updating: false
-    /// Last line of pacman's output, or the verdict once it exits.
+    /// Current phase ("Repos", "Flatpak", …), or the verdict once it exits.
     property string status: ""
 
     Poll {
@@ -30,13 +32,17 @@ Item {
 
     Process {
         id: updater
-        command: ["pkexec", "pacman", "-Syu", "--noconfirm"]
+        // One script for every source: repos, Flatpak, AUR and AppImages, in
+        // that order. It prints a phase per line, so `status` is the phase
+        // being worked on and, at the end, the verdict.
+        command: ["bash", Tokyo.scriptDir + "/update-all.sh"]
         stdout: SplitParser { onRead: line => root.status = String(line) }
         stderr: SplitParser { onRead: line => root.status = String(line) }
         onExited: (code, status) => {
             root.updating = false
-            root.status = code === 0 ? "Updated" : "Failed (exit " + code + ")"
-            if (code === 0) updatesPoll.refresh()
+            if (root.status === "")
+                root.status = code === 0 ? "Updated" : "Failed (exit " + code + ")"
+            updatesPoll.refresh()
         }
     }
 

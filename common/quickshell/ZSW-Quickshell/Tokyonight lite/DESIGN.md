@@ -230,6 +230,14 @@ Toasts and the notification centre are swaync's, not this tree's: it holds
 The styling lives in `~/.config/swaync/style.css`, which mirrors the island by
 hand (`#1a1b26`, `pillRadius`, 11/10px type). Change the toast there, not in QML.
 
+The control centre must sit flush under the capsule: Hyprland's exclusive zone
+for the bar already places its surface at the capsule's bottom edge, so
+`control-center-margin-top` stays 0 in `~/.config/swaync/config.json`. A margin
+there pushes the panel down and opens a strip of the window behind it between
+pill and panel. Keep `control-center-width` equal to `Tokyo.notifWidth` (400)
+and `layer-shell-cover-screen` on, which is what lets the capsule widen while
+the panel is up.
+
 ---
 
 ## Checklist for new UI here

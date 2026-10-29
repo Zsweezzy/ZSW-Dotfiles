@@ -31,7 +31,8 @@ Singleton {
     readonly property int expandDuration: 220
     readonly property int collapseDuration: 160
     /// Island flyout sliding out from under the capsule, one value per open.
-    readonly property int flyoutDuration: 190
+    /// Short: the card is the answer to a click, not a scene change.
+    readonly property int flyoutDuration: 130
 
     readonly property real barHeight: 34
     readonly property real pillHeight: barHeight - 8
@@ -43,6 +44,16 @@ Singleton {
     readonly property real shadowBlur: 12
     readonly property real shadowOffsetY: 3
     readonly property real shadowPad: 12
+    /// The flyout is a card over app windows, so it casts a heavier shadow
+    /// than a bar pill: the pills sit in the bar's own surface, the card has
+    /// to separate from whatever is behind it.
+    readonly property color flyoutShadowColor: Qt.rgba(0, 0, 0, 0.55)
+    readonly property real flyoutShadowBlur: 28
+    readonly property real flyoutShadowOffsetY: 12
+    /// Transparent room the flyout's popup gives that shadow on the sides and
+    /// below. None above: the card's top edge must stay flush under the
+    /// capsule.
+    readonly property real flyoutShadowPad: 16
     // ---------- dynamic island ----------
     // One capsule holds the whole bar (saneAspect's look), in Tokyo Night's own
     // bg_dark rather than his pure black — black next to #16161e windows read as

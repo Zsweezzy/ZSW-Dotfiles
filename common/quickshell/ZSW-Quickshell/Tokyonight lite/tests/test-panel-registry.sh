@@ -32,7 +32,7 @@ check "panel is chosen by module, not by name" Island.qml \
 # A 0-height xdg_popup is a Wayland protocol error, and closing nulls the module
 # in the same commit that drops the loader's item.
 check "panel surface never collapses to zero height" Island.qml \
-      'implicitHeight: Math.max(1, root.surfaceHeight)'
+      'implicitHeight: Math.max(1, root.surfaceHeight + Tokyo.flyoutShadowPad)'
 # The flyout is a drawer: the card slides down from behind the capsule inside
 # an already-full-height surface, instead of resizing the surface mid-map.
 check "flyout slides in as a drawer" Island.qml \
@@ -55,9 +55,13 @@ absent "audio has no flyout of its own" Audio.qml 'panel: Component {'
 absent "media has no flyout of its own" Media.qml 'panel: Component {'
 
 # The upgrade process outlives the panel: a flyout close mid-pacman must not
-# kill a half-applied transaction.
+# kill a half-applied transaction. One script covers every source on the box.
 check "updates process lives in the module" Updates.qml \
-      'command: ["pkexec", "pacman", "-Syu", "--noconfirm"]'
+      'command: ["bash", Tokyo.scriptDir + "/update-all.sh"]'
+check "update all upgrades repos" scripts/update-all.sh 'pkexec pacman -Syu'
+check "update all upgrades flatpaks" scripts/update-all.sh 'flatpak update -y'
+check "update all upgrades the AUR" scripts/update-all.sh 'yay -Sua'
+check "update all upgrades AppImages" scripts/update-all.sh 'appimageupdatetool'
 # A browser publishes MPRIS for any tab that makes sound, so YouTube would
 # otherwise take the pill. Only a playing, non-browser player is shown.
 check "media pill only follows a playing player" Media.qml \
@@ -78,6 +82,12 @@ check "polkit card unrolls from the capsule" PolkitPrompt.qml \
       'height: root.shown ? body.implicitHeight + Tokyo.panelPadV * 2 : 0'
 check "capsule widens for the polkit prompt" Island.qml \
       'width: root.polkitOpen ? Tokyo.polkitWidth'
+# Super+Tab is a keybind in Hyprland, so it enters through the IPC handler and
+# the bar routes it to the focused monitor's island.
+check "Super+Tab toggles the flyout by IPC" shell.qml \
+      'function toggleFlyout(): void {'
+check "the bar routes the flyout to the focused island" Bar.qml \
+      'function onToggleFlyoutRequested() {'
 # The clipboard picker is a per-monitor layer surface like the launcher, not a
 # popup: a popup of the bar cannot hold keyboard focus.
 check "clipboard picker is per-monitor" shell.qml 'delegate: Clipboard'
