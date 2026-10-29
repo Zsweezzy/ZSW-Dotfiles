@@ -45,18 +45,14 @@ ShellRoot {
     // per session: hyprpolkitagent must not be started alongside this.
     PolkitAgent {
         id: polkitAgent
-    }
-    Variants {
-        model: Quickshell.screens
-        delegate: PolkitPrompt {
-            required property ShellScreen modelData
-            screen: modelData
-            flow: polkitAgent.flow
-            open: polkitAgent.isActive
-                  && modelData.name === Hyprland.focusedMonitor?.name
+        // The prompt is modal: an open launcher or clipboard picker would put
+        // a second full-screen grab under it.
+        onIsActiveChanged: {
+            if (!polkitAgent.isActive) return;
+            root.launcherOpen = false;
+            root.clipboardOpen = false;
         }
     }
-
     // Notifications are swaync's: it owns org.freedesktop.Notifications and
     // draws both the toasts and the control centre. The island only toggles
     // its panel, so there is no NotificationServer here to fight it for the
@@ -67,6 +63,7 @@ ShellRoot {
         launcherOpen: root.launcherOpen
         pickerOpen: root.pickerOpen
         clipboardOpen: root.clipboardOpen
+        polkitOpen: polkitAgent.isActive
     }
 
     // One launcher surface per monitor, like the bar. A window is bound to
@@ -95,6 +92,20 @@ ShellRoot {
             open: root.clipboardOpen
                   && modelData.name === Hyprland.focusedMonitor?.name
             onDismissed: root.clipboardOpen = false
+        }
+    }
+
+    // The polkit prompt is the last surface, so it stacks over the launcher's
+    // full-screen grab. It joins the capsule like the launcher does.
+    Variants {
+        model: Quickshell.screens
+        delegate: PolkitPrompt {
+            required property ShellScreen modelData
+            screen: modelData
+            flow: polkitAgent.flow
+            capsuleWidth: bar.capsuleWidth
+            open: polkitAgent.isActive
+                  && modelData.name === Hyprland.focusedMonitor?.name
         }
     }
 }

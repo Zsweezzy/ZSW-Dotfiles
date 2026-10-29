@@ -58,11 +58,14 @@ check "media pill knows browser players" Media.qml 'root.isBrowser(p)'
 check "quick composes the system probe" Quick.qml 'Sys { id: sysData }'
 check "quick composes the updates probe" Quick.qml 'Updates { id: updateData }'
 # One polkit agent per session, and it is ours: the prompt is bound to the
-# agent's flow rather than to a window of its own, and hangs under the bar.
+# agent's flow rather than to a window of its own, and joins the capsule the
+# way the launcher does (flush at the bar's height, capsule widened to it).
 check "polkit prompt is bound to the agent flow" shell.qml \
       'flow: polkitAgent.flow'
-check "polkit prompt anchors under the bar" PolkitPrompt.qml \
-      'y: root.shown ? Tokyo.barHeight + Tokyo.panelGap'
+check "polkit prompt joins the capsule" PolkitPrompt.qml \
+      'y: root.shown ? Tokyo.barHeight : -card.height - 40'
+check "capsule widens for the polkit prompt" Island.qml \
+      'width: root.polkitOpen ? Tokyo.polkitWidth'
 # The clipboard picker is a per-monitor layer surface like the launcher, not a
 # popup: a popup of the bar cannot hold keyboard focus.
 check "clipboard picker is per-monitor" shell.qml 'delegate: Clipboard'

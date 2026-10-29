@@ -28,6 +28,10 @@ Item {
     /// field; opening it closes the flyout.
     property bool clipboardOpen: false
     onClipboardOpenChanged: if (root.clipboardOpen) root.close()
+    /// True on the monitor the polkit prompt is up. It is modal, so it also
+    /// closes any flyout that was open underneath.
+    property bool polkitOpen: false
+    onPolkitOpenChanged: if (root.polkitOpen) root.close()
 
     /// Module whose flyout is open, or null. The module owns the panel
     /// component and the panel owns its width — see Module.qml and Panel.qml.
@@ -128,13 +132,15 @@ Item {
     Rectangle {
         id: capsule
         anchors.verticalCenter: parent.verticalCenter
-        // The launcher and picker cards are exactly as wide as this; widening
-        // the capsule while one is open lets the card's square top join the
-        // capsule's square bottom edge instead of poking out under a narrow pill.
-        width: root.pickerOpen ? Tokyo.pickerWidth
-                                 : root.launcherOpen ? Tokyo.launcherWidth
-                                 : popup.visible ? root.openWidth
-                                 : row.implicitWidth + Tokyo.islandPadH * 2
+        // The launcher, picker and polkit cards are exactly as wide as this;
+        // widening the capsule while one is open lets the card's square top
+        // join the capsule's square bottom edge instead of poking out under a
+        // narrow pill.
+        width: root.polkitOpen ? Tokyo.polkitWidth
+               : root.pickerOpen ? Tokyo.pickerWidth
+               : root.launcherOpen ? Tokyo.launcherWidth
+               : popup.visible ? root.openWidth
+               : row.implicitWidth + Tokyo.islandPadH * 2
         Behavior on width {
             // Animates into a panel morph too, keeping the header exactly as
             // wide as the card on every frame (same duration and easing).
@@ -142,7 +148,7 @@ Item {
             NumberAnimation {
                 duration: root.outgoingModule !== null
                           ? Tokyo.flyoutDuration
-                          : (root.launcherOpen || root.pickerOpen)
+                          : (root.launcherOpen || root.pickerOpen || root.polkitOpen)
                             ? Tokyo.expandDuration : Tokyo.collapseDuration
                 easing.type: Easing.OutCubic
             }
@@ -152,8 +158,10 @@ Item {
         // While a panel is open the capsule is the panel's header, so its
         // bottom corners square off into the card (which is at least as wide).
         // The launcher's window carries the same header shape.
-        bottomLeftRadius: popup.visible || root.launcherOpen || root.pickerOpen ? 0 : height / 2
-        bottomRightRadius: popup.visible || root.launcherOpen || root.pickerOpen ? 0 : height / 2
+        bottomLeftRadius: popup.visible || root.launcherOpen || root.pickerOpen
+                          || root.polkitOpen ? 0 : height / 2
+        bottomRightRadius: popup.visible || root.launcherOpen || root.pickerOpen
+                           || root.polkitOpen ? 0 : height / 2
         Behavior on bottomLeftRadius {
             NumberAnimation { duration: Tokyo.collapseDuration; easing.type: Easing.OutCubic }
         }

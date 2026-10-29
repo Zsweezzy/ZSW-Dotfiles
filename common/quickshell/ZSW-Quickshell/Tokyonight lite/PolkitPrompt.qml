@@ -1,11 +1,12 @@
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.Polkit
 import Quickshell.Wayland
 
 // The polkit authentication dialog. Replaces hyprpolkitagent: the password
-// prompt is a card under the bar instead of a separate GTK window, so
+// prompt is a card joined to the capsule instead of a separate GTK window, so
 // `pkexec`, systemd reboot and anything else privileged ask where the shell
 // already is. One agent per session: hyprpolkitagent must not be started.
 PanelWindow {
@@ -17,6 +18,10 @@ PanelWindow {
     /// like the launcher, because a layer surface cannot be moved to another
     /// output at runtime (Hyprland stops sending it input after a rebuild).
     property bool open: false
+    /// Width the bar's capsule is drawing right now (see shell.qml). The card
+    /// is never wider than it, so the two windows stay flush while the capsule
+    /// widens for the prompt.
+    property real capsuleWidth: Tokyo.polkitWidth
 
     /// True while the card should be on screen.
     readonly property bool shown: root.open && root.flow !== null
@@ -39,7 +44,11 @@ PanelWindow {
     }
 
     onShownChanged: {
-        if (root.shown) Qt.callLater(() => card.focusInput())
+        if (!root.shown) return;
+        // A cancelled attempt leaves its text in the field; a later prompt
+        // must not start with someone else's masked password in it.
+        password.text = "";
+        Qt.callLater(() => card.focusInput());
     }
 
     function cancel() {
@@ -51,6 +60,31 @@ PanelWindow {
     // with a flow open (three core dumps on 2026-10-29). The field holds focus
     // whenever the card is up, so the key still arrives.
 
+    // The pill's shadow is drawn by the bar; this continues it along the
+    // card. Clipped at the capsule's bottom edge — above the seam the bar's
+    // own shadow is already there, and this window sits above the bar.
+    Item {
+        x: card.x - Tokyo.shadowBlur
+        y: card.y
+        width: card.width + Tokyo.shadowBlur * 2
+        height: card.height + Tokyo.shadowBlur + Tokyo.shadowOffsetY
+        clip: true
+
+        RectangularShadow {
+            x: Tokyo.shadowBlur
+            y: 0
+            width: card.width
+            height: card.height
+            radius: Tokyo.islandPanelRadius
+            // Square where it meets the capsule, like the card itself.
+            topLeftRadius: 0
+            topRightRadius: 0
+            blur: Tokyo.shadowBlur
+            offset: Qt.vector2d(0, Tokyo.shadowOffsetY)
+            color: Tokyo.shadowColor
+        }
+    }
+
     Rectangle {
         id: card
 
@@ -58,10 +92,14 @@ PanelWindow {
         // Parked above the surface while closed: the card stays in the scene
         // graph, because an item that has never been rendered does not paint
         // when it is first shown. Moving it is a change the surface reports.
-        y: root.shown ? Tokyo.barHeight + Tokyo.panelGap : -card.height - 40
-        width: 400
+        y: root.shown ? Tokyo.barHeight : -card.height - 40
+        // The capsule widens to this while the prompt is up, and its bottom
+        // edge is square, so the two read as one shape.
+        width: Math.min(Tokyo.polkitWidth, root.capsuleWidth)
         height: body.implicitHeight + Tokyo.panelPadV * 2
         radius: Tokyo.islandPanelRadius
+        topLeftRadius: 0
+        topRightRadius: 0
         color: Tokyo.islandFill
 
         function focusInput() {

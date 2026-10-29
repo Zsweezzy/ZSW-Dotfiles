@@ -8,6 +8,7 @@ Variants {
     property bool launcherOpen: false
     property bool pickerOpen: false
     property bool clipboardOpen: false
+    property bool polkitOpen: false
     /// The focused monitor's capsule width, animated. The launcher card lives
     /// in another window and rescales with it.
     property real capsuleWidth: Tokyo.launcherWidth
@@ -35,6 +36,8 @@ Variants {
                         && win.screen.name === Hyprland.focusedMonitor?.name
             clipboardOpen: barRoot.clipboardOpen
                            && win.screen.name === Hyprland.focusedMonitor?.name
+            polkitOpen: barRoot.polkitOpen
+                        && win.screen.name === Hyprland.focusedMonitor?.name
             anchors {
                 horizontalCenter: parent.horizontalCenter
                 verticalCenter: parent.verticalCenter
