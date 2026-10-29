@@ -10,19 +10,27 @@ ShellRoot {
     property bool pickerOpen: false
     property bool launcherOpen: false
     property bool clipboardOpen: false
+    /// swaync's control centre is up. It is the session's notification daemon
+    /// (see Island.qml), so the bar only observes its layer surface.
+    property bool notifOpen: false
 
     Connections {
         target: Hyprland
+        // The theme picker and swaync's control centre are other processes'
+        // layer surfaces: Hyprland's own map/unmap events are the only way
+        // this shell learns they are up, and the capsule widens to match them.
         function onRawEvent(event) {
-            if (event.data !== "quickshell-theme-picker") return;
-            if (event.name === "openlayer") root.pickerOpen = true;
-            else if (event.name === "closelayer") root.pickerOpen = false;
+            const open = event.name === "openlayer" ? true
+                       : event.name === "closelayer" ? false : null;
+            if (open === null) return;
+            if (event.data === "quickshell-theme-picker") root.pickerOpen = open;
+            else if (event.data === "swaync-control-center") root.notifOpen = open;
         }
     }
 
     Process {
         id: pickerProcess
-        command: ["quickshell", "-n", "-c", "theme-picker"]
+        command: ["quickshell", "-n", "-c", "ZSW-Quickshell/theme-picker"]
     }
 
     IpcHandler {
@@ -64,6 +72,7 @@ ShellRoot {
         pickerOpen: root.pickerOpen
         clipboardOpen: root.clipboardOpen
         polkitOpen: polkitAgent.isActive
+        notifOpen: root.notifOpen
     }
 
     // One launcher surface per monitor, like the bar. A window is bound to

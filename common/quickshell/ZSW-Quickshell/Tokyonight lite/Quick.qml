@@ -51,6 +51,12 @@ Module {
         return parts.join(" · ")
     }
 
+    /// The capsule's clock, now-playing and volume modules. The one flyout
+    /// shows them, so the pills no longer open panels of their own.
+    property var clockModule: null
+    property var mediaModule: null
+    property var audioModule: null
+
     panel: Component {
         QuickPanel { quickModule: root }
     }

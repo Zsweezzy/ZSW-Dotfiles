@@ -1,29 +1,34 @@
 import QtQuick
 import Quickshell
 
-// Instantiates each module's flyout offscreen. Panels are only created when
-// opened, so a QML error in one stays invisible until someone clicks it.
+// Instantiates each flyout offscreen. Panels are only created when opened, so
+// a QML error in one stays invisible until someone clicks it. The control
+// centre embeds ClockPanel, MediaPanel and AudioPanel, so those are created
+// here directly: the flyout is the only place they exist now.
 ShellRoot {
     Clock { id: clock }
     Audio { id: audio }
     Media { id: media }
     Quick { id: quick }
 
-    function report(name, comp) {
-        if (comp === null) {
+    function report(name, item) {
+        if (item === null) {
             print(name + "=NULL")
             return
         }
-        const item = comp.createObject(this)
         print(name + "=" + item.implicitWidth + "x" + item.implicitHeight)
         item.destroy()
     }
 
+    Component { id: clockPanel; ClockPanel {} }
+    Component { id: audioPanel; AudioPanel {} }
+    Component { id: mediaPanel; MediaPanel {} }
+
     Component.onCompleted: {
-        report("clock", clock.panel)
-        report("audio", audio.panel)
-        report("media", media.panel)
-        report("quick", quick.panel)
+        report("clock", clockPanel.createObject(this))
+        report("audio", audioPanel.createObject(this))
+        report("media", mediaPanel.createObject(this))
+        report("quick", quick.panel.createObject(this))
         Qt.quit()
     }
 }

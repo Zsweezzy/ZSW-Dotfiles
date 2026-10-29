@@ -10,6 +10,10 @@ Item {
     property real padH: Tokyo.panelPadH
     property real padV: Tokyo.panelPadV
 
+    /// Screen the panel is on, set by Island's Loader. Null offscreen (the
+    /// test probe), where a panel keeps its declared implicitWidth.
+    property var hostScreen: null
+
     default property alias content: body.data
 
     implicitHeight: body.implicitHeight + root.padV * 2

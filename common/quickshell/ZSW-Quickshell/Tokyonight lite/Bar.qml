@@ -9,6 +9,8 @@ Variants {
     property bool pickerOpen: false
     property bool clipboardOpen: false
     property bool polkitOpen: false
+    /// swaync's control centre is up on the focused monitor.
+    property bool notifOpen: false
     /// The focused monitor's capsule width, animated. The launcher card lives
     /// in another window and rescales with it.
     property real capsuleWidth: Tokyo.launcherWidth
@@ -38,6 +40,8 @@ Variants {
                            && win.screen.name === Hyprland.focusedMonitor?.name
             polkitOpen: barRoot.polkitOpen
                         && win.screen.name === Hyprland.focusedMonitor?.name
+            notifOpen: barRoot.notifOpen
+                       && win.screen.name === Hyprland.focusedMonitor?.name
             anchors {
                 horizontalCenter: parent.horizontalCenter
                 verticalCenter: parent.verticalCenter

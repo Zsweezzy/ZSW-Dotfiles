@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Keeps the island modular contract: a module declares its flyout, the flyout
-# owns its width, and Island sizes the capsule to that same width. Panels are
-# only instantiated on click, so a broken one would otherwise stay hidden until
+# Keeps the island flyout contract: the capsule has one flyout, it owns its
+# width, and Island sizes the capsule to that same width. Panels are only
+# instantiated on click, so a broken one would otherwise stay hidden until
 # someone opens it.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -13,6 +13,15 @@ check() { # check <description> <file> <literal>
     else
         echo "FAIL $1"
         fail=1
+    fi
+}
+
+absent() { # absent <description> <file> <literal>
+    if grep -qF "$3" "$2"; then
+        echo "FAIL $1"
+        fail=1
+    else
+        echo "ok   $1"
     fi
 }
 
@@ -39,10 +48,11 @@ check "switching flyouts morphs instead of retracting" Island.qml \
 # The surface is fixed during the morph, so it must hold the larger panel.
 check "surface holds both panels while morphing" Island.qml \
       'readonly property real surfaceWidth: Math.max(root.openWidth,'
-check "clock module declares its panel" Clock.qml 'panel: Component {'
-check "audio module declares its panel" Audio.qml 'panel: Component {'
-check "media module declares its panel" Media.qml 'panel: Component {'
-check "quick module declares its panel" Quick.qml 'panel: Component {'
+check "quick module is the one that declares a panel" Quick.qml 'panel: Component {'
+check "every pill opens that flyout" Island.qml 'onClicked: root.toggle(quickPill)'
+absent "clock has no flyout of its own" Clock.qml 'panel: Component {'
+absent "audio has no flyout of its own" Audio.qml 'panel: Component {'
+absent "media has no flyout of its own" Media.qml 'panel: Component {'
 
 # The upgrade process outlives the panel: a flyout close mid-pacman must not
 # kill a half-applied transaction.
@@ -87,7 +97,7 @@ cp tests/panel-probe.qml.in "$TMP/panel-probe.qml"
 out=$(QT_QPA_PLATFORM=offscreen timeout 20 quickshell -p "$TMP/panel-probe.qml" 2>&1)
 clean=$(sed 's/\x1b\[[0-9;]*m//g' <<<"$out")
 
-for want in clock=300 audio=288 media=300 quick=340; do
+for want in clock=300 audio=288 media=300 quick=720; do
     if grep -qE "(^|: )$want" <<<"$clean"; then
         echo "ok   ${want%%=*} panel is ${want#*=}px wide"
     else

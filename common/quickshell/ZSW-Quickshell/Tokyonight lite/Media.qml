@@ -32,8 +32,4 @@ Module {
     fg: Tokyo.magenta
     text: "\uf04b " + root.label
     tooltip: root.player ? root.player.identity + " — " + root.title : ""
-
-    panel: Component {
-        MediaPanel { mediaModule: root }
-    }
 }

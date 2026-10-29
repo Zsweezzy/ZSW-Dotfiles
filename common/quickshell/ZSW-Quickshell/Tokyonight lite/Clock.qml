@@ -15,10 +15,6 @@ Module {
 
     implicitWidth: face.contentW + hPad * 2
 
-    panel: Component {
-        ClockPanel { now: root.now }
-    }
-
     ClockFace {
         id: face
         anchors.centerIn: parent

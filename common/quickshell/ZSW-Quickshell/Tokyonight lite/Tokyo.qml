@@ -16,6 +16,9 @@ Singleton {
     // ---------- flyout surfaces ----------
     readonly property color panelFill: ThemeColors.panelFill
     readonly property color paneEdge: ThemeColors.paneEdge
+    /// One step up from the flyout card: the two boxes inside the control
+    /// centre sit lighter than islandFill, but darker than a hover row.
+    readonly property color boxFill: Qt.rgba(ThemeColors.bgHighlight.r, ThemeColors.bgHighlight.g, ThemeColors.bgHighlight.b, 0.35)
     /// "dimmed", for secondary text
     readonly property color dim: ThemeColors.dim
 
@@ -63,6 +66,9 @@ Singleton {
     // The polkit card is this wide; the capsule widens to it while a prompt
     // is up, same join as the launcher.
     readonly property real polkitWidth: 400
+    /// Width the capsule takes while swaync's control centre is up. swaync's
+    /// own config (control-center-width) must match this.
+    readonly property real notifWidth: 400
     // The picker panel is this wide (two 190px cards plus gaps and padding);
     // the capsule widens to it while the picker is open for the same reason.
     // shortcut: fixed to two themes, update both widths when a third lands.

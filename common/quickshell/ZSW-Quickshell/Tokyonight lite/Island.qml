@@ -32,6 +32,18 @@ Item {
     /// closes any flyout that was open underneath.
     property bool polkitOpen: false
     onPolkitOpenChanged: if (root.polkitOpen) root.close()
+    /// swaync's notification centre is up on this monitor. It is not this
+    /// shell's window, so the bar can only match it: the capsule widens to the
+    /// panel's width and squares off, and an open flyout closes instead of
+    /// stacking two cards in the same place.
+    property bool notifOpen: false
+    onNotifOpenChanged: if (root.notifOpen) root.close()
+
+    /// Hover-to-open: resting on the capsule opens the control centre. Only a
+    /// hover-opened card closes on leave, so a clicked flyout behaves as before.
+    property bool capsuleHovered: false
+    property bool cardHovered: false
+    property bool openedByHover: false
 
     /// Module whose flyout is open, or null. The module owns the panel
     /// component and the panel owns its width — see Module.qml and Panel.qml.
@@ -80,6 +92,7 @@ Item {
     }
 
     function toggle(module) {
+        root.openedByHover = false
         if (!popup.visible) root.open(module)
         else if (root.panelModule === module) root.close()
         else root.switchTo(module)
@@ -90,6 +103,7 @@ Item {
     function switchTo(module) {
         closeTimer.stop()
         root.closing = false
+        root.openedByHover = false
         root.outgoingModule = root.panelModule
         root.morphProgress = 0
         root.panelModule = module
@@ -97,6 +111,7 @@ Item {
     }
 
     function close() {
+        root.openedByHover = false
         if (!popup.visible || root.closing) return
         root.closing = true
         closeTimer.start()
@@ -108,6 +123,25 @@ Item {
         id: closeTimer
         interval: Tokyo.flyoutDuration
         onTriggered: popup.visible = false
+    }
+
+    // Hover-opening waits out a pointer crossing the bar; leaving waits out
+    // the move from the capsule onto the card, which is a hop between windows.
+    Timer {
+        id: hoverOpenTimer
+        interval: 260
+        onTriggered: {
+            if (popup.visible || root.launcherOpen || root.pickerOpen
+                    || root.polkitOpen || root.notifOpen) return;
+            root.open(quickPill)
+            root.openedByHover = true
+        }
+    }
+    Timer {
+        id: hoverCloseTimer
+        interval: 200
+        onTriggered: if (root.openedByHover && !root.capsuleHovered
+                         && !root.cardHovered) root.close()
     }
 
     // Morph driver. Finishing at 1 is also what drops the outgoing panel and
@@ -137,6 +171,7 @@ Item {
         // join the capsule's square bottom edge instead of poking out under a
         // narrow pill.
         width: root.polkitOpen ? Tokyo.polkitWidth
+               : root.notifOpen ? Tokyo.notifWidth
                : root.pickerOpen ? Tokyo.pickerWidth
                : root.launcherOpen ? Tokyo.launcherWidth
                : popup.visible ? root.openWidth
@@ -148,7 +183,8 @@ Item {
             NumberAnimation {
                 duration: root.outgoingModule !== null
                           ? Tokyo.flyoutDuration
-                          : (root.launcherOpen || root.pickerOpen || root.polkitOpen)
+                          : (root.launcherOpen || root.pickerOpen || root.polkitOpen
+                             || root.notifOpen)
                             ? Tokyo.expandDuration : Tokyo.collapseDuration
                 easing.type: Easing.OutCubic
             }
@@ -159,9 +195,9 @@ Item {
         // bottom corners square off into the card (which is at least as wide).
         // The launcher's window carries the same header shape.
         bottomLeftRadius: popup.visible || root.launcherOpen || root.pickerOpen
-                          || root.polkitOpen ? 0 : height / 2
+                          || root.polkitOpen || root.notifOpen ? 0 : height / 2
         bottomRightRadius: popup.visible || root.launcherOpen || root.pickerOpen
-                           || root.polkitOpen ? 0 : height / 2
+                           || root.polkitOpen || root.notifOpen ? 0 : height / 2
         Behavior on bottomLeftRadius {
             NumberAnimation { duration: Tokyo.collapseDuration; easing.type: Easing.OutCubic }
         }
@@ -186,11 +222,12 @@ Item {
                 hoverStyle: true
                 hPad: 0
                 Layout.alignment: Qt.AlignVCenter
-                onClicked: root.toggle(clockPill)
+                onClicked: root.toggle(quickPill)
             }
 
             // Only visible while a player has a track; a paused player keeps
-            // the pill, a closed one takes it away.
+            // the pill, a closed one takes it away. Its own flyout is gone:
+            // the card the capsule opens holds now-playing and volume.
             Media {
                 id: mediaPill
                 flat: true
@@ -198,7 +235,7 @@ Item {
                 hPad: 0
                 tooltipHost: root.tooltipHost
                 Layout.alignment: Qt.AlignVCenter
-                onClicked: root.toggle(mediaPill)
+                onClicked: root.toggle(quickPill)
             }
 
             Audio {
@@ -208,13 +245,17 @@ Item {
                 hPad: 0
                 tooltipHost: root.tooltipHost
                 Layout.alignment: Qt.AlignVCenter
-                onClicked: root.toggle(audioPill)
+                onClicked: root.toggle(quickPill)
             }
 
-            // Everything that is not clock, now-playing or volume shares one
-            // flyout: separate pills would push the capsule past the edge.
+            // Everything the bar shows shares one flyout: separate pills would
+            // push the capsule past the edge, and a clock card next to a
+            // network card made two places to look for one monitor's state.
             Quick {
                 id: quickPill
+                clockModule: clockPill
+                mediaModule: mediaPill
+                audioModule: audioPill
                 flat: true
                 hoverStyle: true
                 hPad: 0
@@ -284,6 +325,32 @@ Item {
         }
     }
 
+    // Hover trigger: the capsule plus the band above it up to the monitor's
+    // top edge (y = 0), so flicking the pointer at the screen border opens the
+    // flyout before it has to find the pill. Taller than this item — hover is
+    // not clipped by a parent's bounds — and it sits after the capsule, which
+    // is where the old capsule-only handler was.
+    Item {
+        id: hoverZone
+        x: capsule.x
+        y: -root.y
+        width: capsule.width
+        height: capsule.y + capsule.height + root.y
+
+        HoverHandler {
+            onHoveredChanged: {
+                root.capsuleHovered = hovered
+                if (hovered) {
+                    hoverCloseTimer.stop()
+                    hoverOpenTimer.start()
+                } else {
+                    hoverOpenTimer.stop()
+                    hoverCloseTimer.start()
+                }
+            }
+        }
+    }
+
     PopupWindow {
         id: popup
         color: "transparent"
@@ -299,6 +366,10 @@ Item {
             root.panelModule = null
             root.outgoingModule = null
             root.closing = false
+            // The compositor can dismiss us without close(); hover state
+            // follows the window like everything else here.
+            root.cardHovered = false
+            root.openedByHover = false
         }
 
         Shortcut {
@@ -368,9 +439,22 @@ Item {
                 id: panelLoader
                 width: card.width
                 sourceComponent: root.panelModule ? root.panelModule.panel : null
+                // A panel sizes itself from the screen it is on (the control
+                // centre is half the monitor wide), so it gets the island's.
+                onLoaded: if (panelLoader.item) panelLoader.item.hostScreen = root.screen
                 // Rides the slide; during a morph the slide is already at 1 and
                 // the crossfade takes over.
                 opacity: card.reveal * (root.outgoingModule !== null ? root.morphProgress : 1)
+            }
+
+            // Keeps a hover-opened card alive while the pointer is on it. The
+            // card is in another window, so this is not the capsule's hover.
+            HoverHandler {
+                onHoveredChanged: {
+                    root.cardHovered = hovered
+                    if (hovered) hoverCloseTimer.stop()
+                    else hoverCloseTimer.start()
+                }
             }
         }
     }

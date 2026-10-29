@@ -67,6 +67,7 @@ labels), not a surface.
 | `islandHeight` | 30 | capsule height; the radius is half of it |
 | `islandPadH` | 14 | capsule inner padding, each side |
 | `islandPanelRadius` | 22 | the panel that grows under the capsule |
+| `boxFill` | bg_highlight @ 35% | one step up from `islandFill`: the two boxes inside the control centre. A hover row inside a box uses `panelFill`. |
 
 Workspaces inside the capsule are dots (6px, widening on hover) except the
 active one, which is a `blue` numbered pill (22×16, radius 8, 10px bold
@@ -113,7 +114,7 @@ reader identifies the stat by colour before they read the label.
 | `edgeGap` | 6 | matches Hyprland `gaps_out`, so pills sit as far from the screen edge as windows do |
 | `fontSize` | 13 | base body size |
 | `flyoutWidth` | 1100 | moonsettings' flyout. `Bar.qml`'s top-edge hover strip is this wide and centred, so the pointer is inside the panel the moment it opens |
-| `panelPadH` / `panelPadV` | 16 | every island flyout card; applied by `Panel.qml` |
+| `panelPadH` / `panelPadV` | 16 | every island flyout card; applied by `Panel.qml` and, for the boxes inside one, `Box.qml` |
 | `panelGap` | 12 | row gap inside a flyout |
 | `islandGap` | 14 | gap between the pills inside the capsule |
 
@@ -121,24 +122,29 @@ reader identifies the stat by colour before they read the label.
 
 ## Adding an island function
 
-The lite island is module-driven. A module that opens a flyout declares the
-component itself:
+The lite island has **one** flyout: `QuickPanel`. Every pill in the capsule
+opens it, so a new bar function goes into the card, not into a new panel:
 
-```qml
-Module {
-    panel: Component { FooPanel { fooModule: root } }
-}
-```
+- a control (a row, a slider, a button) is written inline in `QuickPanel.qml`;
+- a section that already exists as a `Panel` is embedded with
+  `padH: 0; padV: 0` (`ClockPanel`, `MediaPanel`, `AudioPanel`), so it keeps
+  its content and loses only its own card padding.
 
-Add the module to `Island.qml`'s row with `onClicked: root.toggle(fooPill)`,
-and make `FooPanel` extend `Panel` and set `implicitWidth`. That width is the
-only width: Island loads the panel with a `Loader` and sizes the capsule to the
-loaded item, so the pill header and the card cannot drift apart. `Panel.qml`
-supplies the shared padding, gap and height. Adding a function means no entry
-in a per-panel width table.
+The card is two `Box`es side by side: left is status (time, now playing,
+volume, CPU/RAM), right is the controls. `Box.qml` is the only container —
+the card border stays that of the flyout, and a box one step lighter groups its
+sections.
 
-`tests/test-panel-registry.sh` instantiates every panel offscreen and checks
-that width contract, because a panel is otherwise only created on click.
+A new pill is wired in `Island.qml` with `onClicked: root.toggle(quickPill)`.
+A module whose state the card shows passes itself to `Quick` there
+(`mediaModule: mediaPill`); `Quick.qml` hands it to `QuickPanel` through its
+`panel` component.
+
+The flyout's width is `QuickPanel.implicitWidth`; Island loads it with a
+`Loader` and sizes the capsule to the loaded item, so the pill header and the
+card cannot drift apart. `tests/test-panel-registry.sh` instantiates the panels
+offscreen and checks that width contract, because a panel is otherwise only
+created on click.
 
 ---
 
