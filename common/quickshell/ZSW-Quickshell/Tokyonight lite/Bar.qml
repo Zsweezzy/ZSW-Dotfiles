@@ -32,11 +32,16 @@ Variants {
     function toggleSettings(byKeyboard) { toggleSettingsRequested(byKeyboard) }
     function closeFlyout() { closeRequested() }
 
-    /// Workspaces holding a window in fullscreen mode 2/3 — the mode that
-    /// covers the bar. Polled rather than read from Hyprland's cached client
-    /// objects (their `fullscreen` goes stale) and not the workspace's
+    /// Workspaces (by name) holding a window in fullscreen mode 2/3 — the mode
+    /// that covers the bar. Polled rather than read from Hyprland's cached
+    /// client objects (their `fullscreen` goes stale) and not the workspace's
     /// `hasFullscreen` flag (which counts maximized windows too).
     property var fullscreenWorkspaces: []
+    /// Monitor name -> the special workspace shown on it. A shown special
+    /// workspace leaves the monitor's active workspace on the one underneath,
+    /// so matching only that id drew the bar on top of every game (they live on
+    /// special:magic here).
+    property var shownSpecial: ({})
 
     PanelWindow {
         id: win
@@ -60,7 +65,25 @@ Variants {
                     try {
                         barRoot.fullscreenWorkspaces = JSON.parse(text)
                             .filter(c => c.fullscreen >= 2)
-                            .map(c => c.workspace.id)
+                            .map(c => c.workspace.name)
+                    } catch (e) {
+                        // A failed probe leaves the last known state alone.
+                    }
+                }
+            }
+        }
+
+        Process {
+            id: specialProbe
+            command: ["hyprctl", "-j", "monitors"]
+            stdout: StdioCollector {
+                onStreamFinished: {
+                    try {
+                        const shown = {}
+                        for (const m of JSON.parse(text))
+                            if (m.specialWorkspace?.name)
+                                shown[m.name] = m.specialWorkspace.name
+                        barRoot.shownSpecial = shown
                     } catch (e) {
                         // A failed probe leaves the last known state alone.
                     }
@@ -72,10 +95,16 @@ Variants {
             interval: Perf.ms(1000)
             repeat: true
             running: win.screen.name === Hyprland.focusedMonitor?.name
-            onTriggered: fsProbe.running = true
+            onTriggered: {
+                fsProbe.running = true
+                specialProbe.running = true
+            }
         }
 
-        Component.onCompleted: fsProbe.running = true
+        Component.onCompleted: {
+            fsProbe.running = true
+            specialProbe.running = true
+        }
 
         // Hyprland hides *top* layers behind an exclusive-fullscreen window and
         // draws overlay ones over it — which is why this bar is an overlay. The
@@ -84,7 +113,9 @@ Variants {
         // (and the popup hanging off it) above the game.
         readonly property var hereWorkspace: Hyprland.monitorFor(win.screen)?.activeWorkspace
         readonly property bool fullscreenHere:
-            barRoot.fullscreenWorkspaces.indexOf(hereWorkspace?.id) >= 0
+            barRoot.fullscreenWorkspaces.indexOf(hereWorkspace?.name) >= 0
+            || barRoot.fullscreenWorkspaces.indexOf(
+                   barRoot.shownSpecial[win.screen.name]) >= 0
         readonly property bool outOfTheWay:
             fullscreenHere && !island.anyOpen && !barRoot.polkitOpen
 
