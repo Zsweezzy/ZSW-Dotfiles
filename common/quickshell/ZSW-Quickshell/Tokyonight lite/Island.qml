@@ -54,7 +54,7 @@ Item {
     /// The audio card is part of the drawer's surface, so one surface means one
     /// keyboard: while the popup is mapped the bar takes it (see Bar.qml), an
     /// xdg_popup can only receive keys while its parent surface can.
-    readonly property bool keyboardActive: popup.visible
+    readonly property bool keyboardActive: popup.visible && !popup.grabFocus
 
     /// Keys reach the island itself only when the popup could not take a grab
     /// (opened from Super+Tab/N/A, where there is no pointer serial). The bar
@@ -133,8 +133,10 @@ Item {
         // the bar keeps the keyboard (Bar.qml) and forwards keys here.
         popup.grabFocus = !byKeyboard
         popup.visible = true
+        // Only a keybind lands on a control: focusing one on a pointer open
+        // painted its focus ring the moment the card appeared.
         Qt.callLater(() => {
-            if (panelLoader.item) panelLoader.item.focusFirst()
+            if (byKeyboard && panelLoader.item) panelLoader.item.focusFirst()
             else card.forceActiveFocus()
         })
     }
@@ -531,7 +533,6 @@ Item {
                 onLoaded: {
                     if (!panelLoader.item) return
                     panelLoader.item.hostScreen = root.screen
-                    panelLoader.item.focusFirst()
                 }
                 // Rides the slide; during a morph the slide is already at 1 and
                 // the crossfade takes over.

@@ -81,6 +81,7 @@ Item {
         Text {
             width: parent.width
             text: root.entry.summary
+            textFormat: Text.PlainText
             color: root.entry.urgency === 2 ? Tokyo.red : Tokyo.fg
             elide: Text.ElideRight
             font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
@@ -89,6 +90,7 @@ Item {
             width: parent.width
             visible: String(root.entry.body || "") !== ""
             text: root.entry.body
+            textFormat: Text.PlainText
             color: Tokyo.dim
             elide: Text.ElideRight
             font { family: Tokyo.fontFamily; pixelSize: 10 }

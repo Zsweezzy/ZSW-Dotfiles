@@ -60,9 +60,15 @@ Item {
     /// out of the URI and resolved through the map below, which picks the asset
     /// itself. A URI that is not an icon form is a real image and is used as is.
     readonly property bool imageIsIconName: root.imageUri.indexOf("image://icon/") === 0
-    readonly property string imageIconName: root.imageIsIconName
-        ? decodeURIComponent(root.imageUri.substring("image://icon/".length))
-        : ""
+    readonly property string imageIconName: {
+        if (!root.imageIsIconName) return ""
+        try {
+            return decodeURIComponent(root.imageUri.substring("image://icon/".length))
+        } catch (e) {
+            // image://icon/%ZZ decodes to nothing; fall back to a glyph.
+            return ""
+        }
+    }
     readonly property string realImage: root.imageIsIconName ? "" : root.imageUri
 
     /// What the map is asked for. desktopEntry is a .desktop id, which is the

@@ -24,6 +24,8 @@ WlSessionLockSurface {
     property var store: null
 
     property string error: ""
+    /// Failed tries since this surface appeared, for the faillock hint below.
+    property int failures: 0
 
     readonly property var now: clock.now
     readonly property var player: {
@@ -53,11 +55,17 @@ WlSessionLockSurface {
         onCompleted: result => {
             if (result === PamResult.Success) {
                 root.error = ""
+                root.failures = 0
                 if (root.lock !== null) root.lock.locked = false
                 return
             }
-            root.error = result === PamResult.MaxTries
-                         ? "Too many attempts — wait a moment"
+            root.failures = root.failures + 1
+            // pam_faillock (deny=3, unlock_time=600) is what actually refuses
+            // the login; "Incorrect password" would make a correct password
+            // look broken for the next ten minutes.
+            root.error = result === PamResult.MaxTries || root.failures >= 3
+                         ? "Too many tries — wait 10 min or run: faillock --user "
+                           + Quickshell.env("USER") + " --reset"
                          : "Incorrect password"
             field.text = ""
             // A failed try is a completed session; a new one starts after the

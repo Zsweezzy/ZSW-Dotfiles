@@ -104,6 +104,7 @@ Item {
             Text {
                 width: parent.width
                 text: root.n ? String(root.n.summary || root.n.body || "") : ""
+                textFormat: Text.PlainText
                 color: root.accent === Tokyo.red ? Tokyo.red : Tokyo.fg
                 elide: Text.ElideRight
                 maximumLineCount: 2
@@ -116,6 +117,7 @@ Item {
                          && String(root.n.body || "") !== ""
                          && String(root.n.body) !== String(root.n.summary)
                 text: root.n ? String(root.n.body || "") : ""
+                textFormat: Text.PlainText
                 color: Tokyo.dim
                 elide: Text.ElideRight
                 maximumLineCount: 2

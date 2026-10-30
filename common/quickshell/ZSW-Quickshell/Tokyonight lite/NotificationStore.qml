@@ -108,8 +108,8 @@ Scope {
         const entry = {
             id: n.id,
             app: n.appName,
-            summary: n.summary,
-            body: n.body,
+            summary: String(n.summary ?? "").slice(0, 512),
+            body: String(n.body ?? "").slice(0, 4096),
             // `image` is a URI, `appIcon` a name or a path, `desktopEntry` the
             // .desktop id. All three are kept because the icon resolver needs
             // them in that order of preference and a Notification is not around

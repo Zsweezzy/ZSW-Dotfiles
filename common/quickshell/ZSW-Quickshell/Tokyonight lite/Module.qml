@@ -27,8 +27,15 @@ Item {
     signal wheelTick(int yDelta)
 
     implicitHeight: Tokyo.pillHeight
-    implicitWidth: (root.fragments.length > 0 ? fragRow.implicitWidth : label.implicitWidth)
-                   + hPad * 2
+    // At least a pill-height-wide target: an icon-only pill (bell, gear) would
+    // otherwise be ten pixels wide and the click that misses it does nothing.
+    implicitWidth: Math.max((root.fragments.length > 0 ? fragRow.implicitWidth
+                                                       : label.implicitWidth) + hPad * 2,
+                            Tokyo.pillHeight)
+    // A layout sizes a pill; the bell sits in a plain Item instead, where the
+    // item would stay 0-wide and only the glyph itself would be clickable.
+    width: implicitWidth
+    height: implicitHeight
 
     // Press feedback: the pill dips under the pointer, so a click lands
     // visibly before the flyout slides out.

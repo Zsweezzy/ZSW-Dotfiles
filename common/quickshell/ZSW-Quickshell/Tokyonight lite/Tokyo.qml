@@ -48,7 +48,7 @@ Singleton {
     /// than a bar pill: the pills sit in the bar's own surface, the card has
     /// to separate from whatever is behind it.
     readonly property color flyoutShadowColor: Qt.rgba(0, 0, 0, 0.55)
-    readonly property real flyoutShadowBlur: 28
+    readonly property real flyoutShadowBlur: 14
     readonly property real flyoutShadowOffsetY: 12
     /// Transparent room the flyout's popup gives that shadow on the sides and
     /// below. Must cover blur + offset, or the shadow is cut off at the

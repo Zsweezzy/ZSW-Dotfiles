@@ -2,7 +2,7 @@
 # island — the bar from a terminal or a keybind.
 #
 #   island status                 what the shell, theme and session are doing
-#   island lock | unlock          the session lock (not hyprlock)
+#   island lock                   the session lock (not hyprlock)
 #   island flyout | notifications | audio | settings | clipboard | launcher
 #   island close                  whatever is open
 #   island dnd on|off             do not disturb
@@ -51,7 +51,6 @@ status() {
 case "${1:-status}" in
     status)       status ;;
     lock)         ipc lock ;;
-    unlock)       ipc unlock ;;
     flyout)       ipc toggleFlyout ;;
     notifications) ipc toggleNotifications ;;
     audio)        ipc toggleAudio ;;

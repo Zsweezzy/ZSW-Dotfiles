@@ -78,9 +78,6 @@ ShellRoot {
         function lock(): void {
             Session.lock()
         }
-        function unlock(): void {
-            Session.unlock()
-        }
         // Bottom-centre OSD: "volume", "brightness" or "mic". Volume also
         // shows itself when the sink changes; this is the door for the other
         // two, and for a keybind that just changed the volume.
@@ -97,7 +94,15 @@ ShellRoot {
             Settings.dnd = on
         }
         // `theme set <slug>`, the picker's own command minus the picker.
+        // A theme is shell code (theme.conf is sourced), so the slug is held to
+        // the shape the picker writes and nothing else. Locked: a reload would
+        // drop the lock surface, and the theme can wait.
         function theme(slug: string): void {
+            if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
+                console.warn("[island] rejected theme slug: " + slug)
+                return
+            }
+            if (Session.locked) return
             themeProcess.command = ["theme", "set", slug]
             themeProcess.running = true
         }

@@ -48,10 +48,10 @@ Item {
         }
     }
 
-    Component.onCompleted: Qt.callLater(root.focusFirst)
-
-    /// Focus the first control in this panel. Island.qml calls it again after
-    /// a morph, because the newly loaded panel is the one that owns focus.
+    /// Focus the first control in this panel. Island.qml calls it after a
+    /// keybind open, because the newly loaded panel is the one that owns focus.
+    /// A pointer open does not call it: the ring on that control read as a
+    /// permanent selection box the user never asked for.
     function focusFirst() {
         let item = root.nextItemInFocusChain(true)
         for (let i = 0; i < 200 && item; i++) {

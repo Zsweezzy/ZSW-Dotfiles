@@ -110,7 +110,8 @@ PanelWindow {
                 Quickshell.execDetached(["notify-send", "-a", "screenshot", "-u", "critical",
                                          "Screenshot failed", path])
             } else {
-                Quickshell.execDetached(["sh", "-c", "wl-copy --type image/png < '" + path + "'"])
+                Quickshell.execDetached(["sh", "-c",
+                                         "wl-copy --type image/png < \"$1\"", "sh", path])
                 Quickshell.execDetached(["notify-send", "-a", "screenshot",
                                          "Screenshot saved (" + kind + ")", name])
             }

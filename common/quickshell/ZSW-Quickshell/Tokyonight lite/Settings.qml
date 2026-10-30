@@ -60,6 +60,14 @@ Singleton {
         printErrors: false
         onLoaded: root.adopt(file.text)
         onFileChanged: root.adopt(file.text)
+        // The file decides DND and the idle timers; keep it as private as the
+        // notification history.
+        onSaved: tighten.running = true
+    }
+
+    Process {
+        id: tighten
+        command: ["chmod", "600", root.path]
     }
 
     function adopt(text) {
