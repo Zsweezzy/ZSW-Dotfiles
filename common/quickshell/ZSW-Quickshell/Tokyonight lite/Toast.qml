@@ -144,7 +144,7 @@ PopupWindow {
         // DND collects without interrupting, and an open centre is already the
         // place the eye is, so a card under it would cover what it announces.
         function onNewNotification(n) {
-            if (root.store.dnd || root.store.centreOpen) return
+            if (Settings.dnd || root.store.centreOpen) return
             root.push(n)
         }
     }

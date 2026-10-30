@@ -93,6 +93,54 @@ Panel {
         }
     }
 
+    // Player picker. Only when there is a choice: one player is not a menu.
+    // The chosen player survives the panel closing because `selected` lives on
+    // the Media module in the capsule, not here.
+    Row {
+        id: picker
+        width: parent.width
+        spacing: 4
+        visible: root.mediaModule !== null && root.mediaModule.allPlayers.length > 1
+
+        readonly property int count: root.mediaModule ? root.mediaModule.allPlayers.length : 0
+
+        Repeater {
+            model: root.mediaModule ? root.mediaModule.allPlayers : []
+
+            delegate: Rectangle {
+                required property var modelData
+
+                readonly property bool on: root.mediaModule.isCurrent(modelData)
+
+                width: picker.count > 0
+                       ? (picker.width - 4 * (picker.count - 1)) / picker.count : 0
+                height: 20
+                radius: 5
+                color: on ? Tokyo.activeTint : "transparent"
+                border.width: 1
+                border.color: on ? Tokyo.magenta : Tokyo.paneEdge
+
+                Text {
+                    anchors { fill: parent; leftMargin: 6; rightMargin: 6 }
+                    text: modelData.identity
+                    color: on ? Tokyo.magenta : Tokyo.dim
+                    elide: Text.ElideRight
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    font { family: Tokyo.fontFamily; pixelSize: 9 }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    activeFocusOnTab: true
+                    function activate() { root.mediaModule.pick(modelData) }
+                    onClicked: activate()
+                    FocusRing {}
+                }
+            }
+        }
+    }
+
     // Seek row. Hidden for streams, which have no length to scrub.
     Item {
         width: parent.width

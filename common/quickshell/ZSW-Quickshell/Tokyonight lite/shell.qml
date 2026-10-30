@@ -36,6 +36,11 @@ ShellRoot {
         command: ["quickshell", "-n", "-c", "ZSW-Quickshell/theme-picker"]
     }
 
+    // `theme set` rewrites ThemeColors.qml, which this shell watches, so a
+    // switch from a keybind or the CLI recolours the bar without a restart.
+    // Nothing to read back: the file is the state.
+    Process { id: themeProcess }
+
     IpcHandler {
         target: "island"
         // The launcher is a window of this config now, so this is only a
@@ -68,6 +73,37 @@ ShellRoot {
         function toggleThemePicker(): void {
             pickerProcess.running = !pickerProcess.running
         }
+        // The session lock (Session.qml). `lock` is a keyword-ish name here,
+        // so the singleton keeps the verb and the object stays private.
+        function lock(): void {
+            Session.lock()
+        }
+        function unlock(): void {
+            Session.unlock()
+        }
+        // Bottom-centre OSD: "volume", "brightness" or "mic". Volume also
+        // shows itself when the sink changes; this is the door for the other
+        // two, and for a keybind that just changed the volume.
+        function osd(kind: string): void {
+            osdWindow.showKind(kind)
+        }
+        // The settings flyout, for a keybind and for the docs.
+        function settings(): void {
+            bar.toggleSettings(true)
+        }
+        // Do Not Disturb. The centre's button writes the same setting, and
+        // Settings.qml is what persists it, so this is only a property write.
+        function dnd(on: bool): void {
+            Settings.dnd = on
+        }
+        // `theme set <slug>`, the picker's own command minus the picker.
+        function theme(slug: string): void {
+            themeProcess.command = ["theme", "set", slug]
+            themeProcess.running = true
+        }
+        function close(): void {
+            bar.closeFlyout()
+        }
     }
 
     // Privileged prompts are the shell's own card (PolkitPrompt), so polkit
@@ -89,8 +125,20 @@ ShellRoot {
     // the server and the list it fills have to be the same object everywhere.
     NotificationStore { id: notificationStore }
 
+    // The session lock. It holds no window until `locked` is set, so it costs
+    // nothing while the session is open.
+    Component.onCompleted: Session.store = notificationStore
+
     // The desktop itself, under every window: hyprpaper's replacement.
     Wallpaper {}
+
+    // Volume / brightness / microphone feedback, bottom centre, only while a
+    // value changes.
+    Osd { id: osdWindow }
+
+    // Lock after idle, blank the panel after idle. Reads Settings.qml, so the
+    // settings flyout is the only place the thresholds live.
+    Idle {}
 
     // The bar first, so its layer surface sits under the launcher's.
     Bar {

@@ -168,6 +168,11 @@ Item {
         root.audioOpen = true
     }
 
+    /// The gear and IPC `settings`: the shell's own preferences.
+    function toggleSettings(byKeyboard) {
+        root.toggle(settingsPill, byKeyboard)
+    }
+
     // Same pill row, new panel: the card morphs its width/height and the two
     // contents crossfade. Nothing retracts and the surface never unmaps.
     function switchTo(module) {
@@ -311,6 +316,16 @@ Item {
                 onClicked: root.toggleAudio()
             }
 
+            // Charge, on a laptop only. Clicking it opens the control centre,
+            // which is where the power profile lives.
+            Battery {
+                id: batteryPill
+                flat: true
+                hPad: 0
+                Layout.alignment: Qt.AlignVCenter
+                onClicked: root.toggle(quickPill)
+            }
+
             // Everything the bar shows shares one flyout: separate pills would
             // push the capsule past the edge, and a clock card next to a
             // network card made two places to look for one monitor's state.
@@ -372,6 +387,21 @@ Item {
                         font { family: Tokyo.fontFamily; pixelSize: 8; bold: true }
                     }
                 }
+            }
+
+            // The gear is the shell's own preferences (SettingsPanel): DND,
+            // grouping, OSD, battery pill, idle timers. Persisted by
+            // Settings.qml, so nothing here has an Apply button.
+            Module {
+                id: settingsPill
+                text: "󰒓"
+                flat: true
+                hPad: 0
+                Layout.alignment: Qt.AlignVCenter
+                panel: Component {
+                    SettingsPanel {}
+                }
+                onClicked: root.toggle(settingsPill)
             }
         }
     }

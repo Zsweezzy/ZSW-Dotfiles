@@ -16,14 +16,14 @@ Item {
     Poll {
         id: cpuPoll
         command: [Tokyo.scriptDir + "/cpu.sh"]
-        interval: 2000
+        interval: Perf.ms(2000)
         onResult: output => root.cpuPct = parseFloat(output) || 0
     }
 
     Poll {
         id: memPoll
         command: [Tokyo.scriptDir + "/mem.sh"]
-        interval: 30000
+        interval: Perf.ms(30000)
         onResult: output => {
             const p = String(output).trim().split("|")
             root.ramUsed = parseFloat(p[0]) || 0

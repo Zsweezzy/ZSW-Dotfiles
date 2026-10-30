@@ -36,9 +36,26 @@ Scope {
     /// How many of the top entries have not been read. The bell lights on this.
     property int unread: 0
 
-    /// Do Not Disturb: collect notifications, show no toasts. In memory only,
-    /// like swaync's until it is toggled from the control centre.
-    property bool dnd: false
+    /// The history folded by app, newest group first. A group is a view, not a
+    /// stored thing: the log stays flat, so grouping can be switched off
+    /// without rewriting history.
+    readonly property var groups: {
+        const out = []
+        const index = ({})
+        for (const e of root.entries) {
+            const app = String(e.app || "")
+            if (index[app] === undefined) {
+                index[app] = out.length
+                out.push({ app: app, entries: [] })
+            }
+            out[index[app]].entries.push(e)
+        }
+        return out
+    }
+
+    /// Do Not Disturb lives in Settings.qml (persisted, and the control centre
+    /// and lock screen read the same flag). This store only decides what a
+    /// toast is allowed to interrupt.
     /// True while the centre's flyout is open. Set by NotificationCentre, read
     /// by the toasts: the centre is already the place the eye is, so a card
     /// under it would only cover what it is announcing.
@@ -77,7 +94,7 @@ Scope {
     Poll {
         id: iconReader
         command: [Tokyo.scriptDir + "/notify-icons.py", "40"]
-        interval: 600000
+        interval: Perf.ms(600000)
         onResult: line => {
             try {
                 root.icons = JSON.parse(line)
@@ -122,7 +139,9 @@ Scope {
         } else {
             root.save()
         }
-        root.newNotification(n)
+        // A muted app still lands in the centre and on disk; it just does not
+        // interrupt. Muting a chat app is the whole point of the setting.
+        if (!Settings.isMuted(entry.app)) root.newNotification(n)
     }
 
     /// How long a toast stays, in ms. 0 = until dismissed. swaync's config is

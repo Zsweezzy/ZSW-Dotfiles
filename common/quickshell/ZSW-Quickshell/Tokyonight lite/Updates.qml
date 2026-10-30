@@ -43,7 +43,7 @@ Item {
     Poll {
         id: updatesPoll
         command: ["checkupdates"]
-        interval: 30 * 60 * 1000
+        interval: Perf.ms(30 * 60 * 1000)
         onStarted: root.packages = []
         onResult: line => {
             const text = String(line).trim()

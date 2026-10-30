@@ -24,9 +24,13 @@ Variants {
     signal toggleFlyoutRequested(bool byKeyboard)
     signal toggleNotificationsRequested(bool byKeyboard)
     signal toggleAudioRequested(bool byKeyboard)
+    signal toggleSettingsRequested(bool byKeyboard)
+    signal closeRequested
     function toggleFlyout(byKeyboard) { toggleFlyoutRequested(byKeyboard) }
     function toggleNotifications(byKeyboard) { toggleNotificationsRequested(byKeyboard) }
     function toggleAudio(byKeyboard) { toggleAudioRequested(byKeyboard) }
+    function toggleSettings(byKeyboard) { toggleSettingsRequested(byKeyboard) }
+    function closeFlyout() { closeRequested() }
 
     /// Workspaces holding a window in fullscreen mode 2/3 — the mode that
     /// covers the bar. Polled rather than read from Hyprland's cached client
@@ -65,7 +69,7 @@ Variants {
         }
 
         Timer {
-            interval: 1000
+            interval: Perf.ms(1000)
             repeat: true
             running: win.screen.name === Hyprland.focusedMonitor?.name
             onTriggered: fsProbe.running = true
@@ -161,6 +165,14 @@ Variants {
             function onToggleAudioRequested(byKeyboard) {
                 if (win.screen.name === Hyprland.focusedMonitor?.name)
                     island.toggleAudio(byKeyboard)
+            }
+            function onToggleSettingsRequested(byKeyboard) {
+                if (win.screen.name === Hyprland.focusedMonitor?.name)
+                    island.toggleSettings(byKeyboard)
+            }
+            function onCloseRequested() {
+                if (win.screen.name === Hyprland.focusedMonitor?.name)
+                    island.close()
             }
         }
     }

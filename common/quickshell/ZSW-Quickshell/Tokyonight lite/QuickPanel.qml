@@ -78,7 +78,7 @@ Panel {
     }
 
     function act(id) {
-        if (id === "lock") return Quickshell.execDetached(["hyprlock"])
+        if (id === "lock") return Session.lock()
         if (id === "suspend") return Quickshell.execDetached(["systemctl", "suspend"])
         if (root.confirm === id) {
             root.confirm = ""

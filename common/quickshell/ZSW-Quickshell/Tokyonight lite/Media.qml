@@ -9,10 +9,33 @@ import Quickshell.Services.Mpris
 Module {
     id: root
 
-    readonly property var player: {
+    /// Player the panel picked, by dbus name. Empty = follow whatever is
+    /// playing. A picked player wins only while it is actually playing, so a
+    /// paused pick cannot keep the pill hidden while something else plays.
+    property string selected: ""
+
+    readonly property var allPlayers: {
         const players = Mpris.players.values
-        return players.find(p => p.isPlaying && !root.isBrowser(p)) ?? null
+        return players.filter(p => !root.isBrowser(p))
     }
+
+    readonly property var player: {
+        const chosen = root.allPlayers.find(p => p.dbusName === root.selected)
+        if (chosen && chosen.isPlaying) return chosen
+        return root.allPlayers.find(p => p.isPlaying) ?? null
+    }
+
+    /// What the picker marks as current: the chosen one, or the one the pill
+    /// is showing when nothing was chosen.
+    function isCurrent(p) {
+        if (root.selected !== "") return p.dbusName === root.selected
+        return root.player !== null && p.dbusName === root.player.dbusName
+    }
+
+    function pick(p) {
+        root.selected = p.dbusName
+    }
+
     readonly property string title: root.player ? (root.player.trackTitle ?? "") : ""
     readonly property bool playing: root.player ? root.player.isPlaying : false
 

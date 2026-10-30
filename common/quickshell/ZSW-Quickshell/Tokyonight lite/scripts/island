@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# island — the bar from a terminal or a keybind.
+#
+#   island status                 what the shell, theme and session are doing
+#   island lock | unlock          the session lock (not hyprlock)
+#   island flyout | notifications | audio | settings | clipboard | launcher
+#   island close                  whatever is open
+#   island dnd on|off             do not disturb
+#   island theme [slug]           switch (no slug: print the current one)
+#   island osd volume|brightness|mic
+#   island screenshot region|monitor
+#
+# Volume, brightness and playback stay wpctl / brightnessctl / playerctl: the
+# OSD listens to PipeWire, so a wpctl change shows itself without coming
+# through here. Every verb below is one IPC call; `status` reads files
+# instead, because it has to answer when the shell is down.
+set -uo pipefail
+
+cfg="ZSW-Quickshell/Tokyonight lite"
+state="${XDG_STATE_HOME:-$HOME/.local/state}/theme/current"
+settings="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/tokyonight-settings.json"
+
+die() { printf 'island: %s\n' "$*" >&2; exit 1; }
+
+ipc() { qs -c "$cfg" ipc call island "$@" || die "the shell is not running"; }
+
+# Minutes as "10m", or "off" for a disabled timer.
+minutes() {
+    if [ "${1:-0}" -gt 0 ] 2>/dev/null; then printf '%sm' "$1"; else printf 'off'; fi
+}
+
+status() {
+    local pid slug dnd lock dpms
+    pid=$(pgrep -x quickshell | head -1)
+    slug=$([ -r "$state" ] && cat "$state" || printf 'tokyonight')
+    if [ -n "$pid" ]; then
+        printf 'shell    running (pid %s)\n' "$pid"
+    else
+        printf 'shell    not running\n'
+    fi
+    printf 'theme    %s\n' "$slug"
+    if [ -r "$settings" ] && command -v jq >/dev/null 2>&1; then
+        dnd=$(jq -r 'if .dnd then "on" else "off" end' "$settings" 2>/dev/null)
+        lock=$(jq -r '.lockIdleMinutes // 0' "$settings" 2>/dev/null)
+        dpms=$(jq -r '.dpmsIdleMinutes // 0' "$settings" 2>/dev/null)
+    fi
+    printf 'dnd      %s\n' "${dnd:-unknown}"
+    printf 'idle     lock %s · screen %s\n' "$(minutes "${lock:-0}")" "$(minutes "${dpms:-0}")"
+}
+
+case "${1:-status}" in
+    status)       status ;;
+    lock)         ipc lock ;;
+    unlock)       ipc unlock ;;
+    flyout)       ipc toggleFlyout ;;
+    notifications) ipc toggleNotifications ;;
+    audio)        ipc toggleAudio ;;
+    settings)     ipc settings ;;
+    clipboard)    ipc toggleClipboard ;;
+    launcher)     ipc toggleLauncher ;;
+    close)        ipc close ;;
+    osd)          ipc osd "${2:-volume}" ;;
+    screenshot)   ipc screenshot "${2:-region}" ;;
+    theme)
+        if [ $# -ge 2 ]; then ipc theme "$2"; else theme current; fi ;;
+    dnd)
+        case "${2:-}" in
+            on)  ipc dnd true ;;
+            off) ipc dnd false ;;
+            *)   die "usage: island dnd on|off" ;;
+        esac ;;
+    ""|help|-h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) die "unknown command '$1' (island help)" ;;
+esac
