@@ -450,27 +450,21 @@ Item {
         anchor.margins.right: root.audioExtra
 
         // The flyout's shadow, in the transparent room the popup keeps around
-        // the card. A plain rounded rect blurred by MultiEffect, not
-        // RectangularShadow: that one draws its shape inset from its item, so
-        // the fade starts a dozen pixels away from the card and the gap reads
-        // as a hard line. The rect is the card itself: growing it first kept
-        // the first `blurMax` pixels solid, so the shadow started with a band
-        // and only feathered at its outer edge. Blurring the bare card fades
-        // from the card outward, and blurMax sets how far that fade reaches.
-        Rectangle {
+        // the card. RectangularShadow's own rect is the shadow's shape and
+        // `blur` is how far it reaches past that rect, so the item is the card
+        // itself: the fade starts at the card's edge, with no solid band and
+        // no gap. The popup surface clips the part above the card, which keeps
+        // it flush under the capsule.
+        RectangularShadow {
             x: card.x
-            y: card.y + Tokyo.flyoutShadowOffsetY
+            y: card.y
             width: card.width
             height: card.height
             radius: card.radius
+            blur: Tokyo.flyoutShadowBlur
+            offset: Qt.vector2d(0, Tokyo.flyoutShadowOffsetY)
             color: Tokyo.flyoutShadowColor
             visible: card.reveal > 0
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                blurEnabled: true
-                blur: 1.0
-                blurMax: Tokyo.flyoutShadowBlur
-            }
         }
 
         Rectangle {
