@@ -1,9 +1,9 @@
 import QtQuick
 import Quickshell.Io
 
-// Pending updates, owned by the Quick module so the state and the upgrade
-// process outlive the flyout. Closing the card mid-pacman must not kill a
-// half-applied transaction, and a panel is destroyed the moment it unmaps.
+// Pending updates, owned by the Quick module so the state outlives the flyout:
+// a panel is destroyed the moment it unmaps. The upgrade itself runs in its
+// own terminal, so closing the card cannot kill a pacman transaction.
 //
 // Two different jobs live here. The poll keeps the pacman count warm without
 // asking for anything, so the pill has a number the moment the card opens. The
@@ -33,7 +33,7 @@ Item {
         return parts.join(" · ")
     }
 
-    /// True from the script start until the last source finishes.
+    /// True while the update terminal is open.
     property bool updating: false
     /// True while the Check button's multi-source query runs.
     property bool checking: false
@@ -78,15 +78,18 @@ Item {
     Process {
         id: updater
         // One script for every source: repos, Flatpak, AUR and AppImages, in
-        // that order. It prints a phase per line, so `status` is the phase
-        // being worked on and, at the end, the verdict.
-        command: ["bash", Tokyo.scriptDir + "/update-all.sh"]
-        stdout: SplitParser { onRead: line => root.status = String(line) }
-        stderr: SplitParser { onRead: line => root.status = String(line) }
+        // that order, run in a terminal so pacman's output and the polkit
+        // prompt are readable rather than compressed into one pane line. The
+        // window waits for Enter so a failure does not scroll away, and the
+        // script's exit code survives that `read` because the shell re-exits
+        // with it. `updating` spans the whole window, so the panel keeps
+        // showing "Updating…" until it is closed.
+        command: ["kitty", "-e", "bash", "-c",
+                  "'" + Tokyo.scriptDir + "/update-all.sh'; rc=$?; echo; " +
+                  "echo 'Press Enter to close...'; read; exit $rc"]
         onExited: (code, status) => {
             root.updating = false
-            if (root.status === "")
-                root.status = code === 0 ? "Updated" : "Failed (exit " + code + ")"
+            root.status = code === 0 ? "Updated" : "Failed (exit " + code + ")"
             root.counts = ({})
             updatesPoll.refresh()
         }

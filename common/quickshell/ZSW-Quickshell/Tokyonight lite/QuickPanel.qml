@@ -554,7 +554,8 @@ Panel {
                     }
                 }
 
-                // One line of live output, or why a check/upgrade failed.
+                // The verdict once the update terminal closes, or why a check
+                // failed.
                 Text {
                     width: parent.width
                     visible: root.updates !== null && root.updates.status !== ""
