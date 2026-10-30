@@ -453,14 +453,16 @@ Item {
         // the card. A plain rounded rect blurred by MultiEffect, not
         // RectangularShadow: that one draws its shape inset from its item, so
         // the fade starts a dozen pixels away from the card and the gap reads
-        // as a hard line. The rect is the card grown by the blur, so the fade
-        // is already at zero when it reaches the item's edge.
+        // as a hard line. The rect is the card itself: growing it first kept
+        // the first `blurMax` pixels solid, so the shadow started with a band
+        // and only feathered at its outer edge. Blurring the bare card fades
+        // from the card outward, and blurMax sets how far that fade reaches.
         Rectangle {
-            x: card.x - Tokyo.flyoutShadowBlur
-            y: card.y - Tokyo.flyoutShadowBlur + Tokyo.flyoutShadowOffsetY
-            width: card.width + Tokyo.flyoutShadowBlur * 2
-            height: card.height + Tokyo.flyoutShadowBlur * 2
-            radius: card.radius + Tokyo.flyoutShadowBlur
+            x: card.x
+            y: card.y + Tokyo.flyoutShadowOffsetY
+            width: card.width
+            height: card.height
+            radius: card.radius
             color: Tokyo.flyoutShadowColor
             visible: card.reveal > 0
             layer.enabled: true

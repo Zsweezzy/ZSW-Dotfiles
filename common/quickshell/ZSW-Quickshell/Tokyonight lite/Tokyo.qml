@@ -51,9 +51,9 @@ Singleton {
     readonly property real flyoutShadowBlur: 14
     readonly property real flyoutShadowOffsetY: 12
     /// Transparent room the flyout's popup gives that shadow on the sides and
-    /// below. Must cover blur + offset, or the shadow is cut off at the
-    /// surface edge and ends in a hard line. None above: the card's top edge
-    /// must stay flush under the capsule.
+    /// below. Must cover blur + offset and the fade's tail, or the shadow is
+    /// cut off at the surface edge and ends in a hard line. None above: the
+    /// card's top edge must stay flush under the capsule.
     readonly property real flyoutShadowPad: 44
     // ---------- dynamic island ----------
     // One capsule holds the whole bar (saneAspect's look), in Tokyo Night's own
