@@ -21,6 +21,31 @@ quickshell -c "ZSW-Quickshell/Tokyonight lite" -v
 Launched at session start by `hyprland.lua`
 (`hl.exec_cmd("quickshell -c 'ZSW-Quickshell/Tokyonight lite'")`).
 
+## Keyboard
+
+Rows never react to the pointer passing over them: no hover colours, no
+tooltips and no hover-opened cards. Every control is reachable from the
+keyboard.
+
+| key | what it does |
+|-----|--------------|
+| `Super+Tab` | open/close the island control centre |
+| `Super+N` | open/close the notification centre |
+| `Super+A` | open/close the audio card beside the control centre |
+| `Print` | screenshot the focused monitor |
+| `Shift+Print` | screenshot a dragged region (can cross monitors) |
+| `Super+Print` | open the latest screenshot in qView |
+| `Tab` / `Shift+Tab` | next / previous control in an open panel |
+| arrows | same as Tab, both axes |
+| `Enter` / `Space` | activate the focused control |
+| `Escape` | close the panel |
+
+A control opts in with `activeFocusOnTab: true`, `function activate()` and a
+`FocusRing {}` — sliders skip the ring, which read as a selection box when a
+panel focused its first control on open. `Panel.qml` owns the navigation. A keybind has no pointer
+serial, so a popup it opens cannot take an xdg grab — `Island.qml` opens those
+without one and forwards the keys from the bar instead (see `DESIGN.md`).
+
 ## Module map
 
 | waybar module          | file          | source                           |
@@ -65,8 +90,8 @@ module at `scripts/`.
   - openapps → re-runs the script on Hyprland open/close window events (plus the 5 s poll)
   - updates middle-click → immediate re-run (the config already treats middle-click
     as "refresh", so its `pkill -RTMIN+9` is equivalent to a restored poll)
-- Tooltips are custom popups styled after the waybar `tooltip` CSS rule; GTK's
-  500 ms hover delay (and the old `libtooltip-delay.so` shim) does not apply.
+- Tooltips are gone: nothing in this shell reacts to the pointer passing over
+  it. Controls answer to keyboard focus and to a press.
 - The memory tooltip lists the top-10 processes by RAM (RSS merged by process
   name, sorted descending, `name SIZE %of_total` per line) from `scripts/mem.sh`.
 - The existing Wi‑Fi and Ethernet tooltips retain their SSID/IP/netmask/DNS/MAC
@@ -75,11 +100,12 @@ module at `scripts/`.
   values. `NetworkMonitor.qml` refreshes one shared snapshot every second; all
   non-loopback adapters are represented, with non-Wi‑Fi adapters grouped under
   the Ethernet tooltip.
-- Clicking the audio pill opens a flyout (`AudioFlyout.qml`) with per-application
-  volume sliders + mute toggles and click-to-switch output/input devices
-  (defaults set via `Pipewire.preferredDefaultAudioSink/Source`). It replaced
-  the old Python audio panel on left-click; right/middle click launches the
-  compiled `audio-popup` panel.
+- Clicking the audio pill (or Super+A) opens the control centre with
+  `AudioCard.qml` beside its left edge, in the same popup surface: output/input
+  devices (click a row to make it the default, through
+  `Pipewire.preferredDefaultAudioSink/Source`) and a slider + mute for every
+  running playback stream. Only the default device carries volume, because a
+  slider on a device nothing is routed through changes nothing.
 - Clicking the cpu / gpu / mem pills opens `btop` in a kitty window
   (`Quickshell.execDetached`, replacing waybar's on-click).
 - **Apps cluster / "minimize to tray"** (`OpenApps.qml`, the dropped waybar tray
@@ -904,15 +930,14 @@ from it at runtime.
 ```
 shell.qml            entry point (ShellRoot)
 Bar.qml              per-screen PanelWindow + module layout
-Module.qml           reusable "pill" (radius 10, margins, hover/tooltip/click)
-Tooltip.qml          hover popup styled like waybar tooltips
-Poll.qml             interval script runner (waybar exec+interval equivalent)
+Module.qml           reusable "pill" (radius 10, margins, keyboard/click)Poll.qml             interval script runner (waybar exec+interval equivalent)
 Tokyo.qml            palette + geometry singleton
 NetworkMonitor.qml  shared per-adapter rate/latency data source
 Brightness.qml      shared DDC/CI brightness service (display map, debounced writes)
 Workspaces/Cava/OpenApps/Wifi/Ethernet/Audio/Gpu/Cpu/Mem/Updates.qml
-AudioFlyout.qml       popup with per-app volume + input/output device switching
-TrayMenu.qml          SNI right-click menu rendered as a flyout (same look as AudioFlyout)
+AudioCard.qml         audio card in the island popup: per-app volume, in/out devices
+TrayMenu.qml          SNI right-click menu rendered as a flyout (same look as the island cards)
+Screenshot.qml        Print/Shift+Print overlay: wlr-screencopy frame, region crop, save + wl-copy
 BrightnessFlyout.qml  per-monitor DDC/CI luminance slider (right-click a workspace pill)
 Clock.qml             the one centre pill: HH:mm:ss over the date, a clock glyph
                       while its flyout is open (left-click → morph)

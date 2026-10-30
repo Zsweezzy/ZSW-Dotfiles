@@ -41,7 +41,6 @@ color: "#1e2030"         // no — now two sources of truth for one pixel
 | `paneEdge` | a pane's own outline |
 | `hairline` | a rule *inside* a pane |
 | `panelFill` | the clock morph's shape |
-| `panelHover` | hover on `panelFill` |
 
 **Never invert the pair.** A `bg` card on a `pane`, or a `bg`-darker fill on a
 lighter surface, reads as a near-black hole punched through the widget. Both
@@ -59,7 +58,7 @@ behind it, and the same pane measured two different values over two windows.
 `islandFill`, `islandDim`. The bar is now one near-black capsule at the top
 centre (saneAspect's dynamic-island look) instead of floating pills; the
 capsule's drop shadow still uses `shadowColor` / `shadowBlur` /
-`shadowOffsetY`. `islandDim` is secondary ink inside a panel (calendar headers,
+`shadowOffsetY`. `islandDim` is secondary ink inside a panel (muted labels,
 labels), not a surface.
 
 | token | value | notes |
@@ -67,11 +66,12 @@ labels), not a surface.
 | `islandHeight` | 30 | capsule height; the radius is half of it |
 | `islandPadH` | 14 | capsule inner padding, each side |
 | `islandPanelRadius` | 22 | the panel that grows under the capsule |
+| `boxFill` | bg_highlight @ 35% | one step up from `islandFill`: the two boxes inside the control centre. A hover row inside a box uses `panelFill`. |
 
-Workspaces inside the capsule are dots (6px, widening on hover) except the
-active one, which is a `blue` numbered pill (22×16, radius 8, 10px bold
-`islandFill` text). At capsule size a row of numbers is unreadable; the dots
-still say how many workspaces there are.
+Workspaces inside the capsule are dots (6px) except the active one, which is a
+`blue` numbered pill (22×16, radius 8, 10px bold `islandFill` text). At capsule
+size a row of numbers is unreadable; the dots still say how many workspaces
+there are.
 
 The app launcher (`Launcher.qml`, Super+R) is a layer surface in the bar's own
 process, not an island popup: an xdg_popup of the bar's layer surface never gets
@@ -85,6 +85,24 @@ the keypress and the card. The capsule widens into the card with the same
 A layer surface's `screen` must never change while it runs: repointing it
 rebuilds the surface, and Hyprland then delivers no pointer events to the
 replacement — the window is drawn but every click falls through it.
+
+`Bar.qml` puts the bar on `WlrLayer.Overlay`. Hyprland hides every other layer
+under an exclusive-fullscreen window and only overlay is allowed above it; the
+island popup rides with its parent surface, so the bar and its cards stay
+usable over a game.
+
+Being above everything is only half of it: a pill sitting on a game is not
+"usable", it is in the way. So the bar steps aside while the active workspace
+holds a window in fullscreen mode 2 or 3 — `outOfTheWay` in `Bar.qml` — and
+comes back the moment a card is asked for (`island.anyOpen`, `polkitOpen`).
+Maximized (mode 1) is not fullscreen here: the bar stays, because the window
+still leaves room for it. The test is a `hyprctl -j clients` poll, not
+`Hyprland.toplevels` (its cached `fullscreen` goes stale) and not the
+workspace's `hasFullscreen` (true for maximized too).
+
+Out of the way means hidden *and* click-through: the surface stays mapped with
+`mask: Region { item: null }` and `Island.visible: false`, so a keybind opens
+its popup against a parent that already exists instead of racing the remap.
 
 ### Ink
 
@@ -112,8 +130,8 @@ reader identifies the stat by colour before they read the label.
 | `barHeight` | 34 | |
 | `edgeGap` | 6 | matches Hyprland `gaps_out`, so pills sit as far from the screen edge as windows do |
 | `fontSize` | 13 | base body size |
-| `flyoutWidth` | 1100 | moonsettings' flyout. `Bar.qml`'s top-edge hover strip is this wide and centred, so the pointer is inside the panel the moment it opens |
-| `panelPadH` / `panelPadV` | 16 | every island flyout card; applied by `Panel.qml` |
+| `flyoutWidth` | 1100 | the old moonsettings flyout's width; nothing in this tree reads it any more |
+| `panelPadH` / `panelPadV` | 16 | every island flyout card; applied by `Panel.qml` and, for the boxes inside one, `Box.qml` |
 | `panelGap` | 12 | row gap inside a flyout |
 | `islandGap` | 14 | gap between the pills inside the capsule |
 
@@ -121,24 +139,34 @@ reader identifies the stat by colour before they read the label.
 
 ## Adding an island function
 
-The lite island is module-driven. A module that opens a flyout declares the
-component itself:
+The lite island has **one** card: `QuickPanel`. Every control in the capsule
+opens it, so a new bar function goes into the card, not into a new panel.
+The notification centre (`Bell` opens `NotificationsPanel`) is the one surface
+of its own. The audio card (`AudioCard`, opened by the volume pill or Super+A)
+is not: it rides in the control centre's popup, hanging off the drawer's left
+edge, so there is one window to dismiss and one keyboard owner.
 
-```qml
-Module {
-    panel: Component { FooPanel { fooModule: root } }
-}
-```
+- a control (a row, a slider, a button) is written inline in `QuickPanel.qml`;
+- a section that already exists as a `Panel` is embedded with
+  `padH: 0; padV: 0` (`ClockPanel`, `MediaPanel`, `AudioPanel`), so it keeps
+  its content and loses only its own card padding.
 
-Add the module to `Island.qml`'s row with `onClicked: root.toggle(fooPill)`,
-and make `FooPanel` extend `Panel` and set `implicitWidth`. That width is the
-only width: Island loads the panel with a `Loader` and sizes the capsule to the
-loaded item, so the pill header and the card cannot drift apart. `Panel.qml`
-supplies the shared padding, gap and height. Adding a function means no entry
-in a per-panel width table.
+The card is two `Box`es side by side: left is status (time, now playing,
+volume, CPU and RAM as two plain rows), right is the controls: Wi-Fi and
+Bluetooth toggles listing only saved/paired devices, power profile, updates and
+session. `Box.qml` is the only container — the card border stays that of the
+flyout, and a box one step lighter groups its sections.
 
-`tests/test-panel-registry.sh` instantiates every panel offscreen and checks
-that width contract, because a panel is otherwise only created on click.
+A new pill is wired in `Island.qml` with `onClicked: root.toggle(quickPill)`.
+A module whose state the card shows passes itself to `Quick` there
+(`mediaModule: mediaPill`); `Quick.qml` hands it to `QuickPanel` through its
+`panel` component.
+
+The flyout's width is `QuickPanel.implicitWidth`; Island loads it with a
+`Loader` and sizes the capsule to the loaded item, so the pill header and the
+card cannot drift apart. `tests/test-panel-registry.sh` instantiates the panels
+offscreen and checks that width contract, because a panel is otherwise only
+created on click.
 
 ---
 
@@ -161,11 +189,10 @@ body; 14px+ only for the clock. `letterSpacing` 1.2–1.5 on small caps labels.
 
 | file | padH / padV |
 |---|---|
-| AudioFlyout, BrightnessFlyout, NotificationCenter, SettingsFlyout | 16 / 12 |
+| AudioCard, BrightnessFlyout, NotificationCenter, SettingsFlyout | 16 / 12 |
 | **SysFlyout** | **8 / 8** |
 | Toast | 10 / 8 |
 | TrayMenu | 10 / 8 |
-| Tooltip | 20 / 14 |
 
 `padH`/`padV` are declared per file, not shared. The user has asked for the Sys
 card to read as tight as their Hyprland windows (`border_size = 2`). **If you
@@ -214,15 +241,87 @@ land between those two lines and a clean-looking check will miss them.
 
 ---
 
+## Keyboard
+
+Nothing here reacts to the pointer passing over it: no hover colours, no
+tooltips and no hover-opened cards. A control answers to keyboard focus and to
+a press.
+
+Every control opts in with `activeFocusOnTab: true` and a `function activate()`;
+`FocusRing {}` draws the ring. Sliders leave it out: a panel focuses its first
+control on open, and on a slider that ring read as a permanent selection box.
+`Panel.qml` owns navigation: Tab/Shift+Tab and
+the arrows step the focus chain, Enter/Space call `activate()`, Escape closes
+the surface. A panel only has to put its click handler in `activate()`.
+
+`Super+Tab`, `Super+N` and `Super+A` open the control centre, the notification
+centre and the audio card through IPC. A keybind carries no pointer
+serial, so an xdg popup opened that way cannot take a keyboard grab — asking for
+one makes it fail to map at all. `Island.qml` opens such popups without the grab,
+keeps the bar's `WlrLayershell.keyboardFocus` Exclusive while one is up, and
+forwards the keys to `Panel.handleKey()`.
+
+---
+
+## Screenshots
+
+`Screenshot.qml` is one overlay per screen, mapped only while a shot is in
+flight. It captures with `ScreencopyView`, so grim, slurp and hyprshot are not
+involved at all.
+
+- **The frame is taken before anything is drawn.** The window is still empty
+  when the compositor serves the frame, so the saved image never contains the
+  overlay. What the user sees afterwards is that frozen frame, and a region is
+  a crop of it, never a second capture.
+- **The surface is 1x1 until its first configure.** A capture requested from
+  `onModeChanged` records that size instead of the screen; the retry timer
+  waits for `width === screen.width`.
+- **`done()` unmaps the window, so it waits for the grab.** An unmapped surface
+  renders nothing, and the `grabToImage` callback is where the save and the
+  close both happen.
+- **The grab follows the output scale**, so a 2x monitor saves at 3840x2160
+  while the window is 1920x1080.
+- **A region maps every screen and every window holds every frame.** The frames
+  are laid out like the desk (Hyprland's geometry, bounding box as the origin),
+  so a box dragged off the screen it started on still saves as one image from
+  the window that took the press. The selection is a `rect` in layout pixels
+  shared through `shell.qml`, so the other screens draw the same box.
+- **`Hyprland.monitors` is an ObjectModel, not an array.** Indexing it yields
+  `undefined`: read `.values` or the window maps with no capture view, then
+  times the whole shot out with "no frame from the compositor".
+- **Layout is in Quickshell's pixels, not Hyprland's.** `HyprlandMonitor`
+  reports `width`/`height` in physical pixels but `x`/`y` in layout pixels, so
+  a 2x output laid out with them draws at twice its size and the window shows
+  only its top-left quarter. `Quickshell.screens` is already layout-sized.
+- **`QImage` has no `copy()` in QML.** A `result.image.copy(...)` throws inside
+  the grab callback and is swallowed with no log line. Cropping is the
+  `ShaderEffectSource`'s job; that item is what gets grabbed.
+
+---
+
 ## Notifications
 
-Toasts and the notification centre are swaync's, not this tree's: it holds
-`org.freedesktop.Notifications` and draws its own layer surfaces. There is no
-`NotificationServer` here to fight it for the bus. The island's bell only runs
-`swaync-client -t` and polls `-c` for the badge.
+Notifications are this shell's, like polkit: `NotificationStore.qml` declares
+the `NotificationServer` that holds `org.freedesktop.Notifications`, so there is
+no second daemon and no `swaync-client` in any pill. The store keeps a JSONL
+history (`~/.local/state/quickshell/tokyonight/notifications.json`) because the
+service only hands out live objects, and it is the history the centre reads.
 
-The styling lives in `~/.config/swaync/style.css`, which mirrors the island by
-hand (`#1a1b26`, `pillRadius`, 11/10px type). Change the toast there, not in QML.
+- **The bell** opens `NotificationsPanel` as an ordinary island flyout, and its
+  badge is `store.unread`. Opening the centre marks everything read; DND and
+  CLEAR ALL are in its header.
+- **Rows** carry the app, its icon (`scripts/notify-icons.py`), a relative
+  timestamp, and the notification's actions while the daemon still holds the
+  live object. Once it is gone the row stays, without buttons.
+- **Toasts** are one `Toast` popup per bar window, top-right, capped at four
+  rows. They are suppressed while DND is on or the centre is open, and they
+  leave the notification in the centre unless the × was pressed.
+- **Timeouts** follow swaync's numbers, not the client's `expireTimeout`:
+  normal 6s, low 5s, critical and resident until dismissed.
+
+Not implemented, deliberately: swaync's grouping by app, inhibitors, scripts,
+notification-visibility rules and inline replies. Gettext-style `body-markup`
+is advertised as unsupported because the rows draw plain text.
 
 ---
 

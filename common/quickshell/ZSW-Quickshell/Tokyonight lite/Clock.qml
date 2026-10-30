@@ -15,16 +15,11 @@ Module {
 
     implicitWidth: face.contentW + hPad * 2
 
-    panel: Component {
-        ClockPanel { now: root.now }
-    }
-
     ClockFace {
         id: face
         anchors.centerIn: parent
         width: face.contentW
         height: Tokyo.pillHeight
-        hovered: root.hovered
         now: root.now
     }
 }
