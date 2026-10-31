@@ -132,7 +132,13 @@ ShellRoot {
 
     // The session lock. It holds no window until `locked` is set, so it costs
     // nothing while the session is open.
-    Component.onCompleted: Session.store = notificationStore
+    Component.onCompleted: {
+        Session.store = notificationStore
+        // Warm the desktop-entry index at login. The launcher windows are
+        // created on open now, and the index arrives on the next event-loop
+        // turn: without this the first Super+R after boot reads it empty.
+        DesktopEntries.applications
+    }
 
     // The desktop itself, under every window: hyprpaper's replacement.
     Wallpaper {}
@@ -159,15 +165,23 @@ ShellRoot {
     // one output for its whole life: repointing `screen` at the focused
     // monitor rebuilds the layer surface, and Hyprland never sends pointer
     // events to the replacement, so the launcher goes click-dead.
+    // Created on open (LazyOverlay): a mapped-but-closed launcher costs ~20 MB
+    // per monitor, and only the focused one can ever be opened.
     Variants {
         model: Quickshell.screens
-        delegate: Launcher {
+        delegate: LazyOverlay {
+            id: launcherLoader
             required property ShellScreen modelData
-            screen: modelData
-            capsuleWidth: bar.capsuleWidth
-            open: root.launcherOpen
-                  && modelData.name === Hyprland.focusedMonitor?.name
-            onDismissed: root.launcherOpen = false
+            wanted: root.launcherOpen
+                    && modelData.name === Hyprland.focusedMonitor?.name
+            // Its card rolls up on close; destroy it only after that.
+            graceMs: Tokyo.collapseDuration
+            sourceComponent: Launcher {
+                screen: launcherLoader.modelData
+                capsuleWidth: bar.capsuleWidth
+                open: launcherLoader.wanted
+                onDismissed: root.launcherOpen = false
+            }
         }
     }
 
@@ -175,30 +189,40 @@ ShellRoot {
     // instead of joining the capsule: a keybind, not the bar, opens it.
     Variants {
         model: Quickshell.screens
-        delegate: Clipboard {
+        delegate: LazyOverlay {
+            id: clipboardLoader
             required property ShellScreen modelData
-            screen: modelData
-            open: root.clipboardOpen
-                  && modelData.name === Hyprland.focusedMonitor?.name
-            onDismissed: root.clipboardOpen = false
+            wanted: root.clipboardOpen
+                    && modelData.name === Hyprland.focusedMonitor?.name
+            graceMs: Tokyo.collapseDuration
+            sourceComponent: Clipboard {
+                screen: clipboardLoader.modelData
+                open: clipboardLoader.wanted
+                onDismissed: root.clipboardOpen = false
+            }
         }
     }
 
     // Print / Shift+Print. Region mode maps every screen so a drag can leave
     // the one it started on; monitor mode stays on the focused screen, like
-    // hyprshot's `-m active` was.
+    // hyprshot's `-m active` was. Nothing is mapped while no shot is running.
     Variants {
         model: Quickshell.screens
-        delegate: Screenshot {
+        delegate: LazyOverlay {
+            id: screenshotLoader
             required property ShellScreen modelData
-            screen: modelData
-            mode: (root.screenshotMode === "region"
-                   || modelData.name === root.screenshotScreen) ? root.screenshotMode : ""
-            // Every screen draws the same selection, so a box dragged onto the
-            // next monitor still reads as one box.
-            region: root.screenshotRect
-            onRegionPicked: (x, y, w, h) => root.screenshotRect = Qt.rect(x, y, w, h)
-            onDone: root.screenshotMode = ""
+            readonly property string shotMode: (root.screenshotMode === "region"
+                    || modelData.name === root.screenshotScreen) ? root.screenshotMode : ""
+            wanted: shotMode !== ""
+            sourceComponent: Screenshot {
+                screen: screenshotLoader.modelData
+                mode: screenshotLoader.shotMode
+                // Every screen draws the same selection, so a box dragged onto
+                // the next monitor still reads as one box.
+                region: root.screenshotRect
+                onRegionPicked: (x, y, w, h) => root.screenshotRect = Qt.rect(x, y, w, h)
+                onDone: root.screenshotMode = ""
+            }
         }
     }
 
@@ -206,13 +230,18 @@ ShellRoot {
     // full-screen grab. It joins the capsule like the launcher does.
     Variants {
         model: Quickshell.screens
-        delegate: PolkitPrompt {
+        delegate: LazyOverlay {
+            id: polkitLoader
             required property ShellScreen modelData
-            screen: modelData
-            flow: polkitAgent.flow
-            capsuleWidth: bar.capsuleWidth
-            open: polkitAgent.isActive
-                  && modelData.name === Hyprland.focusedMonitor?.name
+            wanted: polkitAgent.isActive
+                    && modelData.name === Hyprland.focusedMonitor?.name
+            graceMs: Tokyo.collapseDuration
+            sourceComponent: PolkitPrompt {
+                screen: polkitLoader.modelData
+                flow: polkitAgent.flow
+                capsuleWidth: bar.capsuleWidth
+                open: polkitLoader.wanted
+            }
         }
     }
 }
