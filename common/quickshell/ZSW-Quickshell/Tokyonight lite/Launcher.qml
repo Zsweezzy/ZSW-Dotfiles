@@ -29,6 +29,11 @@ PanelWindow {
     /// once hides apps installed after the first open. One of these windows
     /// exists per monitor.
     property var apps: []
+    // The desktop-entry index only starts scanning when something first
+    // touches it, and its result arrives on the next event-loop turn. Touch it
+    // here, while these windows are created at login, or the first open after
+    // boot reads the still-empty model and shows "No apps".
+    Component.onCompleted: DesktopEntries.applications
     /// Width the bar's capsule is drawing right now (see shell.qml). The card
     /// is never wider than it, so the two windows stay flush while rescaling.
     property real capsuleWidth: Tokyo.launcherWidth
