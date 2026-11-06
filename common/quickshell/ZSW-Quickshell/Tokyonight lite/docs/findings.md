@@ -63,7 +63,7 @@ Environment: Quickshell 0.3.2 (Arch), Qt 6, Hyprland.
 
 ## Performance
 
-- Poll intervals are per-file today (`Sys`, `Updates`, `NotificationStore`).
+- Poll intervals are per-file today (`Sys`, `NotificationStore`).
   One `Perf.qml` singleton keeps them from drifting.
 - A committed baseline matters more than a micro-optimisation: record the
   process RSS and the idle CPU after a reload.

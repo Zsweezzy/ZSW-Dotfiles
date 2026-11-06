@@ -23,7 +23,7 @@ Live log of the roadmap slices. Each entry: what changed, how it was verified.
 | 15 Idle | `Idle.qml`: two `IdleMonitor`s (lock, DPMS) reading the Settings thresholds | reload clean; thresholds 0 disable |
 | 19 Battery | `Battery.qml` pill from `UPower.displayDevice`, removed on desktops | hidden on this desktop (`isPresent: false`) |
 | 18 Media | player picker in `MediaPanel`; the pick lives on the module so it outlives the panel | reload clean with two players |
-| 21 Perf | `Perf.qml` (`ms()` scale, `Settings.lowPower` doubles every poll) applied to `Sys`, `Updates`, `NotificationStore`, `Bar` | reload clean |
+| 21 Perf | `Perf.qml` (`ms()` scale, `Settings.lowPower` doubles every poll) applied to `Sys`, `NotificationStore`, `Bar` | reload clean |
 | 14/11 IPC & CLI | `scripts/island` over the IPC surface; `dnd` and `theme` added to `IpcHandler` | `island status`, `island dnd on/off`, `island theme` |
 
 Verification: `scripts/check-reload.sh` exit 0 after every edit, and once more

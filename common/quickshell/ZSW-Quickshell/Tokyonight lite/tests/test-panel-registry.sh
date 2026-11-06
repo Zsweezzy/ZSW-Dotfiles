@@ -67,23 +67,14 @@ absent "clock has no flyout of its own" Clock.qml 'panel: Component {'
 absent "audio has no flyout of its own" Audio.qml 'panel: Component {'
 absent "media has no flyout of its own" Media.qml 'panel: Component {'
 
-# The upgrade process outlives the panel: a flyout close mid-pacman must not
-# kill a half-applied transaction. One script covers every source on the box.
-check "updates process lives in the module" Updates.qml \
-      'command: ["bash", Tokyo.scriptDir + "/update-all.sh"]'
-check "update all upgrades repos" scripts/update-all.sh 'pkexec pacman -Syu'
-check "update all upgrades flatpaks" scripts/update-all.sh 'flatpak update -y'
-check "update all upgrades the AUR" scripts/update-all.sh 'yay -Sua'
-check "update all upgrades AppImages" scripts/update-all.sh 'appimageupdatetool'
 # A browser publishes MPRIS for any tab that makes sound, so YouTube would
 # otherwise take the pill. Only a playing, non-browser player is shown.
 check "media pill only follows a playing player" Media.qml \
       'players.find(p => p.isPlaying && !root.isBrowser(p))'
 check "media pill knows browser players" Media.qml 'root.isBrowser(p)'
-# System stats and updates are data under the quick pill, not pills of their
-# own: the bar keeps one control-centre entry instead of three.
+# System stats are data under the quick pill, not a pill of its own: the
+# bar keeps one control-centre entry instead of three.
 check "quick composes the system probe" Quick.qml 'Sys { id: sysData }'
-check "quick composes the updates probe" Quick.qml 'Updates { id: updateData }'
 # One polkit agent per session, and it is ours: the prompt is bound to the
 # agent's flow rather than to a window of its own, and joins the capsule the
 # way the launcher does (flush at the bar's height, capsule widened to it).
@@ -183,11 +174,6 @@ absent "no DDC brightness read at open" QuickPanel.qml 'getvcp'
 for f in *.qml; do
     absent "no hover colour in $f" "$f" 'hoverEnabled'
 done
-
-# The Check button queries every source, not only the polled repos.
-check "check queries repos" Updates.qml 'checkupdates 2>/dev/null | wc -l'
-check "check queries flatpak" Updates.qml 'flatpak remote-ls --updates'
-check "check queries the AUR" Updates.qml 'yay -Qua'
 
 
 if ! command -v quickshell >/dev/null; then

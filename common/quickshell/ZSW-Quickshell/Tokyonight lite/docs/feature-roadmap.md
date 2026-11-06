@@ -15,7 +15,7 @@ AGPL-3.0, Noctalia MIT. No copyleft source was copied.
 | 15 | Services & daemons | Idle daemon: lock and DPMS on `IdleMonitor` | `Idle.qml`, `shell.qml` |
 | 18 | Media | Player picker in the media panel, capsule follows it | `Media.qml`, `MediaPanel.qml` |
 | 19 | System integration | UPower battery pill, hidden on desktops | `Battery.qml`, `Island.qml` |
-| 21 | Performance | One `Perf.qml` policy for poll intervals (one switch, `Settings.lowPower`) | `Perf.qml`, `Sys.qml`, `Updates.qml`, `NotificationStore.qml`, `Bar.qml` |
+| 21 | Performance | One `Perf.qml` policy for poll intervals (one switch, `Settings.lowPower`) | `Perf.qml`, `Sys.qml`, `NotificationStore.qml`, `Bar.qml` |
 
 Deliberately skipped (named, not built): notification inhibitors and scripts,
 inline replies, per-monitor lock surfaces with different widgets, video lock

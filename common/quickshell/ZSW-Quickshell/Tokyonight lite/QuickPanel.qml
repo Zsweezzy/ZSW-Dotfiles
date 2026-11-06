@@ -7,7 +7,7 @@ import Quickshell.Networking
 
 // The one flyout: two boxes side by side. Left is status (clock, now playing,
 // volume, CPU/RAM), right is the controls (network, Bluetooth, display, power,
-// updates, session). It reads the capsule's live modules; every action is a
+// session). It reads the capsule's live modules; every action is a
 // property write or an execDetached, so the card can be destroyed at any moment
 // without losing state.
 Panel {
@@ -19,7 +19,6 @@ Panel {
     readonly property var wifiDevice: root.quickModule ? root.quickModule.wifiDevice : null
     readonly property var btAdapter: root.quickModule ? root.quickModule.btAdapter : null
     readonly property var sys: root.quickModule ? root.quickModule.sys : null
-    readonly property var updates: root.quickModule ? root.quickModule.updates : null
 
     /// The capsule's clock, now-playing and volume modules. Their own flyouts
     /// are gone: this card is the one place they open.
@@ -423,146 +422,6 @@ Panel {
                             }
                         }
                     }
-                }
-
-                Rectangle {
-                    width: parent.width
-                    height: 1
-                    color: Tokyo.paneEdge
-                }
-
-                // ---- Updates ----
-                RowLayout {
-                    width: parent.width
-                    Text {
-                        text: "Updates"
-                        color: Tokyo.dim
-                        font { family: Tokyo.fontFamily; pixelSize: 12 }
-                    }
-                    Item { Layout.fillWidth: true }
-                    Text {
-                        text: root.updates && root.updates.updating ? "upgrading…"
-                              : root.updates && root.updates.checking ? "checking…"
-                              : root.updates && root.updates.count > 0
-                                  ? root.updates.count + " pending" : "up to date"
-                        color: root.updates && root.updates.count > 0 ? Tokyo.cyan : Tokyo.dim
-                        font { family: Tokyo.fontFamily; pixelSize: 11; bold: true }
-                    }
-                }
-
-                // Every source, not just pacman: the check button counts repos,
-                // Flatpak, AUR and AppImages, and the line is what it found.
-                Text {
-                    width: parent.width
-                    visible: root.updates !== null && root.updates.breakdown !== ""
-                    text: root.updates ? root.updates.breakdown : ""
-                    color: Tokyo.dim
-                    elide: Text.ElideRight
-                    font { family: Tokyo.fontFamily; pixelSize: 10 }
-                }
-
-                Column {
-                    width: parent.width
-                    spacing: 2
-                    visible: root.updates !== null && root.updates.packages.length > 0
-
-                    Repeater {
-                        model: root.updates ? root.updates.packages.slice(0, 4) : []
-                        delegate: Text {
-                            required property string modelData
-                            width: parent.width
-                            text: modelData
-                            color: Tokyo.fg
-                            elide: Text.ElideRight
-                            font { family: Tokyo.fontFamily; pixelSize: 10 }
-                        }
-                    }
-                    Text {
-                        visible: root.updates !== null && root.updates.packages.length > 4
-                        text: root.updates ? "+" + (root.updates.packages.length - 4) + " more" : ""
-                        color: Tokyo.dim
-                        font { family: Tokyo.fontFamily; pixelSize: 10 }
-                    }
-                }
-
-                RowLayout {
-                    width: parent.width
-                    spacing: 6
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredWidth: 1
-                        height: 28
-                        radius: Tokyo.pillRadius
-                        color: checkPress.pressed ? Tokyo.bgHighlight : "transparent"
-                        border.width: 1
-                        border.color: root.updates && root.updates.checking ? Tokyo.blue : Tokyo.paneEdge
-                        scale: checkPress.pressed ? 0.98 : 1
-                        Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: root.updates && root.updates.checking ? "Checking…" : "Check"
-                            color: root.updates && root.updates.checking ? Tokyo.dim : Tokyo.cyan
-                            font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
-                        }
-
-                        MouseArea {
-                            id: checkPress
-                            anchors.fill: parent
-                            activeFocusOnTab: true
-                            enabled: root.updates !== null && !root.updates.checking
-                                   && !root.updates.updating
-                            function activate() {
-                                if (root.updates) root.updates.checkAll()
-                            }
-                            onClicked: activate()
-                            FocusRing {}
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredWidth: 2
-                        height: 28
-                        radius: Tokyo.pillRadius
-                        color: root.updates && root.updates.updating ? Tokyo.bgHighlight
-                               : updatePress.pressed ? Tokyo.bgHighlight
-                               : (root.updates && root.updates.count > 0 ? Tokyo.activeTint : Tokyo.bgHighlight)
-                        scale: updatePress.pressed ? 0.98 : 1
-                        Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: root.updates && root.updates.updating ? "Updating…" : "Update all"
-                            color: root.updates && root.updates.updating ? Tokyo.dim
-                                   : (root.updates && root.updates.count > 0 ? Tokyo.cyan : Tokyo.dim)
-                            font { family: Tokyo.fontFamily; pixelSize: 12; bold: true }
-                        }
-
-                        MouseArea {
-                            id: updatePress
-                            anchors.fill: parent
-                            activeFocusOnTab: true
-                            enabled: root.updates !== null && !root.updates.updating
-                            function activate() {
-                                if (root.updates) root.updates.startUpdate()
-                            }
-                            onClicked: activate()
-                            FocusRing {}
-                        }
-                    }
-                }
-
-                // The verdict once the update terminal closes, or why a check
-                // failed.
-                Text {
-                    width: parent.width
-                    visible: root.updates !== null && root.updates.status !== ""
-                    text: root.updates ? root.updates.status : ""
-                    color: root.updates && root.updates.status.startsWith("Failed") ? Tokyo.red : Tokyo.dim
-                    elide: Text.ElideRight
-                    font { family: Tokyo.fontFamily; pixelSize: 10 }
                 }
 
                 Rectangle {

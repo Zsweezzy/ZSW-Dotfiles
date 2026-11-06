@@ -153,7 +153,7 @@ edge, so there is one window to dismiss and one keyboard owner.
 
 The card is two `Box`es side by side: left is status (time, now playing,
 volume, CPU and RAM as two plain rows), right is the controls: Wi-Fi and
-Bluetooth toggles listing only saved/paired devices, power profile, updates and
+Bluetooth toggles listing only saved/paired devices, power profile and
 session. `Box.qml` is the only container — the card border stays that of the
 flyout, and a box one step lighter groups its sections.
 

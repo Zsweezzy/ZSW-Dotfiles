@@ -62,7 +62,6 @@ without one and forwards the keys from the bar instead (see `DESIGN.md`).
 | custom/gpu             | Gpu           | `scripts/gpu.sh`                 |
 | cpu                    | Cpu           | `scripts/cpu.sh` (new)           |
 | memory                 | Mem           | `scripts/mem.sh` (new)           |
-| custom/updates         | Updates       | `scripts/cachy-updates.sh`       |
 | tray (merged into OpenApps) | OpenApps | Quickshell.Services.SystemTray + `special:tray` |
 | (no waybar equivalent)  | Brightness    | `scripts/brightness.sh` (ddcutil, DDC/CI VCP 0x10) |
 | (no waybar equivalent)  | ClockFlyout   | `TimerState.qml` + `pw-play` (`assets/timer-done.wav`) |
@@ -88,8 +87,6 @@ module at `scripts/`.
 - **Waybar `signal`/RTMIN refresh has no Quickshell equivalent.** Replaced by:
   - wifi toggle → re-runs `wifi.sh` 800 ms after the toggle click
   - openapps → re-runs the script on Hyprland open/close window events (plus the 5 s poll)
-  - updates middle-click → immediate re-run (the config already treats middle-click
-    as "refresh", so its `pkill -RTMIN+9` is equivalent to a restored poll)
 - Tooltips are gone: nothing in this shell reacts to the pointer passing over
   it. Controls answer to keyboard focus and to a press.
 - The memory tooltip lists the top-10 processes by RAM (RSS merged by process
@@ -934,7 +931,7 @@ Module.qml           reusable "pill" (radius 10, margins, keyboard/click)Poll.qm
 Tokyo.qml            palette + geometry singleton
 NetworkMonitor.qml  shared per-adapter rate/latency data source
 Brightness.qml      shared DDC/CI brightness service (display map, debounced writes)
-Workspaces/Cava/OpenApps/Wifi/Ethernet/Audio/Gpu/Cpu/Mem/Updates.qml
+Workspaces/Cava/OpenApps/Wifi/Ethernet/Audio/Gpu/Cpu/Mem.qml
 AudioCard.qml         audio card in the island popup: per-app volume, in/out devices
 TrayMenu.qml          SNI right-click menu rendered as a flyout (same look as the island cards)
 Screenshot.qml        Print/Shift+Print overlay: wlr-screencopy frame, region crop, save + wl-copy

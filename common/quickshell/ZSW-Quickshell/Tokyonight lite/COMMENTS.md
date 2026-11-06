@@ -32,7 +32,7 @@ This file is the design rationale for AI: read it before editing.
 //                   the wallpaper, everything between them is see-through.
 //   layout        : left  = workspaces | audio | tray
 //                   center= clock (time over date, click → ClockFlyout)
-//                   right = network | sys (gpu+cpu+ram) | updates
+//                   right = network | sys (gpu+cpu+ram)
 //   module pills  : radius 8, margin 4px 3px (26px tall, 3px from each edge)
 //   pill gap      : 12px = 6px bar spacing + 3px margins each side (GTK semantics)
     /// shared Brightness service (shell.qml) — DDC/CI per-monitor luminance
@@ -72,13 +72,9 @@ This file is the design rationale for AI: read it before editing.
             // thing for a widget to do when the panel is meant to look like it
             // belongs to it.
         // ---------- right ----------
-            // rightMargin = hyprland gaps_out (6): the last pill (updates / cachy)
-            // ends exactly gaps_out from the monitor border, mirroring windows.
+            // rightMargin = hyprland gaps_out (6): the last pill ends exactly
+            // gaps_out from the monitor border, mirroring windows.
             // (Was 0 to touch the border; now matches the window gap setting.)
-            // Beside cachy-updates on purpose: "there are updates" and
-            // "something wants you" are both things that arrived while you were
-            // looking at something else, and reading them off two adjacent
-            // pills is one glance rather than two.
             // The net icons and the power glyph are one pill now: the links the
             // machine is actually on sit next to the switch that changes them.
             // Last on the right, so the power glyph is against the screen edge.
