@@ -126,6 +126,10 @@ PanelWindow {
 
         function submit() {
             if (!root.flow) return
+            // An empty reply can never authenticate, and every failed or
+            // cancelled request counts towards pam_faillock (3 misses lock the
+            // account for 10 minutes), so a stray Enter must not burn one.
+            if (password.text.length === 0 && !root.flow.responseVisible) return
             root.flow.submit(password.text)
             password.text = ""
             password.forceActiveFocus()
