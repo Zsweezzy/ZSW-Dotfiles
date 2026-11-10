@@ -49,6 +49,17 @@ end
 
 
 
+# nixGL function - Run OpenGL/Vulkan apps with hardware acceleration on non-NixOS
+# Usage: nixGL <app> [args...] (e.g., nixGL kitty, nixGL yazi)
+function nixGL
+    if test (count $argv) -lt 1
+        echo "Usage: nixGL <command> [args...]"
+        echo "Example: nixGL kitty"
+        return 1
+    end
+    nix run --impure github:nix-community/nixGL -- $argv
+end
+
 # Starship prompt
 if command -q starship
     starship init fish | source
