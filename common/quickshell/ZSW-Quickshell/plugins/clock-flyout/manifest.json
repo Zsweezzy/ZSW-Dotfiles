@@ -1,0 +1,9 @@
+{
+  "name": "clock-flyout",
+  "version": "1.0.0",
+  "entry": "Widget.qml",
+  "type": "flyout",
+  "tags": ["time", "timer", "calendar"],
+  "dependencies": [],
+  "description": "Clock flyout with time, date, timers, and calendar"
+}

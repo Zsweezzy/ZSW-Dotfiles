@@ -45,11 +45,10 @@ Item {
                     // number; at capsule size a row of digits is unreadable
                     // and this keeps inactive workspaces as the dots that show
                     // how many there are.
-                    width: dot.ws.active ? 22 : (hover.hovered ? 10 : 6)
+                    width: dot.ws.active ? 22 : 6
                     height: dot.ws.active ? 16 : 6
                     radius: dot.ws.active ? 8 : 3
-                    color: dot.ws.active ? Tokyo.blue
-                                         : (hover.hovered ? Tokyo.cyan : Tokyo.bgHighlight)
+                    color: dot.ws.active ? Tokyo.blue : Tokyo.bgHighlight
                     Behavior on width {
                         NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
                     }
@@ -79,9 +78,8 @@ Item {
                 }
 
                 MouseArea {
-                    id: hover
+                    id: dotArea
                     anchors.fill: parent
-                    hoverEnabled: true
                     onClicked: m => {
                         if (m.button === Qt.LeftButton) dot.ws.activate()
                     }

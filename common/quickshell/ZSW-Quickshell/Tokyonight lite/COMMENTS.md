@@ -32,7 +32,7 @@ This file is the design rationale for AI: read it before editing.
 //                   the wallpaper, everything between them is see-through.
 //   layout        : left  = workspaces | audio | tray
 //                   center= clock (time over date, click → ClockFlyout)
-//                   right = network | sys (gpu+cpu+ram) | updates
+//                   right = network | sys (gpu+cpu+ram)
 //   module pills  : radius 8, margin 4px 3px (26px tall, 3px from each edge)
 //   pill gap      : 12px = 6px bar spacing + 3px margins each side (GTK semantics)
     /// shared Brightness service (shell.qml) — DDC/CI per-monitor luminance
@@ -72,13 +72,9 @@ This file is the design rationale for AI: read it before editing.
             // thing for a widget to do when the panel is meant to look like it
             // belongs to it.
         // ---------- right ----------
-            // rightMargin = hyprland gaps_out (6): the last pill (updates / cachy)
-            // ends exactly gaps_out from the monitor border, mirroring windows.
+            // rightMargin = hyprland gaps_out (6): the last pill ends exactly
+            // gaps_out from the monitor border, mirroring windows.
             // (Was 0 to touch the border; now matches the window gap setting.)
-            // Beside cachy-updates on purpose: "there are updates" and
-            // "something wants you" are both things that arrived while you were
-            // looking at something else, and reading them off two adjacent
-            // pills is one glance rather than two.
             // The net icons and the power glyph are one pill now: the links the
             // machine is actually on sit next to the switch that changes them.
             // Last on the right, so the power glyph is against the screen edge.
@@ -213,18 +209,11 @@ This file is the design rationale for AI: read it before editing.
 // Geometry matches waybar: radius 8, vertical margin 4px inside a 34px bar
 // (so 26px tall), horizontal padding 0 12px, gap between pills 12px
 // (3px module margins + 6px bar spacing, GTK box semantics).
-//
-// Hover behavior is opt-in via `hoverStyle` because waybar only defines
-// hover rules for #workspaces (and #taskbar) buttons — the generic pill
-// modules like #clock/#cpu stay visually unchanged on hover.
     // ---------- content ----------
-// shown in the shared Tooltip popup on hover
     /// Coloured spans in a row, instead of `text`: a list of { text, color }.
     /// For a pill standing for more than one stat, where each of them keeps the
     /// accent it had as a pill of its own (Sys.qml: gpu purple, cpu cyan, ram
     /// green). One label and one `fg` cannot say that.
-    // opt-in hover styling (waybar #workspaces / #taskbar buttons)
-    // when false the module ignores hover entirely (e.g. the tray counter)
     /// extra letter spacing on the label (waybar `letter-spacing`).
     /// Default 0.2: Pango rounds each glyph advance to an integer pixel at 1x
     /// (JetBrains Mono: 7.8 -> 8.0) while Qt lays out the exact 7.8px, leaving
@@ -273,21 +262,6 @@ This file is the design rationale for AI: read it before editing.
     /// emitted with the script's stdout (last read line) on every run
     // Quote each argument for sh, then append a settle delay so the final
     // bytes of the script's output drain into the pipe before exit.
-```
-
-## `Tooltip.qml`
-
-```qml
-// Tooltip.qml — hover tooltip popup styled like the waybar `tooltip` CSS rule.
-//
-//   tooltip { background-color: #16161e; border: 1px solid #2f334d;
-//             border-radius: 8px; color: #c8d3f5; }
-//
-// One instance per bar (created in Bar.qml); every module shares it through
-// `tooltipHost`. Anchored below the hovered module via PopupAnchor.item.
-// The 6px gap is transparent padding at the popup's top — avoids QML Margins
-// struct assignment issues.
-    /// anchor below the given item and show the tooltip
 ```
 
 ## `Focus.qml`
@@ -372,7 +346,7 @@ This file is the design rationale for AI: read it before editing.
 //   format          {icon} {volume}%
 //   format-muted    \uf026 {volume}%
 //   format-icons    [\uf027, \uf027, \uf028]   (threshold at 67%)
-//   click/wheel     opens the AudioFlyout (per-app volume, in/out devices)
+//   click/wheel     opens the audio card beside the control centre (same surface)
 //   right/middle    same flyout — there is no separate popup anymore
 //   scroll          volume ±5%, clamped to the shared overboost ceiling
 //   tooltip         : "{desc} {volume}%" (hidden while the flyout is open)

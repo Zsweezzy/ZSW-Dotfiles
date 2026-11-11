@@ -28,12 +28,6 @@ Module {
           ? "\uf026 " + root.pct + "%"
           : (root.pct >= 67 ? "\uf028 " : "\uf027 ") + root.pct + "%"
 
-    tooltip: !sink ? "" : `${sink.description} ${root.pct}%`
-
-    panel: Component {
-        AudioPanel { audioModule: root }
-    }
-
     onWheelTick: dy => {
         if (!sink || !sink.audio) return
         sink.audio.volume = Math.max(0, Math.min(1,

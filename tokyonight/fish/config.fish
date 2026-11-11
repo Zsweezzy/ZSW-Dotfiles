@@ -1,9 +1,9 @@
 source /usr/share/cachyos-fish-config/cachyos-config.fish
 
-# Use the locally patched Fetch instead of CachyOS's fastfetch greeting
-# Its --- group markers render as --------.
+# fastfetch greeting; config lives in ~/.config/fastfetch.
+# The old patched-fetch setup is archived in ZSW-Dotfiles/tokyonight/extras/fetch.
 function fish_greeting
-    ~/.local/bin/fetch
+    fastfetch
 end
 
 fish_add_path /home/maxii/.spicetify

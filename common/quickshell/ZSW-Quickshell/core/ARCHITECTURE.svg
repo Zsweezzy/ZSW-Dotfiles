@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="900" height="600" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font: bold 18px sans-serif; fill: #c8d3f5; }
+    .subtitle { font: 14px sans-serif; fill: #82aaff; }
+    .box { fill: #1a1a2e; stroke: #82aaff; stroke-width: 2; rx: 8; ry: 8; }
+    .box-header { fill: #2a2a4a; font: bold 12px sans-serif; fill: #c8d3f5; }
+    .pill { fill: #3a5a3a; stroke: #9ece6a; stroke-width: 1; }
+    .flyout { fill: #3a4a5a; stroke: #86e1fc; stroke-width: 1; }
+    .panel { fill: #2a3a5a; stroke: #bb9af7; stroke-width: 1; }
+    .service { fill: #2a3a4a; stroke: #e0af68; stroke-width: 1; }
+    .text { font: 12px sans-serif; fill: #c8d3f5; }
+    .small-text { font: 10px sans-serif; fill: #82aaff; }
+    .arrow { fill: none; stroke: #82aaff; stroke-width: 2; marker-end: url(#arrowhead); }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#82aaff"/>
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="450" y="30" text-anchor="middle" class="title">ZSW-Quickshell Plugin System Architecture</text>
+  
+  <!-- ShellRoot -->
+  <rect x="350" y="60" width="200" height="60" class="box"/>
+  <text x="450" y="85" text-anchor="middle" class="text">ShellRoot</text>
+  <text x="450" y="102" text-anchor="middle" class="small-text">Main shell container</text>
+  
+  <!-- Services Box -->
+  <rect x="20" y="140" width="200" height="180" class="box"/>
+  <text x="110" y="160" text-anchor="middle" class="box-header">Services (Single Instance)</text>
+  
+  <rect x="30" y="175" width="160" height="40" class="pill"/>
+  <text x="110" y="198" text-anchor="middle" class="text">NotificationStore</text>
+  
+  <rect x="30" y="220" width="160" height="40" class="service"/>
+  <text x="110" y="243" text-anchor="middle" class="text">NetworkMonitor</text>
+  
+  <rect x="30" y="265" width="160" height="40" class="service"/>
+  <text x="110" y="288" text-anchor="middle" class="text">Brightness</text>
+  
+  <!-- Plugin System -->
+  <rect x="350" y="140" width="200" height="100" class="box"/>
+  <text x="450" y="165" text-anchor="middle" class="box-header">Plugin System</text>
+  
+  <rect x="370" y="190" width="160" height="30" class="panel"/>
+  <text x="450" y="210" text-anchor="middle" class="text">PluginLoader</text>
+  
+  <rect x="370" y="225" width="160" height="30" class="panel"/>
+  <text x="450" y="245" text-anchor="middle" class="text">PluginRegistry</text>
+  
+  <!-- Plugins Box -->
+  <rect x="580" y="140" width="300" height="200" class="box"/>
+  <text x="730" y="160" text-anchor="middle" class="box-header">Plugins</text>
+  
+  <!-- Bar Pills -->
+  <text x="600" y="195" class="small-text">Bar Pills (left):</text>
+  <rect x="590" y="205" width="180" height="30" class="pill"/>
+  <text x="680" y="222" text-anchor="middle" class="text">Workspaces</text>
+  
+  <rect x="590" y="245" width="180" height="30" class="pill"/>
+  <text x="680" y="262" text-anchor="middle" class="text">Audio</text>
+  
+  <rect x="590" y="285" width="180" height="30" class="pill"/>
+  <text x="680" y="302" text-anchor="middle" class="text">Tray</text>
+  
+  <!-- Center pill -->
+  <text x="600" y="335" class="small-text">Bar Pills (center):</text>
+  <rect x="680" y="345" width="180" height="30" class="pill"/>
+  <text x="770" y="362" text-anchor="middle" class="text">Clock</text>
+  
+  <!-- Right pills -->
+  <text x="680" y="395" class="small-text">Bar Pills (right):</text>
+  <rect x="590" y="405" width="180" height="30" class="pill"/>
+  <text x="680" y="422" text-anchor="middle" class="text">Sys</text>
+  
+  <rect x="590" y="445" width="180" height="30" class="pill"/>
+  <text x="680" y="462" text-anchor="middle" class="text">Bell</text>
+  
+  <rect x="590" y="485" width="180" height="30" class="pill"/>
+  <text x="680" y="502" text-anchor="middle" class="text">Settings</text>
+  
+  <!-- Flyouts -->
+  <text x="20" y="350" class="small-text">Flyouts:</text>
+  <rect x="10" y="365" width="200" height="30" class="flyout"/>
+  <text x="110" y="382" text-anchor="middle" class="text">ClockFlyout</text>
+  
+  <rect x="10" y="400" width="200" height="30" class="flyout"/>
+  <text x="110" y="417" text-anchor="middle" class="text">AudioFlyout</text>
+  
+  <rect x="10" y="435" width="200" height="30" class="flyout"/>
+  <text x="110" y="452" text-anchor="middle" class="text">SettingsFlyout</text>
+  
+  <!-- Bar -->
+  <rect x="350" y="280" width="200" height="80" class="box"/>
+  <text x="450" y="305" text-anchor="middle" class="box-header">Bar</text>
+  <text x="450" y="325" text-anchor="middle" class="small-text">PanelWindow per screen</text>
+  
+  <!-- Arrows -->
+  <path d="M450 120 L450 138" class="arrow"/>
+  <path d="M450 138 L450 250" class="arrow" stroke-dasharray="5,5"/>
+  
+  <path d="M110 320 L220 320" class="arrow"/>
+  <path d="M220 320 L370 320" class="arrow"/>
+  
+  <path d="M550 210 L580 210" class="arrow"/>
+  <path d="M550 260 L580 260" class="arrow"/>
+  
+  <path d="M450 375 L550 375" class="arrow"/>
+  
+  <!-- Plugin Loading Flow -->
+  <rect x="350" y="400" width="200" height="100" class="box" fill="#0d1117"/>
+  <text x="450" y="425" text-anchor="middle" class="box-header" fill="#82aaff">Plugin Loading Flow</text>
+  
+  <rect x="370" y="445" width="80" height="30" class="pill"/>
+  <text x="410" y="462" text-anchor="middle" class="text">Shell Start</text>
+  
+  <path d="M410 475 L410 495" class="arrow"/>
+  
+  <rect x="340" y="505" width="140" height="30" class="flyout"/>
+  <text x="410" y="522" text-anchor="middle" class="text">Read Manifest</text>
+  
+  <path d="M410 535 L410 555" class="arrow"/>
+  
+  <rect x="370" y="565" width="80" height="30" class="panel"/>
+  <text x="410" y="582" text-anchor="middle" class="text">Load QML</text>
+  
+  <path d="M410 595 L550 475" class="arrow"/>
+<foreignObject x="560" y="465" width="120" height="60">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <div style="color: #c8d3f5; font-family: sans-serif; font-size: 12px;">
+        <strong>Ready:</strong><br/>
+        Component registered<br/>
+        in PluginRegistry
+      </div>
+    </body>
+  </foreignObject>
+</svg>

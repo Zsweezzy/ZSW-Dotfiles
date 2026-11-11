@@ -1,0 +1,134 @@
+```mermaid
+flowchart TD
+    subgraph "Quickshell Shell Architecture"
+        direction TB
+        
+        %% Shell Root
+        SR[ShellRoot]
+        
+        %% Services Section
+        subgraph "Services (Single Instance)"
+            direction LR
+            NS[NotificationStore]
+            NM[NetworkMonitor]
+            BR[Brightness]
+            PC[PolkitAgent]
+            WS[Wallpaper]
+        end
+        
+        %% Plugin System Section
+        subgraph "Plugin System"
+            direction TB
+            PL[PluginLoader]
+            PR[PluginRegistry]
+        end
+        
+        %% Plugin Categories
+        subgraph "Plugins"
+            direction TB
+            subgraph "Bar Pills"
+                BP1[Clock<br/>plugins/clock]
+                BP2[Audio<br/>plugins/audio]
+                BP3[Workspaces<br/>plugins/workspaces]
+                BP4[Sys<br/>(built-in)]
+            end
+            
+            subgraph "Flyouts"
+                FL1[ClockFlyout<br/>plugins/clock-flyout]
+                FL2[AudioFlyout<br/>plugins/audio-flyout]
+                FL3[SettingsFlyout<br/>built-in]
+            end
+            
+            subgraph "Overlays"
+                OL1[NotificationCenter<br/>built-in]
+                OL2[LockScreen<br/>built-in]
+            end
+        end
+        
+        %% Bar Section
+        subgraph "Bar"
+            direction LR
+            B[Bar]
+            
+            subgraph "Bar Layout"
+                BL[Left: Workspaces, Audio, Tray]
+                BC[Center: Clock]
+                BR2[Right: Sys, Notifications, Settings]
+            end
+        end
+    end
+    
+    %% Connections
+    SR --> NS
+    SR --> NM
+    SR --> BR
+    SR --> PC
+    SR --> WS
+    SR --> PL
+    
+    PL --> PR
+    PL --> BP1
+    PL --> BP2
+    PL --> BP3
+    PL --> BP4
+    PL --> FL1
+    PL --> FL2
+    PL --> FL3
+    PL --> OL1
+    PL --> OL2
+    
+    LR --> BP1
+    LR --> BP2
+    LR --> BP3
+    LR --> BP4
+    
+    BC --> BP1
+    BC --> FL1
+    
+    BR2 --> BP4
+    BR2 --> OL1
+    BR2 --> FL3
+    
+    BP1 --> FL1
+    BP2 --> FL2
+    
+    style SR fill:#3a3f58,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    style PL fill:#2a3a58,stroke:#82aaff,stroke-width:2px,color:#ffffff
+    style B fill:#1a2a4a,stroke:#82aaff,stroke-width:2px,color:#ffffff
+    style BP1 fill:#3a5a3a,stroke:#9ece6a,stroke-width:1px,color:#ffffff
+    style BP2 fill:#3a5a3a,stroke:#9ece6a,stroke-width:1px,color:#ffffff
+    style BP3 fill:#3a5a3a,stroke:#9ece6a,stroke-width:1px,color:#ffffff
+    style BP4 fill:#3a5a3a,stroke:#9ece6a,stroke-width:1px,color:#ffffff
+    style FL1 fill:#3a4a5a,stroke:#86e1fc,stroke-width:1px,color:#ffffff
+    style FL2 fill:#3a4a5a,stroke:#86e1fc,stroke-width:1px,color:#ffffff
+    style FL3 fill:#3a4a5a,stroke:#86e1fc,stroke-width:1px,color:#ffffff
+    style OL1 fill:#3a2a3a,stroke:#bb9af7,stroke-width:1px,color:#ffffff
+    style OL2 fill:#3a2a3a,stroke:#bb9af7,stroke-width:1px,color:#ffffff
+```
+
+# Plugin System Flowchart
+
+## How Plugins Load
+
+```mermaid
+flowchart TD
+    A[Shell Starts] --> B{Read manifest.json}
+    B -->|Valid| C[Load Widget.qml]
+    B -->|Invalid| D[Skip Plugin]
+    C --> E[Create Component]
+    E --> F[Register in PluginRegistry]
+    F --> G[Available for Shell Config]
+```
+
+## Plugin Lifecycle
+
+```mermaid
+flowchart LR
+    A[Plugin Directory] --> B[manifest.json]
+    B --> C[Parse Metadata]
+    C --> D[Load Entry QML]
+    D --> E{Valid QML?}
+    E -->|Yes| F[Component Ready]
+    E -->|No| G[Error Log]
+    F --> H[Shell Uses Component]
+```

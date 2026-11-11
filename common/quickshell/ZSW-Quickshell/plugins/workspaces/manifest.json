@@ -1,0 +1,8 @@
+{
+  "name": "workspaces",
+  "version": "1.0.0",
+  "type": "bar-pill",
+  "position": "left",
+  "tags": ["navigation", "hyprland"],
+  "description": "Workspace switcher showing numbered pills with active highlight"
+}

@@ -1,0 +1,10 @@
+{
+  "name": "clock",
+  "version": "1.0.0",
+  "entry": "Widget.qml",
+  "type": "bar-pill",
+  "position": "center",
+  "tags": ["time", "date", "utility"],
+  "dependencies": [],
+  "description": "Clock widget with optional date display and click-to-open flyout"
+}

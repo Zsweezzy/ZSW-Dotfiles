@@ -1,0 +1,82 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1e2030', 'primaryBorderColor': '#82aaff', 'primaryTextColor': '#c8d3f5', 'sideBorderColor': '#2f334d', 'tertiaryColor': '#3a5a3a', 'tertiaryBorderColor': '#9ece6a', 'secondaryColor': '#3a4a5a', 'secondaryBorderColor': '#86e1fc', 'lineColor': '#7aa2f7'}}}%%
+flowchart TB
+    %% Shell Root
+    SR[ShellRoot] --> NS[NotificationStore]
+    SR --> NM[NetworkMonitor]
+    SR --> BR[Brightness]
+    SR --> PL[PluginLoader]
+    
+    %% Plugin System
+    subgraph PluginSystem["Plugin System"]
+        direction TB
+        PL --> PR[PluginRegistry]
+        
+        subgraph Plugins["Plugins"]
+            direction TB
+            
+            subgraph BarPills["Bar Pills"]
+                direction LR
+                BP1[Clock<br/><i>plugins/clock</i>]
+                BP2[Workspaces<br/><i>plugins/workspaces</i>]
+                BP3[Audio<br/><i>plugins/audio</i>]
+                BP4[Sys<br/><i>built-in</i>]
+            end
+            
+            subgraph Flyouts["Flyouts"]
+                direction LR
+                FL1[ClockFlyout<br/><i>plugins/clock-flyout</i>]
+                FL2[AudioFlyout<br/><i>plugins/audio-flyout</i>]
+                FL3[SettingsFlyout<br/><i>built-in</i>]
+            end
+            
+            subgraph Overlays["Overlays & Panels"]
+                direction LR
+                OL1[NotificationCenter<br/><i>built-in</i>]
+                OL2[Settings Panel<br/><i>built-in</i>]
+            end
+        end
+        
+        PR --> BP1
+        PR --> BP2
+        PR --> BP3
+        PR --> BP4
+        PR --> FL1
+        PR --> FL2
+        PR --> FL3
+        PR --> OL1
+        PR --> OL2
+    end
+    
+    %% Bar Layout
+    subgraph Bar["Bar (PanelWindow)"]
+        direction LR
+        L[Left<br/>• Workspaces<br/>• Audio<br/>• Tray]
+        C[Center<br/>• Clock]
+        R[Right<br/>• Sys<br/>• Bell<br/>• Settings]
+    end
+    
+    BP1 --> FL1
+    BP2 --> |click| L
+    BP3 --> |click| L
+    BP4 --> |click| R
+    
+    %% Connections to Bar
+    SR --> Bar
+    Bar --> L
+    Bar --> C
+    Bar --> R
+    
+    style SR fill:#1e2030,stroke:#82aaff,stroke-width:2px,color:#c8d3f5
+    style PL fill:#2f334d,stroke:#82aaff,stroke-width:2px,color:#c8d3f5
+    style PR fill:#2f334d,stroke:#82aaff,stroke-width:2px,color:#c8d3f5
+    
+    classDef pill fill:#3a5a3a,stroke:#9ece6a,stroke-width:1px,color:#ffffff
+    classDef flyout fill:#3a4a5a,stroke:#86e1fc,stroke-width:1px,color:#ffffff
+    classDef panel fill:#2a3a5a,stroke:#bb9af7,stroke-width:1px,color:#ffffff
+    classDef service fill:#3a3a4a,stroke:#e0af68,stroke-width:1px,color:#ffffff
+    classDef shell fill:#1e2030,stroke:#82aaff,stroke-width:2px,color:#c8d3f5
+    
+    class BP1,BP2,BP3,BP4 pill
+    class FL1,FL2,FL3 flyout
+    class OL1,OL2 panel
+    class SR,PL,PR shell

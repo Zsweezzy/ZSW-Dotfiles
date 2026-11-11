@@ -3,8 +3,6 @@ import QtQuick
 Item {
     id: root
 
-    property bool hovered: false
-
     property var now
 
     readonly property real contentW: timeWorst.width
@@ -18,15 +16,12 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         text: Qt.formatDateTime(root.now, "HH:mm")
 
-        color: root.hovered ? Tokyo.cyan : Tokyo.fg
+        color: Tokyo.fg
         font {
             family: Tokyo.fontFamily
             pixelSize: 13
             bold: true
             letterSpacing: 0.2
-        }
-        Behavior on color {
-            ColorAnimation { duration: 120; easing.type: Easing.OutQuad }
         }
     }
 
