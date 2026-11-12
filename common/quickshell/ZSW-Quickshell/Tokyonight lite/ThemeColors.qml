@@ -19,5 +19,5 @@ Singleton {
     readonly property color dim: "#7983a4"
     readonly property color islandFill: "#1a1b26"
     // The bar paints the desktop itself (Wallpaper.qml); hyprpaper is gone.
-    readonly property string wallpaper: "/home/maxii/.config/themes/tokyonight/wallpaper.png"
+    readonly property string wallpaper: "/home/maxii/.config/wallpapers/tokyonight.png"
 }

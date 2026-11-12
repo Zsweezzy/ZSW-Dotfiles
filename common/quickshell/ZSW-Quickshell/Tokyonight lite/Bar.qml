@@ -8,7 +8,6 @@ Variants {
     id: barRoot
     model: Quickshell.screens
     property bool launcherOpen: false
-    property bool pickerOpen: false
     property bool clipboardOpen: false
     property bool polkitOpen: false
     /// shared NotificationStore (shell.qml) — the daemon, history and toasts
@@ -141,7 +140,6 @@ Variants {
             // Only the monitor the flyout opens on gets a squared header.
             launcherOpen: barRoot.launcherOpen
                           && win.screen.name === Hyprland.focusedMonitor?.name
-            pickerOpen: barRoot.pickerOpen
                         && win.screen.name === Hyprland.focusedMonitor?.name
             clipboardOpen: barRoot.clipboardOpen
                            && win.screen.name === Hyprland.focusedMonitor?.name

@@ -7,7 +7,6 @@ import Quickshell.Wayland
 
 ShellRoot {
     id: root
-    property bool pickerOpen: false
     property bool launcherOpen: false
     property bool clipboardOpen: false
     /// "monitor" / "region" while the screenshot overlay is up, "" otherwise,
@@ -18,29 +17,8 @@ ShellRoot {
     /// one being dragged has to tell the others what to draw.
     property rect screenshotRect: Qt.rect(0, 0, 0, 0)
 
-    Connections {
-        target: Hyprland
-        // The theme picker is another process's layer surface: Hyprland's own
-        // map/unmap events are the only way this shell learns it is up, and the
-        // capsule widens to match it.
-        function onRawEvent(event) {
-            const open = event.name === "openlayer" ? true
-                       : event.name === "closelayer" ? false : null;
-            if (open === null) return;
-            if (event.data === "quickshell-theme-picker") root.pickerOpen = open;
-        }
-    }
-
-    Process {
-        id: pickerProcess
-        command: ["quickshell", "-n", "-c", "ZSW-Quickshell/theme-picker"]
-    }
-
-    // `theme set` rewrites ThemeColors.qml, which this shell watches, so a
     // switch from a keybind or the CLI recolours the bar without a restart.
     // Nothing to read back: the file is the state.
-    Process { id: themeProcess }
-
     IpcHandler {
         target: "island"
         // The launcher is a window of this config now, so this is only a
@@ -70,9 +48,6 @@ ShellRoot {
             root.screenshotScreen = Hyprland.focusedMonitor?.name ?? ""
             root.screenshotMode = root.screenshotScreen === "" ? "" : mode
         }
-        function toggleThemePicker(): void {
-            pickerProcess.running = !pickerProcess.running
-        }
         // The session lock (Session.qml). `lock` is a keyword-ish name here,
         // so the singleton keeps the verb and the object stays private.
         function lock(): void {
@@ -92,19 +67,6 @@ ShellRoot {
         // Settings.qml is what persists it, so this is only a property write.
         function dnd(on: bool): void {
             Settings.dnd = on
-        }
-        // `theme set <slug>`, the picker's own command minus the picker.
-        // A theme is shell code (theme.conf is sourced), so the slug is held to
-        // the shape the picker writes and nothing else. Locked: a reload would
-        // drop the lock surface, and the theme can wait.
-        function theme(slug: string): void {
-            if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
-                console.warn("[island] rejected theme slug: " + slug)
-                return
-            }
-            if (Session.locked) return
-            themeProcess.command = ["theme", "set", slug]
-            themeProcess.running = true
         }
         function close(): void {
             bar.closeFlyout()
@@ -155,7 +117,6 @@ ShellRoot {
     Bar {
         id: bar
         launcherOpen: root.launcherOpen
-        pickerOpen: root.pickerOpen
         clipboardOpen: root.clipboardOpen
         polkitOpen: polkitAgent.isActive
         notifications: notificationStore

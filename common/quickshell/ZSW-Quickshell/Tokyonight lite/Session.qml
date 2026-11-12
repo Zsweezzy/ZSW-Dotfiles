@@ -8,7 +8,7 @@
 //
 // A config reload destroys the lock surface with the rest of the config, so the
 // state is also kept in a marker file: the generation that starts while it says
-// locked locks again. Without that, saving any .qml file (or switching theme)
+// locked locks again. Without that, saving any .qml file
 // unlocked the session.
 pragma Singleton
 

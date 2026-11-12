@@ -24,8 +24,6 @@ Item {
         root.close()
         root.audioOpen = false
     }
-    /// True on the monitor the theme picker is on, while it is mapped.
-    property bool pickerOpen: false
     /// True on the monitor the clipboard picker is open on. The picker is an
     /// overlay window, so an open flyout would otherwise sit on top of its
     /// field; opening it closes the flyout.
@@ -49,7 +47,7 @@ Item {
     /// Any card is on screen. Bar.qml keeps the whole island out of the way
     /// over a fullscreen window until one of these asks for it.
     readonly property bool anyOpen: popup.visible || audioOpen || launcherOpen
-                                    || pickerOpen || clipboardOpen || polkitOpen
+                                    || clipboardOpen || polkitOpen
 
     /// The audio card is part of the drawer's surface, so one surface means one
     /// keyboard: while the popup is mapped the bar takes it (see Bar.qml), an
@@ -246,7 +244,6 @@ Item {
         // join the capsule's square bottom edge instead of poking out under a
         // narrow pill.
         width: root.polkitOpen ? Tokyo.polkitWidth
-               : root.pickerOpen ? Tokyo.pickerWidth
                : root.launcherOpen ? Tokyo.launcherWidth
                : popup.visible ? root.openWidth
                : row.implicitWidth + Tokyo.islandPadH * 2
@@ -257,7 +254,7 @@ Item {
             NumberAnimation {
                 duration: root.outgoingModule !== null
                           ? Tokyo.flyoutDuration
-                          : (root.launcherOpen || root.pickerOpen || root.polkitOpen)
+                          : (root.launcherOpen || root.polkitOpen)
                             ? Tokyo.expandDuration : Tokyo.collapseDuration
                 easing.type: Easing.OutExpo
             }
@@ -267,9 +264,9 @@ Item {
         // While a panel is open the capsule is the panel's header, so its
         // bottom corners square off into the card (which is at least as wide).
         // The launcher's window carries the same header shape.
-        bottomLeftRadius: popup.visible || root.launcherOpen || root.pickerOpen
+        bottomLeftRadius: popup.visible || root.launcherOpen
                           || root.polkitOpen ? 0 : height / 2
-        bottomRightRadius: popup.visible || root.launcherOpen || root.pickerOpen
+        bottomRightRadius: popup.visible || root.launcherOpen
                            || root.polkitOpen ? 0 : height / 2
         Behavior on bottomLeftRadius {
             NumberAnimation { duration: Tokyo.collapseDuration; easing.type: Easing.OutExpo }

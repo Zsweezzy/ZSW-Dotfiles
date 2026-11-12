@@ -62,8 +62,8 @@ immutability=1
 plugin=org.kde.plasma.icontasks
 
 [Containments][227][Applets][229][Configuration][General]
-groupingAppIdBlacklist=mpv.desktop,steam.desktop,samrewritten.desktop,kitty.desktop,firefox.desktop
-groupingLauncherUrlBlacklist=applications:mpv.desktop,applications:kitty.desktop,applications:firefox.desktop,applications:samrewritten.desktop,applications:steam.desktop
+groupingAppIdBlacklist=firefox.desktop,samrewritten.desktop,steam.desktop,mpv.desktop,kitty.desktop
+groupingLauncherUrlBlacklist=applications:steam.desktop,applications:kitty.desktop,applications:mpv.desktop,applications:firefox.desktop,applications:samrewritten.desktop
 launchers=applications:org.kde.dolphin.desktop,applications:firefox.desktop,applications:steam.desktop,applications:spotify.desktop
 
 [Containments][227][Applets][230]
@@ -129,14 +129,14 @@ currentDetailsTab=details
 
 [Containments][227][Applets][230][Applets][242]
 immutability=1
-plugin=org.kde.plasma.networkmanagement
+plugin=org.kde.plasma.volume
 
 [Containments][227][Applets][230][Applets][242][Configuration][General]
 migrated=true
 
 [Containments][227][Applets][230][Applets][243]
 immutability=1
-plugin=org.kde.plasma.battery
+plugin=org.kde.plasma.networkmanagement
 
 [Containments][227][Applets][230][Applets][244]
 immutability=1
@@ -228,8 +228,8 @@ immutability=1
 plugin=org.kde.plasma.icontasks
 
 [Containments][23][Applets][26][Configuration][General]
-groupingAppIdBlacklist=kitty.desktop,mpv.desktop,steam.desktop,samrewritten.desktop,firefox.desktop
-groupingLauncherUrlBlacklist=applications:steam.desktop,applications:samrewritten.desktop,applications:mpv.desktop,applications:firefox.desktop,applications:kitty.desktop
+groupingAppIdBlacklist=firefox.desktop,samrewritten.desktop,steam.desktop,mpv.desktop,kitty.desktop
+groupingLauncherUrlBlacklist=applications:steam.desktop,applications:kitty.desktop,applications:mpv.desktop,applications:firefox.desktop,applications:samrewritten.desktop
 launchers=applications:org.kde.dolphin.desktop,applications:firefox.desktop,applications:steam.desktop,applications:spotify.desktop
 
 [Containments][23][Applets][28]
@@ -404,8 +404,8 @@ immutability=1
 plugin=org.kde.plasma.icontasks
 
 [Containments][251][Applets][253][Configuration][General]
-groupingAppIdBlacklist=mpv.desktop,steam.desktop,samrewritten.desktop,kitty.desktop,firefox.desktop
-groupingLauncherUrlBlacklist=applications:mpv.desktop,applications:kitty.desktop,applications:firefox.desktop,applications:samrewritten.desktop,applications:steam.desktop
+groupingAppIdBlacklist=firefox.desktop,samrewritten.desktop,steam.desktop,mpv.desktop,kitty.desktop
+groupingLauncherUrlBlacklist=applications:steam.desktop,applications:kitty.desktop,applications:mpv.desktop,applications:firefox.desktop,applications:samrewritten.desktop
 launchers=applications:org.kde.dolphin.desktop,applications:firefox.desktop,applications:steam.desktop,applications:spotify.desktop
 
 [Containments][251][Applets][254]
@@ -471,14 +471,14 @@ currentDetailsTab=details
 
 [Containments][251][Applets][254][Applets][266]
 immutability=1
-plugin=org.kde.plasma.networkmanagement
+plugin=org.kde.plasma.volume
 
 [Containments][251][Applets][254][Applets][266][Configuration][General]
 migrated=true
 
 [Containments][251][Applets][254][Applets][267]
 immutability=1
-plugin=org.kde.plasma.battery
+plugin=org.kde.plasma.networkmanagement
 
 [Containments][251][Applets][254][Applets][268]
 immutability=1
@@ -613,7 +613,7 @@ DialogWidth=810
 [Containments][43][General]
 changedPositions={"desktop:/NEWEST":["1920x1080","2","3"],"desktop:/OOHH":["1920x1080","2","2"],"desktop:/hey.txt":["1920x1080","0","1"]}
 lastResolution=1920x1080
-positions={"1920x1080":["1","17","desktop:/SRDR30015","0","6","desktop:/SRDR30001.bak","0","5","desktop:/NEWEST","2","3","desktop:/todo.txt~","0","9","desktop:/kündigung.txt","0","2","desktop:/todo.txt","0","8","desktop:/SRDR30000.bak","0","3","desktop:/bookmarks.html","0","2","desktop:/To-Dos.txt","0","0","desktop:/SRDR30001","0","4","desktop:/calculator.py","0","9","desktop:/OOHH","2","2","desktop:/hey.txt","0","1","desktop:/aaaaaaaaaaa","0","0","desktop:/SRDR30015.bak.part","0","9","desktop:/SRDR30015.bak","0","7","desktop:/sprechtext.md","0","1","desktop:/RDRSE Backups","0","1","desktop:/SRDR30001.bak.part","0","9"]}
+positions={"1920x1080":["1","17","desktop:/decky_installer.desktop","0","7","desktop:/To-Dos.txt","0","0","desktop:/kündigung.txt","0","2","desktop:/SRDR30000.bak","0","3","desktop:/OOHH","2","2","desktop:/aaaaaaaaaaa","0","0","desktop:/Sequence 01.mp4","0","8","desktop:/sprechtext.md","0","1","desktop:/SRDR30001","0","4","desktop:/shortcuts.md","0","5","desktop:/FilmCraft Demo.fcproj","0","10","desktop:/SRDR30001.bak.part","0","9","desktop:/todo.txt~","0","9","desktop:/NEWEST","2","3","desktop:/bookmarks.html","0","2","desktop:/Zsweezzy Premiere.preset","0","9","desktop:/todo.txt","0","8","desktop:/Zsweezzy Premiere Pro Shortcuts.kys","0","3","desktop:/SRDR30001.bak","0","5","desktop:/hey.txt","0","1","desktop:/SRDR30015","0","6","desktop:/SRDR30015.bak","0","7","desktop:/calculator.py","0","9","desktop:/SRDR30015.bak.part","0","9","desktop:/RDRSE Backups","0","1"]}
 sortMode=-1
 
 [Containments][43][Wallpaper][com.t145.matrixrain][General]
@@ -682,5 +682,5 @@ panelWidgets=[{"id":178,"name":"luisbocanegra.panel.colorizer","title":"Panel co
 presetAutoloading={"enabled":true,"filterByScreen":true,"fullscreenWindow":"/home/maxii/.config/panel-colorizer/presets/Main Blur","maximized":"/home/maxii/.config/panel-colorizer/presets/Main Blur","touchingWindow":"/home/maxii/.config/panel-colorizer/presets/Main Setup","activeWindow":"/home/maxii/.config/panel-colorizer/presets/Main Setup","visibleWindows":"/home/maxii/.config/panel-colorizer/presets/Main Setup","floating":"/home/maxii/.config/panel-colorizer/presets/Main Setup","normal":"/home/maxii/.config/panel-colorizer/presets/Main Setup"}
 
 [ScreenMapping]
-itemsOnDisabledScreens=0,027b836a-4528-4df3-9c0f-c75f899a8d7a,10,desktop:/SRDR30000.bak,desktop:/aaaaaaaaaaa,desktop:/To-Dos.txt,desktop:/SRDR30015,desktop:/bookmarks.html,desktop:/sprechtext.md,desktop:/SRDR30001.bak,desktop:/SRDR30001,desktop:/SRDR30015.bak,desktop:/hey.txt
-screenMapping=desktop:/hey.txt,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30001,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30001.bak,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/sprechtext.md,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/To-Dos.txt,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/bookmarks.html,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30015,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30000.bak,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/aaaaaaaaaaa,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30015.bak,0,027b836a-4528-4df3-9c0f-c75f899a8d7a
+itemsOnDisabledScreens=0,027b836a-4528-4df3-9c0f-c75f899a8d7a,12,desktop:/SRDR30001.bak,desktop:/sprechtext.md,desktop:/To-Dos.txt,desktop:/aaaaaaaaaaa,desktop:/Zsweezzy Premiere.preset,desktop:/hey.txt,desktop:/SRDR30015.bak,desktop:/FilmCraft Demo.fcproj,desktop:/shortcuts.md,desktop:/Sequence 01.mp4,desktop:/Zsweezzy Premiere Pro Shortcuts.kys,desktop:/SRDR30000.bak
+screenMapping=desktop:/Zsweezzy Premiere.preset,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/sprechtext.md,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/Sequence 01.mp4,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30000.bak,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/aaaaaaaaaaa,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30015.bak,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/shortcuts.md,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/FilmCraft Demo.fcproj,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/To-Dos.txt,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/hey.txt,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/Zsweezzy Premiere Pro Shortcuts.kys,0,027b836a-4528-4df3-9c0f-c75f899a8d7a,desktop:/SRDR30001.bak,0,027b836a-4528-4df3-9c0f-c75f899a8d7a

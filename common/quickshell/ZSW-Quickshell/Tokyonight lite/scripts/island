@@ -6,7 +6,6 @@
 #   island flyout | notifications | audio | settings | clipboard | launcher
 #   island close                  whatever is open
 #   island dnd on|off             do not disturb
-#   island theme [slug]           switch (no slug: print the current one)
 #   island osd volume|brightness|mic
 #   island screenshot region|monitor
 #
@@ -17,7 +16,6 @@
 set -uo pipefail
 
 cfg="ZSW-Quickshell/Tokyonight lite"
-state="${XDG_STATE_HOME:-$HOME/.local/state}/theme/current"
 settings="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/tokyonight-settings.json"
 
 die() { printf 'island: %s\n' "$*" >&2; exit 1; }
@@ -32,13 +30,11 @@ minutes() {
 status() {
     local pid slug dnd lock dpms
     pid=$(pgrep -x quickshell | head -1)
-    slug=$([ -r "$state" ] && cat "$state" || printf 'tokyonight')
     if [ -n "$pid" ]; then
         printf 'shell    running (pid %s)\n' "$pid"
     else
         printf 'shell    not running\n'
     fi
-    printf 'theme    %s\n' "$slug"
     if [ -r "$settings" ] && command -v jq >/dev/null 2>&1; then
         dnd=$(jq -r 'if .dnd then "on" else "off" end' "$settings" 2>/dev/null)
         lock=$(jq -r '.lockIdleMinutes // 0' "$settings" 2>/dev/null)
@@ -60,8 +56,6 @@ case "${1:-status}" in
     close)        ipc close ;;
     osd)          ipc osd "${2:-volume}" ;;
     screenshot)   ipc screenshot "${2:-region}" ;;
-    theme)
-        if [ $# -ge 2 ]; then ipc theme "$2"; else theme current; fi ;;
     dnd)
         case "${2:-}" in
             on)  ipc dnd true ;;

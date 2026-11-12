@@ -3,8 +3,8 @@ import Quickshell
 import Quickshell.Wayland
 
 // hyprpaper used to paint the desktop. A background-layer surface per monitor
-// does the same: the theme script writes the palette's wallpaper path into
-// ThemeColors.qml, whose reload repaints every screen.
+// does the same: ThemeColors.qml provides the wallpaper path, whose reload
+// repaints every screen.
 Variants {
     model: Quickshell.screens
 
