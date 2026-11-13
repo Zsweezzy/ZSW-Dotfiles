@@ -42,7 +42,7 @@ PanelWindow {
         const q = root.query.trim().toLowerCase();
         const seen = new Set();
         return root.apps
-            .filter(a => a.name && !a.noDisplay && (q === ""
+            .filter(a => a.name && a.icon && !a.noDisplay && (q === ""
                 || a.name.toLowerCase().includes(q)
                 || (a.genericName || "").toLowerCase().includes(q)))
             .sort((a, b) => a.name.localeCompare(b.name))
