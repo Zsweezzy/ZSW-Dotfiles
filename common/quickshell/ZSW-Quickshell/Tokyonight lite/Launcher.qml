@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 
 // App launcher, opened by Super+R through the bar's IPC handler.
@@ -38,9 +39,33 @@ PanelWindow {
     /// is never wider than it, so the two windows stay flush while rescaling.
     property real capsuleWidth: Tokyo.launcherWidth
 
-    /// Plasma-only apps: anything advertising the KDE category is hidden from
-    /// this launcher, except the two KDE apps this session actually launches.
-    readonly property var plasmaShared: ["org.kde.ark", "org.kde.kwalletmanager"]
+    /// App visibility, declared in launcher-visibility.conf next to this file.
+    /// A non-empty file is authoritative; if it is missing the built-in
+    /// defaults below keep every KDE app except Ark and the wallet out.
+    property var plasmaShared: ["org.kde.ark", "org.kde.kwalletmanager"]
+    property var hyprHidden: []
+
+    FileView {
+        id: visibility
+        path: Qt.resolvedUrl("launcher-visibility.conf")
+        preload: true
+        watchChanges: true
+        onFileChanged: reload()
+        onTextChanged: {
+            if (visibility.text().trim().length === 0) return;
+            const shared = [];
+            const hidden = [];
+            for (const line of visibility.text().split("\n")) {
+                const [kind, id] = line.trim().split(/\s+/);
+                if (!id || kind.startsWith("#")) continue;
+                if (kind === "plasma-shared") shared.push(id);
+                else if (kind === "hypr-hidden") hidden.push(id);
+            }
+            root.plasmaShared = shared;
+            root.hyprHidden = hidden;
+        }
+    }
+
     readonly property var matches: {
         const q = root.query.trim().toLowerCase();
         const seen = new Set();
@@ -50,6 +75,7 @@ PanelWindow {
                 || (a.genericName || "").toLowerCase().includes(q)))
             .filter(a => !(a.categories || []).some(c => c === "KDE")
                 || root.plasmaShared.some(id => (a.id || "").startsWith(id)))
+            .filter(a => !root.hyprHidden.some(id => (a.id || "").startsWith(id)))
             .sort((a, b) => a.name.localeCompare(b.name))
             .filter(a => {
                 if (seen.has(a.name)) return false;
