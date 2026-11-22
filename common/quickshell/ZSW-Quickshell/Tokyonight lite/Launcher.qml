@@ -25,6 +25,9 @@ PanelWindow {
     signal dismissed()
     property string query: ""
     property int index: 0
+    /// Tab toggle: reveal everything the visibility rules would hide. Reset on
+    /// every open so the launcher always starts filtered.
+    property bool showAll: false
     /// Filled on every open: scanning every .desktop file is startup work a
     /// launcher that is never opened should not pay, and a snapshot taken only
     /// once hides apps installed after the first open. One of these windows
@@ -74,6 +77,19 @@ PanelWindow {
         }
     }
 
+    /// Whether the visibility rules let this entry through. `showAll` (Tab)
+    /// bypasses them without touching the config file.
+    function visible(a) {
+        if (root.showAll) return true;
+        const id = a.id || "";
+        const cats = a.categories || [];
+        const prefixed = (list) => list.some(x => id.startsWith(x));
+        if (cats.some(c => c === "KDE") && !prefixed(root.plasmaShared)) return false;
+        if (prefixed(root.hyprShown)) return true;
+        if (prefixed(root.hyprHidden)) return false;
+        return !root.hiddenCategories.some(c => cats.some(x => x === c));
+    }
+
     readonly property var matches: {
         const q = root.query.trim().toLowerCase();
         const seen = new Set();
@@ -81,11 +97,7 @@ PanelWindow {
             .filter(a => a.name && a.icon && !a.noDisplay && (q === ""
                 || a.name.toLowerCase().includes(q)
                 || (a.genericName || "").toLowerCase().includes(q)))
-            .filter(a => !(a.categories || []).some(c => c === "KDE")
-                || root.plasmaShared.some(id => (a.id || "").startsWith(id)))
-            .filter(a => root.hyprShown.some(id => (a.id || "").startsWith(id))
-                || !(root.hyprHidden.some(id => (a.id || "").startsWith(id))
-                    || root.hiddenCategories.some(c => (a.categories || []).some(x => x === c))))
+            .filter(a => root.visible(a))
             .sort((a, b) => a.name.localeCompare(b.name))
             .filter(a => {
                 if (seen.has(a.name)) return false;
@@ -106,6 +118,7 @@ PanelWindow {
         root.apps = DesktopEntries.applications.values;
         root.query = "";
         root.index = 0;
+        root.showAll = false;
         Qt.callLater(() => bodyLoader.item?.focusInput());
     }
 
@@ -239,16 +252,26 @@ PanelWindow {
                         anchors.left: parent.left
                         anchors.leftMargin: 12
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Apps"
-                        color: Tokyo.dim
+                        text: root.showAll ? "All" : "Apps"
+                        color: root.showAll ? Tokyo.blue : Tokyo.dim
                         font { family: Tokyo.fontFamily; pixelSize: 11; bold: true; letterSpacing: 0.5 }
+                    }
+
+                    Text {
+                        id: hint
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.showAll ? "Tab: filtered" : "Tab: all"
+                        color: Tokyo.dim
+                        font { family: Tokyo.fontFamily; pixelSize: 10 }
                     }
 
                     TextInput {
                         id: input
                         anchors.left: label.right
                         anchors.leftMargin: 10
-                        anchors.right: parent.right
+                        anchors.right: hint.left
                         anchors.rightMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
                         focus: root.open
@@ -282,6 +305,10 @@ PanelWindow {
                                 event.accepted = true;
                             } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                                 root.launch();
+                                event.accepted = true;
+                            } else if (event.key === Qt.Key_Tab) {
+                                root.showAll = !root.showAll;
+                                root.index = 0;
                                 event.accepted = true;
                             }
                         }
