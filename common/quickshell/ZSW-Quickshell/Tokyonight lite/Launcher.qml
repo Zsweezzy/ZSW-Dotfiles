@@ -44,6 +44,8 @@ PanelWindow {
     /// defaults below keep every KDE app except Ark and the wallet out.
     property var plasmaShared: ["org.kde.ark", "org.kde.kwalletmanager"]
     property var hyprHidden: []
+    property var hyprShown: []
+    property var hiddenCategories: []
 
     FileView {
         id: visibility
@@ -55,14 +57,20 @@ PanelWindow {
             if (visibility.text().trim().length === 0) return;
             const shared = [];
             const hidden = [];
+            const shown = [];
+            const categories = [];
             for (const line of visibility.text().split("\n")) {
                 const [kind, id] = line.trim().split(/\s+/);
                 if (!id || kind.startsWith("#")) continue;
                 if (kind === "plasma-shared") shared.push(id);
                 else if (kind === "hypr-hidden") hidden.push(id);
+                else if (kind === "hypr-shown") shown.push(id);
+                else if (kind === "hypr-hidden-category") categories.push(id);
             }
             root.plasmaShared = shared;
             root.hyprHidden = hidden;
+            root.hyprShown = shown;
+            root.hiddenCategories = categories;
         }
     }
 
@@ -75,7 +83,9 @@ PanelWindow {
                 || (a.genericName || "").toLowerCase().includes(q)))
             .filter(a => !(a.categories || []).some(c => c === "KDE")
                 || root.plasmaShared.some(id => (a.id || "").startsWith(id)))
-            .filter(a => !root.hyprHidden.some(id => (a.id || "").startsWith(id)))
+            .filter(a => root.hyprShown.some(id => (a.id || "").startsWith(id))
+                || !(root.hyprHidden.some(id => (a.id || "").startsWith(id))
+                    || root.hiddenCategories.some(c => (a.categories || []).some(x => x === c))))
             .sort((a, b) => a.name.localeCompare(b.name))
             .filter(a => {
                 if (seen.has(a.name)) return false;
