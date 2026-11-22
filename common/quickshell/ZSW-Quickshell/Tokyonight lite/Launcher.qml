@@ -38,6 +38,9 @@ PanelWindow {
     /// is never wider than it, so the two windows stay flush while rescaling.
     property real capsuleWidth: Tokyo.launcherWidth
 
+    /// Plasma-only apps: anything advertising the KDE category is hidden from
+    /// this launcher, except the two KDE apps this session actually launches.
+    readonly property var plasmaShared: ["org.kde.ark", "org.kde.kwalletmanager"]
     readonly property var matches: {
         const q = root.query.trim().toLowerCase();
         const seen = new Set();
@@ -45,6 +48,8 @@ PanelWindow {
             .filter(a => a.name && a.icon && !a.noDisplay && (q === ""
                 || a.name.toLowerCase().includes(q)
                 || (a.genericName || "").toLowerCase().includes(q)))
+            .filter(a => !(a.categories || []).some(c => c === "KDE")
+                || root.plasmaShared.some(id => (a.id || "").startsWith(id)))
             .sort((a, b) => a.name.localeCompare(b.name))
             .filter(a => {
                 if (seen.has(a.name)) return false;
