@@ -7,6 +7,7 @@ function fish_greeting
 end
 
 fish_add_path /home/maxii/.spicetify
+fish_add_path /home/maxii/.local/share/pnpm/bin
 
 # ── Prompt engine (starship | omp) ──────────────────────────────────────
 # Switch with: prompt_engine starship   (or)   prompt_engine omp
