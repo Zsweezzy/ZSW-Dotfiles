@@ -71,10 +71,6 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("hyprpaper") -- wallpaper daemon
 	hl.exec_cmd("quickshell -c tokyonight") -- status bar (quickshell tokyonight bar; waybar config backed up in gh:Zsweezzy/waybar-dotfiles)
 	hl.exec_cmd("openrgb --startminimized") -- RGB control; start to tray, no UI on launch
-	-- Apollo: Moonlight GameStream server. Start the unit, not the binary, because
-	-- its ExecStartPre settle delay and Restart= are part of the behaviour, and the
-	-- xdg-autostart target it is enabled against never activates under Hyprland.
-	hl.exec_cmd("systemctl --user start apollo")
 	-- Warm the shortcuts/apps launcher so Super+K only has to reveal it.
 	hl.exec_cmd("/home/maxii/.local/bin/hypr-shortcut-launcher --background")
 	-- Clipboard history daemon (cliphist): watch text + image selections and store them
@@ -465,7 +461,7 @@ describedBind(
 )
 -- ALT + Tab = free the cursor from whatever is holding it.
 -- hl.dsp.release_input_capture ends a wlr-input-capture session, and the only
--- things that create one are compositors-as-clients (Apollo/Steam Remote Play,
+-- things that create one are compositors-as-clients (Steam Remote Play,
 -- RDP/VNC) -- so this chord is dead weight for a locally launched game like
 -- Detroit: Become Human, which traps the cursor through Wine's own fullscreen
 -- pointer clip instead, and nothing in Hyprland releases that except a focus
